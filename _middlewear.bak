@@ -1,0 +1,53 @@
+// middleware.ts
+import { NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
+import { verifyJwtToken } from './lib/jwt';
+
+// Paths that don't require authentication
+const publicPaths = ['/api/auth/login', '/api/auth/signup'];
+
+export function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+  
+  // Check if the path is public
+  if (publicPaths.some(path => pathname === path)) {
+    return NextResponse.next();
+  }
+
+  // Only apply auth check to API routes
+  if (pathname.startsWith('/api/')) {
+    // Get token from Authorization header for API requests
+    const authHeader = request.headers.get('authorization');
+    const token = authHeader?.split(' ')[1];
+
+    if (!token) {
+      return NextResponse.json(
+        { success: false, message: 'Authentication required' },
+        { status: 401 }
+      );
+    }
+
+    // Verify the token
+    const decoded = verifyJwtToken(token);
+    if (!decoded) {
+      return NextResponse.json(
+        { success: false, message: 'Invalid or expired token' },
+        { status: 401 }
+      );
+    }
+
+    // Role-based access control for admin-only API endpoints
+    if (pathname.startsWith('/api/admin') && decoded.role !== 'ADMIN') {
+      return NextResponse.json(
+        { success: false, message: 'Admin access required' },
+        { status: 403 }
+      );
+    }
+  }
+
+  return NextResponse.next();
+}
+
+export const config = {
+  matcher: ['/api/:path*'],
+};

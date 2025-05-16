@@ -1,0 +1,150 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id          Int      @id @default(autoincrement())
+  userName    String   @unique
+  wbEmailId   String?  @unique
+  password    String
+  phoneNumber String?
+  role        Role     @default(SALES)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Agreement {
+  id           Int            @id @default(autoincrement())
+  clientName   String
+  employeeName String?
+  employeeId   String?
+  type         AgreementType?
+  poNumber     Int?
+  startDate    DateTime
+  endDate      DateTime
+  fileUpload   String?
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+}
+
+model Requirement {
+  id              Int      @id @default(autoincrement())
+  requirementName String
+  companyName     String
+  jobDescription  String
+  experience      Int
+  noticePeriod    Int
+  positions       Int
+  primarySkills   String
+  secondarySkills String
+  closePositions  String
+  requirementType String
+  workLocation    String
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model Lead {
+  id                     Int                @id @default(autoincrement())
+  salesName              String
+  companyName            String
+  companyID              String?               // Make it optional by adding '?' to allow null/undefined
+  numberOfEmployees      Int                @default(0)
+  employeeID             String?
+  employeeName           String?
+  replacementToDate      DateTime?
+  replacementRequestDate DateTime?
+  createdAt              DateTime           @default(now())
+  updatedAt              DateTime           @updatedAt
+  status                 LeadStatus         @default(prospective)
+  companyNameGST         String?
+  companySelect          String?
+  companysize            String?
+  industry               Industry?
+  percentage             Int?
+  remarks                String?
+  technology             Technology?
+  replacementReason      ReplacementReason?
+  leadType               leadstatus
+  businessType           String?
+  spocs                  Spoc[]
+}
+
+model Spoc {
+  id          Int      @id @default(autoincrement())
+  name        String
+  email       String
+  contact     String
+  altContact  String?
+  designation String
+  location    String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  leadId      Int
+  lead        Lead     @relation(fields: [leadId], references: [id])
+}
+
+enum Role {
+  ADMIN
+  RECRUITER
+  SALES
+  ACCOUNT_MANAGER
+}
+
+enum AgreementType {
+  MSA
+  NDA
+  SOW
+  PO
+}
+
+enum LeadStatus {
+  prospective
+  newlead
+  existing
+  deal
+  NEW
+}
+
+enum ReplacementReason {
+  resigned
+  performance_issue
+  employee_concern
+}
+
+enum Technology {
+  development
+  testing
+  devops
+  ai_ml
+  ai
+}
+
+enum Industry {
+  it
+  finance
+  healthcare
+  manufacturing
+  retail
+  education
+  telecom
+  automobile
+  realestate
+  logistics
+  media
+  government
+  energy
+  consulting
+}
+
+enum leadstatus {
+  prospective
+  new
+  existing
+  deal
+}
