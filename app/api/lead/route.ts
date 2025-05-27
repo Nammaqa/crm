@@ -11,28 +11,31 @@ interface SpocInput {
 }
 
 // Helper to add CORS headers to all responses
-function withCors(response: NextResponse) {
-  response.headers.set("Access-Control-Allow-Origin", "*");
-  response.headers.set("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS");
-  response.headers.set("Access-Control-Allow-Headers", "Content-Type, Authorization");
-  return response;
-}
+const ALLOWED_ORIGIN =
+  process.env.NODE_ENV === 'production'
+    ? 'https://crm.wizzybox.in'
+    : '*';
 
-// Handle preflight OPTIONS request
 export async function OPTIONS() {
-  return withCors(new NextResponse(null, { status: 204 }));
+  return new Response(null, {
+    status: 200,
+    headers: {
+      'Access-Control-Allow-Origin': ALLOWED_ORIGIN,
+      'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+      'Access-Control-Allow-Credentials': 'false',
+    },
+  });
 }
-
 export async function GET() {
   try {
     const leads = await prisma.lead.findMany({
       include: { spocs: true },
     });
-    return withCors(NextResponse.json(leads));
+    return NextResponse.json(leads, { headers: { 'Access-Control-Allow-Origin': ALLOWED_ORIGIN } });
   } catch {
-    return withCors(
-      NextResponse.json({ error: "Failed to fetch leads" }, { status: 500 })
-    );
+    return NextResponse.json({ error: "Failed to fetch leads" }, 
+      { headers: { 'Access-Control-Allow-Origin': ALLOWED_ORIGIN }, status: 500 })
   }
 }
 
@@ -98,11 +101,10 @@ export async function POST(req: NextRequest) {
       include: { spocs: true },
     });
 
-    return withCors(NextResponse.json(lead, { status: 201 }));
+    return NextResponse.json(lead, { headers: { 'Access-Control-Allow-Origin': ALLOWED_ORIGIN } ,status:201});
   } catch (error) {
     console.error(error);
-    return withCors(
-      NextResponse.json({ error: "Failed to create lead" }, { status: 500 })
-    );
+    return NextResponse.json({ error: "Failed to create leads" }, 
+      { headers: { 'Access-Control-Allow-Origin': ALLOWED_ORIGIN }, status: 500 })
   }
 }
