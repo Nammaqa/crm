@@ -13,7 +13,7 @@ interface SpocInput {
 // Helper to add CORS headers to all responses
 const ALLOWED_ORIGIN =
   process.env.NODE_ENV === 'production'
-    ? 'http://crm.wizzybox.in'
+    ? 'https://crm.wizzybox.in'
     : '*';
 
 export async function OPTIONS() {
