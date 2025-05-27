@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextResponse, NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 
 interface SpocInput {
@@ -10,18 +10,33 @@ interface SpocInput {
   location: string;
 }
 
+// Helper to add CORS headers to all responses
+function withCors(response: NextResponse) {
+  response.headers.set("Access-Control-Allow-Origin", "*");
+  response.headers.set("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS");
+  response.headers.set("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  return response;
+}
+
+// Handle preflight OPTIONS request
+export async function OPTIONS() {
+  return withCors(new NextResponse(null, { status: 204 }));
+}
+
 export async function GET() {
   try {
     const leads = await prisma.lead.findMany({
       include: { spocs: true },
     });
-    return NextResponse.json(leads);
+    return withCors(NextResponse.json(leads));
   } catch {
-    return NextResponse.json({ error: "Failed to fetch leads" }, { status: 500 });
+    return withCors(
+      NextResponse.json({ error: "Failed to fetch leads" }, { status: 500 })
+    );
   }
 }
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
 
@@ -83,9 +98,11 @@ export async function POST(req: Request) {
       include: { spocs: true },
     });
 
-    return NextResponse.json(lead, { status: 201 });
+    return withCors(NextResponse.json(lead, { status: 201 }));
   } catch (error) {
     console.error(error);
-    return NextResponse.json({ error: "Failed to create lead" }, { status: 500 });
+    return withCors(
+      NextResponse.json({ error: "Failed to create lead" }, { status: 500 })
+    );
   }
 }

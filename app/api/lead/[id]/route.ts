@@ -4,12 +4,25 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { Spoc } from "@prisma/client";
 
+// Helper to add CORS headers to all responses
+function withCors(response: NextResponse) {
+  response.headers.set("Access-Control-Allow-Origin", "*");
+  response.headers.set("Access-Control-Allow-Methods", "GET,PUT,DELETE,PATCH,OPTIONS");
+  response.headers.set("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  return response;
+}
+
+// Handle preflight OPTIONS request
+export async function OPTIONS() {
+  return withCors(new NextResponse(null, { status: 204 }));
+}
+
 export async function GET(_: NextRequest, context: { params: Promise<{ id: string }> }) {
   const params = await context.params;
   const id = params.id;
   const leadId = parseInt(id);
 
-  if (isNaN(leadId)) return NextResponse.json({ error: "Invalid lead ID" }, { status: 400 });
+  if (isNaN(leadId)) return withCors(NextResponse.json({ error: "Invalid lead ID" }, { status: 400 }));
 
   try {
     const lead = await prisma.lead.findUnique({
@@ -17,10 +30,10 @@ export async function GET(_: NextRequest, context: { params: Promise<{ id: strin
       include: { spocs: true },
     });
 
-    if (!lead) return NextResponse.json({ error: "Lead not found" }, { status: 404 });
-    return NextResponse.json(lead);
+    if (!lead) return withCors(NextResponse.json({ error: "Lead not found" }, { status: 404 }));
+    return withCors(NextResponse.json(lead));
   } catch (error: unknown) {
-    return NextResponse.json({ error: (error as Error).message }, { status: 500 });
+    return withCors(NextResponse.json({ error: (error as Error).message }, { status: 500 }));
   } finally {
     await prisma.$disconnect();
   }
@@ -32,7 +45,7 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ id: str
   const leadId = parseInt(id);
 
   if (!id || isNaN(leadId)) {
-    return NextResponse.json({ error: "Invalid lead ID" }, { status: 400 });
+    return withCors(NextResponse.json({ error: "Invalid lead ID" }, { status: 400 }));
   }
 
   try {
@@ -43,7 +56,7 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ id: str
       include: { spocs: true },
     });
 
-    if (!existingLead) return NextResponse.json({ error: "Lead not found" }, { status: 404 });
+    if (!existingLead) return withCors(NextResponse.json({ error: "Lead not found" }, { status: 404 }));
 
     const {
       salesName = existingLead.salesName,
@@ -111,12 +124,12 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ id: str
       include: { spocs: true },
     });
 
-    return NextResponse.json(updatedLead);
+    return withCors(NextResponse.json(updatedLead));
   } catch (error: unknown) {
     console.log("[PUT ERROR]:", error);
     console.log("[PUT ERROR MESSAGE]:", (error as Error).message);
     console.log("[PUT ERROR STACK]:", (error as Error).stack);
-    return NextResponse.json({ error: (error as Error).message }, { status: 500 });
+    return withCors(NextResponse.json({ error: (error as Error).message }, { status: 500 }));
   } finally {
     await prisma.$disconnect();
   }
@@ -130,21 +143,21 @@ export async function DELETE(_: NextRequest, context: { params: Promise<{ id: st
   try {
     await prisma.spoc.deleteMany({ where: { leadId } });
     const deletedLead = await prisma.lead.delete({ where: { id: leadId } });
-    return NextResponse.json(deletedLead);
+    return withCors(NextResponse.json(deletedLead));
   } catch (error: unknown) {
-    return NextResponse.json({ error: (error as Error).message }, { status: 500 });
+    return withCors(NextResponse.json({ error: (error as Error).message }, { status: 500 }));
   } finally {
     await prisma.$disconnect();
   }
 }
 
-export async function PATCH(req: NextRequest, context: { params: Promise<{ id: string }> } ) {
+export async function PATCH(req: NextRequest, context: { params: Promise<{ id: string }> }) {
   const params = await context.params;
   const id = params.id;
   const leadId = parseInt(id);
 
   if (isNaN(leadId)) {
-    return NextResponse.json({ error: "Invalid lead ID" }, { status: 400 });
+    return withCors(NextResponse.json({ error: "Invalid lead ID" }, { status: 400 }));
   }
 
   try {
@@ -166,10 +179,10 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
 
     console.log("[PATCH] Updated lead:", updatedLead);  // Log updated lead
 
-    return NextResponse.json(updatedLead);
+    return withCors(NextResponse.json(updatedLead));
   } catch (error: unknown) {
     console.error("[PATCH ERROR]:", error);  // Log any errors
-    return NextResponse.json({ error: (error as Error).message }, { status: 500 });
+    return withCors(NextResponse.json({ error: (error as Error).message }, { status: 500 }));
   } finally {
     await prisma.$disconnect();
   }
