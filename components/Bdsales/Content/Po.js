@@ -87,7 +87,7 @@ export default function PurchaseOrderForm() {
     const formDataToSend = new FormData();
     formDataToSend.append("clientName", formData.clientName);
     formDataToSend.append("employeeName", formData.employeeName);
-    formDataToSend.append("employeeId", formData.employeeId);
+    // formDataToSend.append("employeeId", formData.employeeId);
     formDataToSend.append("poNumber", formData.poNumber);
     formDataToSend.append("startDate", formData.startDate);
     formDataToSend.append("endDate", formData.endDate);
@@ -121,7 +121,7 @@ export default function PurchaseOrderForm() {
         setFormData({
           clientName: "",
           employeeName: "",
-          employeeId: "",
+          // employeeId: "",
           poNumber: "",
           startDate: "",
           endDate: "",
@@ -179,7 +179,7 @@ export default function PurchaseOrderForm() {
           className="w-full p-2 border rounded"
         />
 
-        {/* Employee ID */}
+        {/* Employee ID
         <label htmlFor="employeeId" className="block font-medium text-gray-700">
           Employee ID <span className="text-red-600">*</span>
         </label>
@@ -192,7 +192,7 @@ export default function PurchaseOrderForm() {
           value={formData.employeeId}
           onChange={handleChange}
           className="w-full p-2 border rounded"
-        />
+        /> */}
 
         {/* PO Number */}
         <label htmlFor="poNumber" className="block font-medium text-gray-700">

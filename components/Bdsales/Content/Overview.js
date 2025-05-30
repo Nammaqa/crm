@@ -9,7 +9,8 @@ export default function Overview() {
     // if (!token) return;
 
     try {
-      const res = await fetch("http://localhost:3000/api/users/me", {
+      const baseUrl = process.env.NEXT_PUBLIC_BASEAPIURL; // This is only available at build time
+const res = await fetch(`${baseUrl}/api/users/me`, { 
         method: "GET",
         // headers: {
         //   Authorization: `Bearer ${token}`,

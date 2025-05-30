@@ -14,38 +14,41 @@ export default function BdSales({ isSidebarOpen }) {
   const [leads, setLeads] = useState([]);
   const [activeTab, setActiveTab] = useState("Prospective");
   const [formData, setFormData] = useState({
-    id: "",
-    salesName: "",
-    leadType: "prospective",
-    dealType: "",
-    companyName: "",
-    companysize: "",
-    companyID: "",
-    numEmployees: "",
-    percentage: "",
-    remarks: "",
-    spocs: [
-      {
-        id: 1,
-        name: "",
-        email: "",
-        contact: "",
-        altContact: "",
-        designation: "",
-        location: "",
-      },
-    ],
-    existingLeadDetails: {
-      employeeID: "",
-      employeeName: "",
-      replacementReason: "",
-      replacementToDate: "",
-      replacementRequestDate: "",
-      companySelect: "",
-      companyNameGST: "",
+  id: "",
+  salesName: "",
+  leadType: "prospective",
+  dealType: "",
+  companyName: "",
+  companysize: "",
+  companyID: "",
+  numEmployees: "",
+  percentage: "",
+  remarks: "",
+  industry: "",         // <-- ADD THIS
+  industryOther: "",    // <-- ADD THIS
+  spocs: [
+    {
+      id: 1,
+      name: "",
+      email: "",
+      contact: "",
+      altContact: "",
+      designation: "",
+      location: "",
     },
-    status: "prospective",
-  });
+  ],
+  existingLeadDetails: {
+    employeeID: "",
+    employeeName: "",
+    replacementReason: "",
+    replacementToDate: "",
+    replacementRequestDate: "",
+    companySelect: "",
+    companyNameGST: "",
+  },
+  status: "prospective",
+});
+
 
   const BASE_URL = process.env.NEXT_PUBLIC_BASEAPIURL;
 
@@ -73,48 +76,50 @@ export default function BdSales({ isSidebarOpen }) {
   // When user clicks a row in the table, load that lead into the form
   const handleLeadClick = (lead) => {
     setFormData({
-      id: lead.id || "",
-      salesName: lead.salesName || "",
-      leadType: lead.leadType || "prospective",
-      dealType: lead.dealType || "",
-      companyName: lead.companyName || "",
-      companysize: lead.companysize || "",
-      companyID: lead.companyID || "",
-      numEmployees: lead.numberOfEmployees || "",
-      percentage: lead.percentage || "",
-      remarks: lead.remarks || "",
-      spocs: Array.isArray(lead.spocs) && lead.spocs.length > 0
-        ? lead.spocs.map((spoc, idx) => ({
-            id: spoc.id ?? idx + 1,
-            name: spoc.name || "",
-            email: spoc.email || "",
-            contact: spoc.contact || "",
-            altContact: spoc.altContact || "",
-            designation: spoc.designation || "",
-            location: spoc.location || "",
-          }))
-        : [
-            {
-              id: 1,
-              name: "",
-              email: "",
-              contact: "",
-              altContact: "",
-              designation: "",
-              location: "",
-            },
-          ],
-      existingLeadDetails: {
-        employeeID: lead.employeeID || "",
-        employeeName: lead.employeeName || "",
-        replacementReason: lead.replacementReason || "",
-        replacementToDate: lead.replacementToDate || "",
-        replacementRequestDate: lead.replacementRequestDate || "",
-        companySelect: lead.companySelect || "",
-        companyNameGST: lead.companyNameGST || "",
-      },
-      status: lead.status || "prospective",
-    });
+  id: lead.id || "",
+  salesName: lead.salesName || "",
+  leadType: lead.leadType || "prospective",
+  dealType: lead.dealType || "",
+  companyName: lead.companyName || "",
+  companysize: lead.companysize || "",
+  companyID: lead.companyID || "",
+  numEmployees: lead.numberOfEmployees || "",
+  percentage: lead.percentage || "",
+  remarks: lead.remarks || "",
+  industry: lead.industry || "",         // <-- ADD THIS
+  industryOther: lead.industryOther || "", // <-- ADD THIS
+  spocs: Array.isArray(lead.spocs) && lead.spocs.length > 0
+    ? lead.spocs.map((spoc, idx) => ({
+        id: spoc.id ?? idx + 1,
+        name: spoc.name || "",
+        email: spoc.email || "",
+        contact: spoc.contact || "",
+        altContact: spoc.altContact || "",
+        designation: spoc.designation || "",
+        location: spoc.location || "",
+      }))
+    : [
+        {
+          id: 1,
+          name: "",
+          email: "",
+          contact: "",
+          altContact: "",
+          designation: "",
+          location: "",
+        },
+      ],
+  existingLeadDetails: {
+    employeeID: lead.employeeID || "",
+    employeeName: lead.employeeName || "",
+    replacementReason: lead.replacementReason || "",
+    replacementToDate: lead.replacementToDate || "",
+    replacementRequestDate: lead.replacementRequestDate || "",
+    companySelect: lead.companySelect || "",
+    companyNameGST: lead.companyNameGST || "",
+  },
+  status: lead.status || "prospective",
+});
     // Also sync tab and leadType
     if (lead.leadType === "prospective") setActiveTab("Prospective");
     if (lead.leadType === "new") setActiveTab("new-lead");
@@ -157,38 +162,41 @@ export default function BdSales({ isSidebarOpen }) {
       if (res.ok) {
         toast.success("Lead submitted successfully!");
         setFormData((prev) => ({
-          id: "",
-          salesName: prev.salesName,
-          leadType: formData.leadType,
-          dealType: "",
-          companyName: "",
-          companysize: "",
-          companyID: "",
-          numEmployees: "",
-          percentage: "",
-          remarks: "",
-          spocs: [
-            {
-              id: 1,
-              name: "",
-              email: "",
-              contact: "",
-              altContact: "",
-              designation: "",
-              location: "",
-            },
-          ],
-          existingLeadDetails: {
-            employeeID: "",
-            employeeName: "",
-            replacementReason: "",
-            replacementToDate: "",
-            replacementRequestDate: "",
-            companySelect: "",
-            companyNameGST: "",
-          },
-          status: formData.status || "prospective",
-        }));
+  id: "",
+  salesName: prev.salesName,
+  leadType: formData.leadType,
+  dealType: "",
+  companyName: "",
+  companysize: "",
+  companyID: "",
+  numEmployees: "",
+  percentage: "",
+  remarks: "",
+  industry: "",         // <-- ADD THIS
+  industryOther: "",    // <-- ADD THIS
+  spocs: [
+    {
+      id: 1,
+      name: "",
+      email: "",
+      contact: "",
+      altContact: "",
+      designation: "",
+      location: "",
+    },
+  ],
+  existingLeadDetails: {
+    employeeID: "",
+    employeeName: "",
+    replacementReason: "",
+    replacementToDate: "",
+    replacementRequestDate: "",
+    companySelect: "",
+    companyNameGST: "",
+  },
+  status: formData.status || "prospective",
+}));
+
 
         // Update the leads list
         setLeads((prev) => {

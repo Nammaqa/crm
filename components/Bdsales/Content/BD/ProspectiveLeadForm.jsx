@@ -1,6 +1,5 @@
-
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import {
@@ -10,7 +9,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Button } from "@/components/ui/button";
 import SpocFields from "./SpocFields";
 import RemarksField from "./RemarksField";
@@ -51,7 +49,21 @@ export default function ProspectiveLeadForm({ formData, setFormData, handleMoveT
     companysize: "",
     companyID: "",
     spocs: [],
+    technologyOther: "",
+    industryOther: "",
   });
+
+  // Track if "Other" is selected for Technology/Industry
+  const [showTechnologyOther, setShowTechnologyOther] = useState(formData.technology === "other");
+  const [showIndustryOther, setShowIndustryOther] = useState(formData.industry === "other");
+
+  useEffect(() => {
+    setShowTechnologyOther(formData.technology === "other");
+  }, [formData.technology]);
+
+  useEffect(() => {
+    setShowIndustryOther(formData.industry === "other");
+  }, [formData.industry]);
 
   // Validate all fields before moving to lead
   const validateForm = () => {
@@ -61,6 +73,8 @@ export default function ProspectiveLeadForm({ formData, setFormData, handleMoveT
       companysize: "",
       companyID: "",
       spocs: [],
+      technologyOther: "",
+      industryOther: "",
     };
 
     if (!formData.companyName || !isAlpha(formData.companyName)) {
@@ -75,6 +89,16 @@ export default function ProspectiveLeadForm({ formData, setFormData, handleMoveT
 
     if (!formData.companyID || !isAlphanumeric(formData.companyID)) {
       newErrors.companyID = "Company ID must be alphanumeric (auto-generated).";
+      valid = false;
+    }
+
+    if (showTechnologyOther && (!formData.technologyOther || formData.technologyOther.trim() === "")) {
+      newErrors.technologyOther = "Please specify the technology.";
+      valid = false;
+    }
+
+    if (showIndustryOther && (!formData.industryOther || formData.industryOther.trim() === "")) {
+      newErrors.industryOther = "Please specify the industry.";
       valid = false;
     }
 
@@ -114,7 +138,6 @@ export default function ProspectiveLeadForm({ formData, setFormData, handleMoveT
   // On submit
   const handleMoveToLeadWithValidation = () => {
     if (validateForm()) {
-      // Call the parent handler, which should handle the API/state update
       handleMoveToLead();
     }
   };
@@ -142,6 +165,26 @@ export default function ProspectiveLeadForm({ formData, setFormData, handleMoveT
 
   const handleSpocsUpdate = (spocs) => {
     setFormData((prev) => ({ ...prev, spocs }));
+  };
+
+  // Technology select handler
+  const handleTechnologyChange = (value) => {
+    setFormData((prev) => ({
+      ...prev,
+      technology: value,
+      technologyOther: value === "other" ? (prev.technologyOther || "") : "",
+    }));
+    setShowTechnologyOther(value === "other");
+  };
+
+  // Industry select handler
+  const handleIndustryChange = (value) => {
+    setFormData((prev) => ({
+      ...prev,
+      industry: value,
+      industryOther: value === "other" ? (prev.industryOther || "") : "",
+    }));
+    setShowIndustryOther(value === "other");
   };
 
   return (
@@ -230,7 +273,7 @@ export default function ProspectiveLeadForm({ formData, setFormData, handleMoveT
         <Label>Technology</Label>
         <Select
           value={formData.technology}
-          onValueChange={(value) => setFormData((prev) => ({ ...prev, technology: value }))}
+          onValueChange={handleTechnologyChange}
         >
           <SelectTrigger className="w-full">
             <SelectValue placeholder="Select Technology" />
@@ -240,44 +283,68 @@ export default function ProspectiveLeadForm({ formData, setFormData, handleMoveT
             <SelectItem value="testing">Testing</SelectItem>
             <SelectItem value="devops">DevOps</SelectItem>
             <SelectItem value="ai_ml">AI/ML</SelectItem>
+            <SelectItem value="Digital Marketing">Digital Marketing</SelectItem>
+            <SelectItem value="Data Analytics">Data Analytics</SelectItem>
             <SelectItem value="ai">AI</SelectItem>
+            <SelectItem value="other">Other</SelectItem>
           </SelectContent>
         </Select>
+        {showTechnologyOther && (
+          <div className="mt-2">
+            <Input
+              placeholder="Please specify technology"
+              value={formData.technologyOther || ""}
+              onChange={e =>
+                setFormData(prev => ({
+                  ...prev,
+                  technologyOther: e.target.value,
+                }))
+              }
+            />
+            {errors.technologyOther && (
+              <span className="text-red-500 text-xs">{errors.technologyOther}</span>
+            )}
+          </div>
+        )}
       </div>
 
       <div className="space-y-2">
         <Label>Industry</Label>
         <Select
           value={formData.industry}
-          onValueChange={(value) => setFormData((prev) => ({ ...prev, industry: value }))}
+          onValueChange={handleIndustryChange}
         >
           <SelectTrigger className="w-full">
             <SelectValue placeholder="Select Industry" />
           </SelectTrigger>
           <SelectContent>
+            <SelectItem value="BFSI">BFSI</SelectItem>
+            <SelectItem value="Traveling">Traveling</SelectItem>
+            <SelectItem value="Ceramics">Ceramics</SelectItem>
+            <SelectItem value="Media">Media</SelectItem>
             <SelectItem value="it">IT</SelectItem>
             <SelectItem value="finance">Finance</SelectItem>
             <SelectItem value="healthcare">Healthcare</SelectItem>
+            <SelectItem value="other">Other</SelectItem>
           </SelectContent>
         </Select>
-      </div>
-
-      <div className="space-y-2">
-        <Label>Percentage</Label>
-        <RadioGroup
-          className="flex flex-row gap-4"
-          value={String(formData.percentage || "")}
-          onValueChange={(value) =>
-            setFormData((prev) => ({ ...prev, percentage: parseInt(value) }))
-          }
-        >
-          {[10, 30, 50, 70, 90].map((value) => (
-            <div key={value} className="flex items-center space-x-2">
-              <RadioGroupItem value={String(value)} id={`percentage-${value}`} />
-              <Label htmlFor={`percentage-${value}`}>{value}%</Label>
-            </div>
-          ))}
-        </RadioGroup>
+        {showIndustryOther && (
+          <div className="mt-2">
+            <Input
+              placeholder="Please specify industry"
+              value={formData.industryOther || ""}
+              onChange={e =>
+                setFormData(prev => ({
+                  ...prev,
+                  industryOther: e.target.value,
+                }))
+              }
+            />
+            {errors.industryOther && (
+              <span className="text-red-500 text-xs">{errors.industryOther}</span>
+            )}
+          </div>
+        )}
       </div>
 
       <RemarksField
