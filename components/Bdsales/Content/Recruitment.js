@@ -11,6 +11,7 @@ function RecruitmentForm() {
     requirementName: "",
     companyName: "",
     jobDescription: "",
+    jdImage: null, 
     experience: "",
     noticePeriod: "",
     positions: "",
@@ -25,6 +26,7 @@ function RecruitmentForm() {
   const [formData, setFormData] = useState(initialFormData);
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
+  const [jdImagePreview, setJdImagePreview] = useState(null);
 
   // Validation functions
   const isAlpha = (str) => /^[A-Za-z\s]+$/.test(str);
@@ -103,6 +105,8 @@ function RecruitmentForm() {
       newErrors.closePositions = "Position Type is required.";
     }
 
+    // JD Image is optional, so no validation
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -147,6 +151,33 @@ function RecruitmentForm() {
     }));
   };
 
+  // Handle JD Image change
+  const handleJdImageChange = (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (file) {
+      setFormData((prev) => ({
+        ...prev,
+        jdImage: file,
+      }));
+      setJdImagePreview(URL.createObjectURL(file));
+    } else {
+      setFormData((prev) => ({
+        ...prev,
+        jdImage: null,
+      }));
+      setJdImagePreview(null);
+    }
+  };
+
+  // Remove JD Image
+  const handleRemoveJdImage = () => {
+    setFormData((prev) => ({
+      ...prev,
+      jdImage: null,
+    }));
+    setJdImagePreview(null);
+  };
+
   return (
     <div className="max-w-2xl mx-auto py-8 px-2">
       <Card className="shadow-lg">
@@ -154,43 +185,66 @@ function RecruitmentForm() {
           <CardTitle>Recruitment Details</CardTitle>
         </CardHeader>
         <CardContent>
-          <form onSubmit={async (e) => {
-            e.preventDefault();
-            if (!validate()) return;
-            setLoading(true);
+          <form
+            onSubmit={async (e) => {
+              e.preventDefault();
+              if (!validate()) return;
+              setLoading(true);
 
-            try {
-              const res = await fetch("/api/requirements", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                  ...formData,
-                  experience: Number(formData.experience),
-                  noticePeriod: Number(formData.noticePeriod),
-                  positions: Number(formData.positions),
-                  budget: Number(formData.budget),
-                }),
-              });
+              try {
+                // Use FormData if jdImage is present, else JSON
+                let body;
+                let headers;
+                if (formData.jdImage) {
+                  body = new FormData();
+                  Object.entries(formData).forEach(([key, value]) => {
+                    if (key === "jdImage" && value) {
+                      body.append("jdImage", value);
+                    } else {
+                      body.append(key, value);
+                    }
+                  });
+                  // Don't set Content-Type for FormData
+                  headers = {};
+                } else {
+                  body = JSON.stringify({
+                    ...formData,
+                    experience: Number(formData.experience),
+                    noticePeriod: Number(formData.noticePeriod),
+                    positions: Number(formData.positions),
+                    budget: Number(formData.budget),
+                  });
+                  headers = { "Content-Type": "application/json" };
+                }
 
-              const data = await res.json();
+                const res = await fetch("/api/requirements", {
+                  method: "POST",
+                  headers,
+                  body,
+                });
 
-              if (res.ok) {
-                alert("Requirement submitted successfully!");
-                // Log form data to console
-                console.log("Submitted Recruitment Data:", formData);
-                // Clear form fields
-                setFormData(initialFormData);
-                setErrors({});
-              } else {
-                alert(data?.error || "Submission failed.");
+                const data = await res.json();
+
+                if (res.ok) {
+                  alert("Requirement submitted successfully!");
+                  // Log form data to console
+                  console.log("Submitted Recruitment Data:", formData);
+                  // Clear form fields
+                  setFormData(initialFormData);
+                  setErrors({});
+                  setJdImagePreview(null);
+                } else {
+                  alert(data?.error || "Submission failed.");
+                }
+              } catch (error) {
+                console.error("Error:", error);
+                alert("An error occurred while submitting the form.");
+              } finally {
+                setLoading(false);
               }
-            } catch (error) {
-              console.error("Error:", error);
-              alert("An error occurred while submitting the form.");
-            } finally {
-              setLoading(false);
-            }
-          }} className="space-y-6">
+            }}
+            className="space-y-6"
+          >
             {/* Alphabetic fields */}
             <div className="flex flex-col mb-5">
               <Label htmlFor="requirementName" className="mb-2">
@@ -243,6 +297,38 @@ function RecruitmentForm() {
                 <span className="text-red-600 text-xs mt-1">{errors.jobDescription}</span>
               )}
             </div>
+            {/* JD Image Upload (Optional) */}
+            <div className="flex flex-col mb-5">
+              <Label htmlFor="jdImage" className="mb-2">
+                JD Image (optional):
+              </Label>
+              <Input
+                id="jdImage"
+                name="jdImage"
+                type="file"
+                accept="image/*"
+                onChange={handleJdImageChange}
+              />
+              {jdImagePreview && (
+                <div className="mt-2 flex items-center gap-2">
+                  <img
+                    src={jdImagePreview}
+                    alt="JD Preview"
+                    className="h-24 w-auto rounded border"
+                  />
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    size="sm"
+                    onClick={handleRemoveJdImage}
+                  >
+                    Remove
+                  </Button>
+                </div>
+              )}
+            </div>
+            {/* ...rest of the form fields remain unchanged... */}
+            {/* Primary Skills, Secondary Skills, Experience, Notice Period, Positions, etc. */}
             <div className="flex flex-col mb-5">
               <Label htmlFor="primarySkills" className="mb-2">
                 Primary Skills: <span className="text-red-500">*</span>
@@ -277,8 +363,6 @@ function RecruitmentForm() {
                 <span className="text-red-600 text-xs mt-1">{errors.secondarySkills}</span>
               )}
             </div>
-
-            {/* Numeric fields */}
             <div className="flex flex-col mb-5">
               <Label htmlFor="experience" className="mb-2">
                 Experience (years): <span className="text-red-500">*</span>
@@ -334,7 +418,6 @@ function RecruitmentForm() {
                 <span className="text-red-600 text-xs mt-1">{errors.positions}</span>
               )}
             </div>
-
             {/* Requirement Type */}
             <div className="flex flex-col mb-5">
               <Label className="mb-2">
@@ -358,7 +441,6 @@ function RecruitmentForm() {
                 <span className="text-red-600 text-xs mt-1">{errors.requirementType}</span>
               )}
             </div>
-
             {/* Work Location */}
             <div className="flex flex-col mb-5">
               <Label className="mb-2">
@@ -382,7 +464,6 @@ function RecruitmentForm() {
                 <span className="text-red-600 text-xs mt-1">{errors.workLocation}</span>
               )}
             </div>
-
             {/* Position Type (New / Replacement) as Radio Buttons */}
             <div className="flex flex-col mb-5">
               <Label className="mb-2">
@@ -406,7 +487,6 @@ function RecruitmentForm() {
                 <span className="text-red-600 text-xs mt-1">{errors.closePositions}</span>
               )}
             </div>
-
             {/* Budget */}
             <div className="flex flex-col mb-5">
               <Label htmlFor="budget" className="mb-2">
@@ -427,7 +507,6 @@ function RecruitmentForm() {
                 <span className="text-red-600 text-xs mt-1">{errors.budget}</span>
               )}
             </div>
-
             <Button type="submit" className="w-full flex items-center justify-center" disabled={loading}>
               {loading && (
                 <svg

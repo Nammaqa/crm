@@ -12,8 +12,7 @@ function allowAlpha(value) {
   return value.replace(/[^a-zA-Z\s]/g, "");
 }
 
-
-export default function NewLeadForm({ formData, setFormData, handleMoveToDeal, handleSubmitLead }) {
+export default function QualifiedLeadForm({ formData, setFormData, handleMoveToDeal, handleSubmitLead }) {
   const [error, setError] = useState("");
 
   // Validate company name: required, alphabets and spaces only
@@ -43,19 +42,20 @@ export default function NewLeadForm({ formData, setFormData, handleMoveToDeal, h
     e.preventDefault();  // Prevent default form submission
 
     if (validateCompanyName()) {
-      if (e.target.id === "move-to-deal") {
-        // Move to Deal logic
+      if (formData.percentage === 90) {
+        // Move to Deal/Closure logic
         handleMoveToDeal(e);
       } else {
-        // Submit Lead logic
-        console.log(formData)
+        // Submit Qualified Lead logic
         // await handleSubmitLead(formData);
+        console.log(formData)
       }
     }
   };
 
   return (
     <div className="mb-4 p-5 border rounded-md shadow-md space-y-4">
+      <h2 className="text-xl font-bold mb-2">Qualified Lead</h2>
       <Label htmlFor="companyName">Company Name :</Label>
       <Input
         id="companyName"
@@ -125,9 +125,8 @@ export default function NewLeadForm({ formData, setFormData, handleMoveToDeal, h
           variant="outline"
           onClick={handleFormSubmit}
         >
-          Move to Deal
+          {formData.percentage === 90 ? "Move to Deal/Closure" : "Save Qualified Lead"}
         </Button>
-       
       </div>
     </div>
   );

@@ -39,6 +39,7 @@ model Requirement {
   requirementName String
   companyName     String
   jobDescription  String
+  jdImage         String? 
   experience      Int
   noticePeriod    Int
   positions       Int
@@ -47,6 +48,7 @@ model Requirement {
   closePositions  String
   requirementType String
   workLocation    String
+  budget          Int?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 }

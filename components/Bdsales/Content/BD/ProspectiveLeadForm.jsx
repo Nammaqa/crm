@@ -1,3 +1,4 @@
+
 "use client";
 import { useState, useEffect } from "react";
 import { Label } from "@/components/ui/label";
@@ -12,6 +13,63 @@ import {
 import { Button } from "@/components/ui/button";
 import SpocFields from "./SpocFields";
 import RemarksField from "./RemarksField";
+
+// Enum arrays and label maps
+const INDUSTRY_ENUMS = [
+  "it",
+  "finance",
+  "healthcare",
+  "manufacturing",
+  "retail",
+  "education",
+  "telecom",
+  "automobile",
+  "realestate",
+  "logistics",
+  "media",
+  "government",
+  "energy",
+  "consulting",
+  "other",
+];
+const INDUSTRY_LABELS = {
+  it: "IT",
+  finance: "Finance",
+  healthcare: "Healthcare",
+  manufacturing: "Manufacturing",
+  retail: "Retail",
+  education: "Education",
+  telecom: "Telecom",
+  automobile: "Automobile",
+  realestate: "Real Estate",
+  logistics: "Logistics",
+  media: "Media",
+  government: "Government",
+  energy: "Energy",
+  consulting: "Consulting",
+  other: "Other",
+};
+
+const TECHNOLOGY_ENUMS = [
+  "development",
+  "testing",
+  "devops",
+  "ai_ml",
+  "ai",
+  "digital_marketing",
+  "data_analytics",
+  "other",
+];
+const TECHNOLOGY_LABELS = {
+  development: "Development",
+  testing: "Testing",
+  devops: "DevOps",
+  ai_ml: "AI/ML",
+  ai: "AI",
+  digital_marketing: "Digital Marketing",
+  data_analytics: "Data Analytics",
+  other: "Other",
+};
 
 // Utility function to generate random Company ID (alphanumeric)
 function generateCompanyID() {
@@ -279,14 +337,11 @@ export default function ProspectiveLeadForm({ formData, setFormData, handleMoveT
             <SelectValue placeholder="Select Technology" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="development">Development</SelectItem>
-            <SelectItem value="testing">Testing</SelectItem>
-            <SelectItem value="devops">DevOps</SelectItem>
-            <SelectItem value="ai_ml">AI/ML</SelectItem>
-            <SelectItem value="Digital Marketing">Digital Marketing</SelectItem>
-            <SelectItem value="Data Analytics">Data Analytics</SelectItem>
-            <SelectItem value="ai">AI</SelectItem>
-            <SelectItem value="other">Other</SelectItem>
+            {TECHNOLOGY_ENUMS.map((value) => (
+              <SelectItem key={value} value={value}>
+                {TECHNOLOGY_LABELS[value] || value}
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
         {showTechnologyOther && (
@@ -318,14 +373,11 @@ export default function ProspectiveLeadForm({ formData, setFormData, handleMoveT
             <SelectValue placeholder="Select Industry" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="BFSI">BFSI</SelectItem>
-            <SelectItem value="Traveling">Traveling</SelectItem>
-            <SelectItem value="Ceramics">Ceramics</SelectItem>
-            <SelectItem value="Media">Media</SelectItem>
-            <SelectItem value="it">IT</SelectItem>
-            <SelectItem value="finance">Finance</SelectItem>
-            <SelectItem value="healthcare">Healthcare</SelectItem>
-            <SelectItem value="other">Other</SelectItem>
+            {INDUSTRY_ENUMS.map((value) => (
+              <SelectItem key={value} value={value}>
+                {INDUSTRY_LABELS[value] || value}
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
         {showIndustryOther && (

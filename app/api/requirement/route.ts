@@ -1,5 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma'; // Make sure this path is correct
+import { prisma } from '@/lib/prisma';
+import { v2 as cloudinary } from 'cloudinary';
+
+// Cloudinary config from environment variables
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME!,
+  api_key: process.env.CLOUDINARY_API_KEY!,
+  api_secret: process.env.CLOUDINARY_API_SECRET!,
+});
 
 // Fetch all requirements
 export async function GET() {
@@ -12,15 +20,59 @@ export async function GET() {
   }
 }
 
-// Create a new requirement
+// Create a new requirement (with optional JD image upload)
 export async function POST(req: NextRequest) {
   try {
-    const data = await req.json();
+    const contentType = req.headers.get("content-type") || "";
+    let data: any = {};
+    let jdImageUrl: string | null = null;
+
+    if (contentType.includes("multipart/form-data")) {
+      const formData = await req.formData();
+
+      data.requirementName = formData.get("requirementName") as string;
+      data.companyName = formData.get("companyName") as string;
+      data.jobDescription = formData.get("jobDescription") as string;
+      data.experience = Number(formData.get("experience"));
+      data.noticePeriod = Number(formData.get("noticePeriod"));
+      data.positions = Number(formData.get("positions"));
+      data.primarySkills = formData.get("primarySkills") as string;
+      data.secondarySkills = formData.get("secondarySkills") as string;
+      data.closePositions = formData.get("closePositions") as string;
+      data.requirementType = formData.get("requirementType") as string;
+      data.workLocation = formData.get("workLocation") as string;
+      data.budget = Number(formData.get("budget"));
+
+      // Handle JD image upload (optional)
+      const jdImage = formData.get("jdImage") as File | null;
+      if (jdImage && jdImage.size > 0) {
+        const arrayBuffer = await jdImage.arrayBuffer();
+        const buffer = Buffer.from(arrayBuffer);
+
+        // Upload to Cloudinary
+        const uploadResult = await new Promise<{ secure_url: string }>((resolve, reject) => {
+          const stream = cloudinary.uploader.upload_stream(
+            { folder: "jd_images" },
+            (error, result) => {
+              if (error || !result) return reject(error || new Error("Cloudinary upload failed"));
+              resolve(result as { secure_url: string });
+            }
+          );
+          stream.end(buffer);
+        });
+        jdImageUrl = uploadResult.secure_url;
+      }
+    } else {
+      // Fallback: Accept JSON (no image)
+      data = await req.json();
+    }
+
     const newRequirement = await prisma.requirement.create({
       data: {
         requirementName: data.requirementName,
         companyName: data.companyName,
         jobDescription: data.jobDescription,
+        jdImage: jdImageUrl, // Store Cloudinary URL or null
         experience: data.experience,
         noticePeriod: data.noticePeriod,
         positions: data.positions,
@@ -29,6 +81,7 @@ export async function POST(req: NextRequest) {
         closePositions: data.closePositions,
         requirementType: data.requirementType,
         workLocation: data.workLocation,
+        budget: data.budget,
       },
     });
     return NextResponse.json(newRequirement, { status: 201 });
@@ -38,15 +91,66 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// Update a requirement by ID
+// Update a requirement by ID (allow updating jdImage if provided)
 export async function PUT(req: NextRequest) {
   try {
-    const { id, ...data } = await req.json();
+    const contentType = req.headers.get("content-type") || "";
+    let data: any = {};
+    let jdImageUrl: string | undefined = undefined;
+
+    if (contentType.includes("multipart/form-data")) {
+      const formData = await req.formData();
+
+      data.id = formData.get("id") as string;
+      data.requirementName = formData.get("requirementName") as string;
+      data.companyName = formData.get("companyName") as string;
+      data.jobDescription = formData.get("jobDescription") as string;
+      data.experience = Number(formData.get("experience"));
+      data.noticePeriod = Number(formData.get("noticePeriod"));
+      data.positions = Number(formData.get("positions"));
+      data.primarySkills = formData.get("primarySkills") as string;
+      data.secondarySkills = formData.get("secondarySkills") as string;
+      data.closePositions = formData.get("closePositions") as string;
+      data.requirementType = formData.get("requirementType") as string;
+      data.workLocation = formData.get("workLocation") as string;
+      data.budget = Number(formData.get("budget"));
+
+      // Handle JD image upload (optional)
+      const jdImage = formData.get("jdImage") as File | null;
+      if (jdImage && jdImage.size > 0) {
+        const arrayBuffer = await jdImage.arrayBuffer();
+        const buffer = Buffer.from(arrayBuffer);
+
+        // Upload to Cloudinary
+        const uploadResult = await new Promise<{ secure_url: string }>((resolve, reject) => {
+          const stream = cloudinary.uploader.upload_stream(
+            { folder: "jd_images" },
+            (error, result) => {
+              if (error || !result) return reject(error || new Error("Cloudinary upload failed"));
+              resolve(result as { secure_url: string });
+            }
+          );
+          stream.end(buffer);
+        });
+        jdImageUrl = uploadResult.secure_url;
+      }
+    } else {
+      data = await req.json();
+      jdImageUrl = data.jdImage; // allow updating/removing image via JSON
+    }
+
+    const { id, ...updateData } = data;
+    if (!id) {
+      return NextResponse.json({ error: "Missing ID" }, { status: 400 });
+    }
+
+    if (jdImageUrl !== undefined) {
+      updateData.jdImage = jdImageUrl;
+    }
+
     const updatedRequirement = await prisma.requirement.update({
       where: { id: parseInt(id, 10) },
-      data: {
-        ...data,
-      },
+      data: updateData,
     });
     return NextResponse.json(updatedRequirement, { status: 200 });
   } catch (error) {

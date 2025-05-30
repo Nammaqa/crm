@@ -23,7 +23,7 @@ export default function ExistingLeadForm({ formData, setFormData, leads, handleM
     const newErrors = {};
 
     if (formData.dealType === "replacement") {
-      if (!existingLeadDetails.employeeID) newErrors.employeeID = "Employee ID is required";
+      // if (!existingLeadDetails.employeeID) newErrors.employeeID = "Employee ID is required";
       if (!existingLeadDetails.employeeName) newErrors.employeeName = "Employee Name is required";
       if (!existingLeadDetails.replacementReason) newErrors.replacementReason = "Replacement reason is required";
       if (!existingLeadDetails.replacementToDate) newErrors.replacementToDate = "Replacement To Date is required";
@@ -66,8 +66,9 @@ export default function ExistingLeadForm({ formData, setFormData, leads, handleM
 
       {/* Replacement Fields */}
       {formData.dealType === "replacement" && (
+
         <div className="mb-4 p-4 border rounded-md shadow-sm space-y-2">
-          <Input
+          {/* <Input
             placeholder="Employee ID"
             value={existingLeadDetails.employeeID}
             onChange={(e) => {
@@ -83,7 +84,7 @@ export default function ExistingLeadForm({ formData, setFormData, leads, handleM
               }
             }}
           />
-          {errors.employeeID && <p className="text-red-500 text-sm">{errors.employeeID}</p>}
+          {errors.employeeID && <p className="text-red-500 text-sm">{errors.employeeID}</p>} */}
 
           <Input
             placeholder="Employee Name"
@@ -149,7 +150,7 @@ export default function ExistingLeadForm({ formData, setFormData, leads, handleM
         </div>
       )}
 
-      {/* New Lead Fields */}
+      {/* Qualified Lead Fields */}
       {formData.dealType === "new" && (
         <div className="mb-4 p-4 border rounded-md shadow-sm space-y-2">
           <Label htmlFor="businessType">Business Type:</Label>

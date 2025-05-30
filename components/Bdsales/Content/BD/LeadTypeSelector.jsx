@@ -12,7 +12,7 @@ export default function LeadTypeSelector({ value, onChange }) {
                 </SelectTrigger>
                 <SelectContent>
                     <SelectItem value="prospective">Add Prospective Lead</SelectItem>
-                    <SelectItem value="new">Add New Lead</SelectItem>
+                    <SelectItem value="new">Add Qualified Lead</SelectItem>
                     <SelectItem value="existing">Add Existing Deal</SelectItem>
                 </SelectContent>
             </Select>

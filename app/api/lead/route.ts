@@ -1,6 +1,6 @@
 import { NextResponse, NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { Industry, Technology } from "@prisma/client"; // Import enum types
+import { Industry, Technology } from "@prisma/client"; 
 
 interface SpocInput {
   name: string;
@@ -108,7 +108,7 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    // Use type assertion since body is unknown
+    
     const {
       salesName,
       leadType,

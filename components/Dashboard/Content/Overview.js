@@ -6,7 +6,7 @@ export default function Overview() {
     { title: "My Open Deals", value: 5, content: "You have 5 ongoing deals in progress." },
     { title: "My Untouched Deals", value: 2, content: "You have 2 deals that haven't been worked on yet." },
     { title: "My Calls Today", value: 8, content: "You've made 8 calls today with potential clients." },
-    { title: "My Leads", value: 12, content: "You have 12 new leads generated today." },
+    { title: "My Leads", value: 12, content: "You have 12 Qualified leads  generated today." },
   ];
 
   return (

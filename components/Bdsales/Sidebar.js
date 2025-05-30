@@ -20,7 +20,21 @@ import {
   FaFileContract,
   FaClipboardList,
   FaShoppingCart,
+  FaListAlt, // New icon for Agreement List
 } from "react-icons/fa";
+
+// Placeholder AgreementList component
+function AgreementList() {
+  return (
+    <div>
+      <h2 className="text-2xl font-bold mb-4">Agreement List</h2>
+      {/* Replace with your actual agreement list table/component */}
+      <div className="bg-white p-4 rounded shadow">
+        <p>This is where the Agreement List will be displayed.</p>
+      </div>
+    </div>
+  );
+}
 
 // Sidebar sections with dynamic content
 const sections = [
@@ -30,6 +44,8 @@ const sections = [
   { id: "msa", label: "MSA & NDA", icon: <FaFileContract size={20} />, content: <MsaNda /> },
   { id: "sow", label: "Statement of Work", icon: <FaClipboardList size={20} />, content: <Sow /> },
   { id: "po", label: "Purchase Order", icon: <FaShoppingCart size={20} />, content: <Po /> },
+  // New Agreement List section
+  { id: "agreement-list", label: "Agreement List", icon: <FaListAlt size={20} />, content: <AgreementList /> },
 ];
 
 export default function Bdsles() {
@@ -48,7 +64,6 @@ export default function Bdsles() {
 
   return (
     <div className="flex h-screen w-full overflow-hidden">
-      {/* <div className="flex h-screen w-full overflow-hidden"> */}
       {/* Static Sidebar */}
       <div className="bg-gray-900 text-white h-full w-64 p-5 pt-8 flex flex-col relative">
         {/* Logo Section */}
@@ -87,7 +102,6 @@ export default function Bdsles() {
           <span>Logout</span>
         </button>
       </div>
-
 
       {/* Main Content Area */}
       <main className="max-h-screen flex-1 flex justify-center items-start p-6 overflow-y-scroll scrollbar-hide">

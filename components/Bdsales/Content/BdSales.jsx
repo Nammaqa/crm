@@ -14,56 +14,60 @@ export default function BdSales({ isSidebarOpen }) {
   const [leads, setLeads] = useState([]);
   const [activeTab, setActiveTab] = useState("Prospective");
   const [formData, setFormData] = useState({
-  id: "",
-  salesName: "",
-  leadType: "prospective",
-  dealType: "",
-  companyName: "",
-  companysize: "",
-  companyID: "",
-  numEmployees: "",
-  percentage: "",
-  remarks: "",
-  industry: "",         // <-- ADD THIS
-  industryOther: "",    // <-- ADD THIS
-  spocs: [
-    {
-      id: 1,
-      name: "",
-      email: "",
-      contact: "",
-      altContact: "",
-      designation: "",
-      location: "",
+    id: "",
+    salesName: "",
+    leadType: "prospective",
+    dealType: "",
+    companyName: "",
+    companysize: "",
+    companyID: "",
+    numEmployees: "",
+    percentage: "",
+    remarks: "",
+    industry: "",
+    industryOther: "",
+    spocs: [
+      {
+        id: 1,
+        name: "",
+        email: "",
+        contact: "",
+        altContact: "",
+        designation: "",
+        location: "",
+      },
+    ],
+    existingLeadDetails: {
+      employeeID: "",
+      employeeName: "",
+      replacementReason: "",
+      replacementToDate: "",
+      replacementRequestDate: "",
+      companySelect: "",
+      companyNameGST: "",
     },
-  ],
-  existingLeadDetails: {
-    employeeID: "",
-    employeeName: "",
-    replacementReason: "",
-    replacementToDate: "",
-    replacementRequestDate: "",
-    companySelect: "",
-    companyNameGST: "",
-  },
-  status: "prospective",
-});
-
-
-  const BASE_URL = process.env.NEXT_PUBLIC_BASEAPIURL;
+    status: "prospective",
+  });
 
   // Fetch initial data
   useEffect(() => {
     const fetchInitialData = async () => {
       try {
+        // Always use relative path for internal API
         const userRes = await fetch("/api/users/me", { method: "GET" });
         const userData = await userRes.json();
         if (userRes.ok && userData?.data?.userName) {
           setFormData((prev) => ({ ...prev, salesName: userData.data.userName }));
         }
 
-        const leadRes = await fetch(`${BASE_URL}/api/lead`);
-        const leadData = await leadRes.json();
+        // Use relative path for internal API
+        let leadRes, leadData;
+        try {
+          leadRes = await fetch("/api/lead");
+          leadData = await leadRes.json();
+        } catch (err) {
+          throw err;
+        }
         if (leadRes.ok) setLeads(leadData);
         else console.error("Failed to fetch leads:", leadData.error);
       } catch (err) {
@@ -76,50 +80,50 @@ export default function BdSales({ isSidebarOpen }) {
   // When user clicks a row in the table, load that lead into the form
   const handleLeadClick = (lead) => {
     setFormData({
-  id: lead.id || "",
-  salesName: lead.salesName || "",
-  leadType: lead.leadType || "prospective",
-  dealType: lead.dealType || "",
-  companyName: lead.companyName || "",
-  companysize: lead.companysize || "",
-  companyID: lead.companyID || "",
-  numEmployees: lead.numberOfEmployees || "",
-  percentage: lead.percentage || "",
-  remarks: lead.remarks || "",
-  industry: lead.industry || "",         // <-- ADD THIS
-  industryOther: lead.industryOther || "", // <-- ADD THIS
-  spocs: Array.isArray(lead.spocs) && lead.spocs.length > 0
-    ? lead.spocs.map((spoc, idx) => ({
-        id: spoc.id ?? idx + 1,
-        name: spoc.name || "",
-        email: spoc.email || "",
-        contact: spoc.contact || "",
-        altContact: spoc.altContact || "",
-        designation: spoc.designation || "",
-        location: spoc.location || "",
-      }))
-    : [
-        {
-          id: 1,
-          name: "",
-          email: "",
-          contact: "",
-          altContact: "",
-          designation: "",
-          location: "",
-        },
-      ],
-  existingLeadDetails: {
-    employeeID: lead.employeeID || "",
-    employeeName: lead.employeeName || "",
-    replacementReason: lead.replacementReason || "",
-    replacementToDate: lead.replacementToDate || "",
-    replacementRequestDate: lead.replacementRequestDate || "",
-    companySelect: lead.companySelect || "",
-    companyNameGST: lead.companyNameGST || "",
-  },
-  status: lead.status || "prospective",
-});
+      id: lead.id || "",
+      salesName: lead.salesName || "",
+      leadType: lead.leadType || "prospective",
+      dealType: lead.dealType || "",
+      companyName: lead.companyName || "",
+      companysize: lead.companysize || "",
+      companyID: lead.companyID || "",
+      numEmployees: lead.numberOfEmployees || "",
+      percentage: lead.percentage || "",
+      remarks: lead.remarks || "",
+      industry: lead.industry || "",
+      industryOther: lead.industryOther || "",
+      spocs: Array.isArray(lead.spocs) && lead.spocs.length > 0
+        ? lead.spocs.map((spoc, idx) => ({
+            id: spoc.id ?? idx + 1,
+            name: spoc.name || "",
+            email: spoc.email || "",
+            contact: spoc.contact || "",
+            altContact: spoc.altContact || "",
+            designation: spoc.designation || "",
+            location: spoc.location || "",
+          }))
+        : [
+            {
+              id: 1,
+              name: "",
+              email: "",
+              contact: "",
+              altContact: "",
+              designation: "",
+              location: "",
+            },
+          ],
+      existingLeadDetails: {
+        employeeID: lead.employeeID || "",
+        employeeName: lead.employeeName || "",
+        replacementReason: lead.replacementReason || "",
+        replacementToDate: lead.replacementToDate || "",
+        replacementRequestDate: lead.replacementRequestDate || "",
+        companySelect: lead.companySelect || "",
+        companyNameGST: lead.companyNameGST || "",
+      },
+      status: lead.status || "prospective",
+    });
     // Also sync tab and leadType
     if (lead.leadType === "prospective") setActiveTab("Prospective");
     if (lead.leadType === "new") setActiveTab("new-lead");
@@ -162,41 +166,40 @@ export default function BdSales({ isSidebarOpen }) {
       if (res.ok) {
         toast.success("Lead submitted successfully!");
         setFormData((prev) => ({
-  id: "",
-  salesName: prev.salesName,
-  leadType: formData.leadType,
-  dealType: "",
-  companyName: "",
-  companysize: "",
-  companyID: "",
-  numEmployees: "",
-  percentage: "",
-  remarks: "",
-  industry: "",         // <-- ADD THIS
-  industryOther: "",    // <-- ADD THIS
-  spocs: [
-    {
-      id: 1,
-      name: "",
-      email: "",
-      contact: "",
-      altContact: "",
-      designation: "",
-      location: "",
-    },
-  ],
-  existingLeadDetails: {
-    employeeID: "",
-    employeeName: "",
-    replacementReason: "",
-    replacementToDate: "",
-    replacementRequestDate: "",
-    companySelect: "",
-    companyNameGST: "",
-  },
-  status: formData.status || "prospective",
-}));
-
+          id: "",
+          salesName: prev.salesName,
+          leadType: formData.leadType,
+          dealType: "",
+          companyName: "",
+          companysize: "",
+          companyID: "",
+          numEmployees: "",
+          percentage: "",
+          remarks: "",
+          industry: "",
+          industryOther: "",
+          spocs: [
+            {
+              id: 1,
+              name: "",
+              email: "",
+              contact: "",
+              altContact: "",
+              designation: "",
+              location: "",
+            },
+          ],
+          existingLeadDetails: {
+            employeeID: "",
+            employeeName: "",
+            replacementReason: "",
+            replacementToDate: "",
+            replacementRequestDate: "",
+            companySelect: "",
+            companyNameGST: "",
+          },
+          status: formData.status || "prospective",
+        }));
 
         // Update the leads list
         setLeads((prev) => {
@@ -218,7 +221,7 @@ export default function BdSales({ isSidebarOpen }) {
     }
   };
 
-  // Move a prospective lead to new lead 111
+  // Move a prospective lead to Qualified Lead
   const handleMoveToLead = async () => {
     if (!formData.id) {
       toast.error("Lead ID missing. Submit the form first.");
@@ -226,7 +229,7 @@ export default function BdSales({ isSidebarOpen }) {
     }
 
     try {
-      const response = await fetch(`${BASE_URL}/api/lead/${formData.id}`, {
+      const response = await fetch(`/api/lead/${formData.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -238,7 +241,7 @@ export default function BdSales({ isSidebarOpen }) {
       const updatedLead = await response.json();
 
       if (response.ok) {
-        toast.success("Moved to New Lead and Status updated!");
+        toast.success("Moved to Qualified Lead and Status updated!");
         setFormData((prev) => ({
           ...prev,
           leadType: "new",
@@ -260,7 +263,7 @@ export default function BdSales({ isSidebarOpen }) {
     }
   };
 
-  // Move a new lead to deal (existing)
+  // Move a Qualified Lead to deal (existing)
   const handleMoveToDeal = async () => {
     if (!formData.id) {
       toast.error("Submit the lead first before moving to Deal.");
@@ -268,7 +271,7 @@ export default function BdSales({ isSidebarOpen }) {
     }
 
     try {
-      const response = await fetch(`${BASE_URL}/api/lead/${formData.id}`, {
+      const response = await fetch(`/api/lead/${formData.id}`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
@@ -293,7 +296,8 @@ export default function BdSales({ isSidebarOpen }) {
             lead.id === updatedLead.id ? updatedLead : lead
           )
         );
-        setActiveTab("deal");
+        // Switch to the "Existing Deal" tab so the user sees the moved lead
+        setActiveTab("existing-deal");
       } else {
         toast.error(`Failed to move to deal: ${updatedLead.error}`);
       }
@@ -344,6 +348,7 @@ export default function BdSales({ isSidebarOpen }) {
                 formData={formData}
                 setFormData={setFormData}
                 handleMoveToLead={handleMoveToLead}
+                moveToLeadLabel="Move to Qualified Lead"
               />
             )}
 
