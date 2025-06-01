@@ -26,27 +26,40 @@ export default function AgreementList() {
   // Set your API base URL in .env as NEXT_PUBLIC_BASEAPIURL
   const BASE_URL = process.env.NEXT_PUBLIC_BASEAPIURL;
 
-  // Define endpoints for each tab
-  const endpoints = {
-    bdsales: `${BASE_URL}/bdsales`,
-  };
-
-  // Fetch all data when the component mounts
+  // Fetch all agreements from the API and categorize by type
   useEffect(() => {
     async function fetchAll() {
       setLoading(true);
       setError("");
       try {
-        // Fetch all endpoints in parallel
-        const results = await Promise.all(
-          Object.entries(endpoints).map(async ([key, url]) => {
-            const res = await fetch(url);
-            if (!res.ok) throw new Error(`Failed to fetch ${key}`);
-            const json = await res.json();
-            return [key, json];
-          })
-        );
-        setData(Object.fromEntries(results));
+        const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+        if (!token) throw new Error("No authentication token found. Please login again.");
+        const res = await fetch(`${BASE_URL}/api/agreements`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          },
+        });
+        if (!res.ok) throw new Error("Failed to fetch agreements");
+        const json = await res.json();
+        // json.data is an array of all agreements
+        const categorized = {
+          bdsales: [],
+          msa: [],
+          nda: [],
+          requirement: [],
+          sow: [],
+          po: [],
+        };
+        if (Array.isArray(json.data)) {
+          json.data.forEach((item) => {
+            // Normalize type to lower case for matching
+            const type = (item.type || "").toLowerCase();
+            if (categorized[type]) {
+              categorized[type].push(item);
+            }
+          });
+        }
+        setData(categorized);
       } catch (err) {
         setError(err.message || "Error fetching agreement data");
       } finally {
