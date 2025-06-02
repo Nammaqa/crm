@@ -132,12 +132,12 @@ export async function POST(req: NextRequest) {
       spocs,
     } = body as Record<string, any>;
 
-    // Validate required fields
-    if (!salesName || !companyName) {
-      return withCors(
-        NextResponse.json({ error: "Missing required fields: salesName, companyName" }, { status: 400 })
-      );
-    }
+    // // Validate required fields
+    // if (!salesName || !companyName) {
+    //   return withCors(
+    //     NextResponse.json({ error: "Missing required fields: salesName, companyName" }, { status: 400 })
+    //   );
+    // }
 
     const techMap = mapToEnumOrOther<Technology>(technology, TECHNOLOGY_ENUMS);
     const indMap = mapToEnumOrOther<Industry>(industry, INDUSTRY_ENUMS);

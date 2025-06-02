@@ -2,8 +2,6 @@
 import { useState } from "react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-// import 
-
 import {
   Select,
   SelectContent,
@@ -23,7 +21,6 @@ export default function ExistingLeadForm({ formData, setFormData, leads, handleM
     const newErrors = {};
 
     if (formData.dealType === "replacement") {
-      // if (!existingLeadDetails.employeeID) newErrors.employeeID = "Employee ID is required";
       if (!existingLeadDetails.employeeName) newErrors.employeeName = "Employee Name is required";
       if (!existingLeadDetails.replacementReason) newErrors.replacementReason = "Replacement reason is required";
       if (!existingLeadDetails.replacementToDate) newErrors.replacementToDate = "Replacement To Date is required";
@@ -38,6 +35,21 @@ export default function ExistingLeadForm({ formData, setFormData, leads, handleM
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
+  };
+
+  // --- NEW: handle company select and autofill companyID and companyNameGST ---
+  const handleCompanySelect = (value) => {
+    // Find the selected lead
+    const selectedLead = leads.find((lead) => String(lead.id) === String(value));
+    setFormData(prev => ({
+      ...prev,
+      companyID: selectedLead ? String(selectedLead.id) : "",
+      existingLeadDetails: {
+        ...prev.existingLeadDetails,
+        companySelect: value,
+        companyNameGST: selectedLead ? selectedLead.companyNameGST || "" : "",
+      }
+    }));
   };
 
   return (
@@ -66,26 +78,7 @@ export default function ExistingLeadForm({ formData, setFormData, leads, handleM
 
       {/* Replacement Fields */}
       {formData.dealType === "replacement" && (
-
         <div className="mb-4 p-4 border rounded-md shadow-sm space-y-2">
-          {/* <Input
-            placeholder="Employee ID"
-            value={existingLeadDetails.employeeID}
-            onChange={(e) => {
-              const value = e.target.value;
-              if (/^[a-zA-Z0-9]*$/.test(value)) {
-                setFormData(prev => ({
-                  ...prev,
-                  existingLeadDetails: { ...prev.existingLeadDetails, employeeID: value }
-                }));
-                setErrors(prev => ({ ...prev, employeeID: "" }));
-              } else {
-                setErrors(prev => ({ ...prev, employeeID: "Only alphanumeric characters allowed" }));
-              }
-            }}
-          />
-          {errors.employeeID && <p className="text-red-500 text-sm">{errors.employeeID}</p>} */}
-
           <Input
             placeholder="Employee Name"
             value={existingLeadDetails.employeeName}
@@ -179,19 +172,14 @@ export default function ExistingLeadForm({ formData, setFormData, leads, handleM
           <Label htmlFor="companySelect">Select Company:</Label>
           <Select
             value={existingLeadDetails.companySelect}
-            onValueChange={(value) =>
-              setFormData(prev => ({
-                ...prev,
-                existingLeadDetails: { ...prev.existingLeadDetails, companySelect: value }
-              }))
-            }
+            onValueChange={handleCompanySelect}
           >
             <SelectTrigger className="w-full">
               <SelectValue placeholder="Select a Company" />
             </SelectTrigger>
             <SelectContent>
               {leads.map((lead) => (
-                <SelectItem key={lead.id} value={lead.id}>
+                <SelectItem key={lead.id} value={String(lead.id)}>
                   {lead.companyName}
                 </SelectItem>
               ))}

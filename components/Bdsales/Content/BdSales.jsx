@@ -51,33 +51,43 @@ export default function BdSales({ isSidebarOpen }) {
 
   // Fetch initial data
   useEffect(() => {
-    const fetchInitialData = async () => {
-      try {
-        // Always use relative path for internal API
-        const userRes = await fetch("/api/users/me", { method: "GET" });
-        const userData = await userRes.json();
-        if (userRes.ok && userData?.data?.userName) {
-          setFormData((prev) => ({ ...prev, salesName: userData.data.userName }));
-        }
+  const fetchInitialData = async () => {
+    try {
+      // Fetch logged-in user
+      const userRes = await fetch("/api/users/me", { method: "GET" });
+      const userData = await userRes.json();
 
-        // Use relative path for internal API
-        let leadRes, leadData;
-        try {
-          leadRes = await fetch("/api/lead");
-          leadData = await leadRes.json();
-        } catch (err) {
-          throw err;
-        }
-        if (leadRes.ok) setLeads(leadData);
-        else console.error("Failed to fetch leads:", leadData.error);
-      } catch (err) {
-        console.error("Initialization error:", err);
+      if (!userRes.ok || !userData?.data?.userName) {
+        throw new Error("Failed to fetch user data");
       }
-    };
-    fetchInitialData();
-  }, []);
 
-  // When user clicks a row in the table, load that lead into the form
+      const loggedInSalesName = userData.data.userName;
+      setFormData((prev) => ({ ...prev, salesName: loggedInSalesName }));
+
+      // Fetch all leads
+      const leadRes = await fetch("/api/lead");
+      const leadData = await leadRes.json();
+
+      if (!leadRes.ok) {
+        console.error("Failed to fetch leads:", leadData.error);
+        return;
+      }
+
+      // ✅ Filter only those leads where salesName === loggedInSalesName
+      const filteredLeads = leadData.filter(
+        (lead) => lead.salesName?.toLowerCase() === loggedInSalesName.toLowerCase()
+      );
+
+      setLeads(filteredLeads);
+    } catch (err) {
+      console.error("Initialization error:", err);
+    }
+  };
+
+  fetchInitialData();
+}, []); 
+
+// When user clicks a row in the table, load that lead into the form
   const handleLeadClick = (lead) => {
     setFormData({
       id: lead.id || "",
