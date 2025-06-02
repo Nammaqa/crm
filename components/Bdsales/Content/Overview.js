@@ -9,7 +9,8 @@ export default function Overview() {
     // if (!token) return;
 
     try {
-      const res = await fetch("http://localhost:3000/api/users/me", {
+      const baseUrl = process.env.NEXT_PUBLIC_BASEAPIURL; // This is only available at build time
+const res = await fetch(`${baseUrl}/api/users/me`, { 
         method: "GET",
         // headers: {
         //   Authorization: `Bearer ${token}`,
@@ -40,7 +41,7 @@ export default function Overview() {
     { title: "My Open Deals", value: 5, content: "You have 5 ongoing deals in progress." },
     { title: "My Untouched Deals", value: 2, content: "You have 2 deals that haven't been worked on yet." },
     { title: "My Calls Today", value: 8, content: "You've made 8 calls today with potential clients." },
-    { title: "My Leads", value: 12, content: "You have 12 new leads generated today." },
+    { title: "My Leads", value: 12, content: "You have 12 Qualified Lead  generated today." },
   ];
 
   return (

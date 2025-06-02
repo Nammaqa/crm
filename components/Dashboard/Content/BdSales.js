@@ -137,7 +137,7 @@ export default function BdSales({ isSidebarOpen }) {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="prospective">Add Prospective Lead</SelectItem>
-                  <SelectItem value="new">Add New Lead</SelectItem>
+                  <SelectItem value="new">Add Qualified Lead</SelectItem>
                   <SelectItem value="existing">Add Existing Lead</SelectItem>
 
                 </SelectContent>

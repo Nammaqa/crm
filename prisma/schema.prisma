@@ -22,8 +22,10 @@ model Agreement {
   id           Int            @id @default(autoincrement())
   clientName   String
   employeeName String?
-  employeeId   String?
+  //employeeId   String?
   type         AgreementType?
+  technology   Technology?
+  otherTechnology String?
   poNumber     Int?
   startDate    DateTime
   endDate      DateTime
@@ -37,6 +39,7 @@ model Requirement {
   requirementName String
   companyName     String
   jobDescription  String
+  jdImage         String? 
   experience      Int
   noticePeriod    Int
   positions       Int
@@ -45,6 +48,7 @@ model Requirement {
   closePositions  String
   requirementType String
   workLocation    String
+  budget          Int?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 }
@@ -53,9 +57,8 @@ model Lead {
   id                     Int                @id @default(autoincrement())
   salesName              String
   companyName            String
-  companyID              String?               // Make it optional by adding '?' to allow null/undefined
+  companyID              String?               
   numberOfEmployees      Int                @default(0)
-  employeeID             String?
   employeeName           String?
   replacementToDate      DateTime?
   replacementRequestDate DateTime?
@@ -69,6 +72,7 @@ model Lead {
   percentage             Int?
   remarks                String?
   technology             Technology?
+  technologyOther        String?            // <-- Added for specifying 'other' technology
   replacementReason      ReplacementReason?
   leadType               leadstatus
   businessType           String?
@@ -123,6 +127,9 @@ enum Technology {
   devops
   ai_ml
   ai
+  digital_marketing
+  data_analytics
+  other
 }
 
 enum Industry {
@@ -140,6 +147,7 @@ enum Industry {
   government
   energy
   consulting
+  other
 }
 
 enum leadstatus {

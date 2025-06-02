@@ -21,7 +21,7 @@ function BdTable() {
                     variant={activeTab === 'new-lead' ? "default" : "ghost"}
                     className="py-2 px-4"
                 >
-                    New Lead
+                    Qualified Lead
                 </Button>
                 <Button
                     onClick={() => setActiveTab('existing-lead')}
@@ -41,8 +41,8 @@ function BdTable() {
 
             {/* Tab Content */}
             <div className="p-4 border rounded-md">
-                {activeTab === 'Prospective' && <div className="mb-4"> Persuasive Lead List </div>}
-                {activeTab === 'new-lead' && <div className="mb-4"> New Lead List</div>}
+                {activeTab === 'Prospective' && <div className="mb-4"> Prospective Lead List </div>}
+                {activeTab === 'new-lead' && <div className="mb-4"> Qualified Lead List</div>}
                 {activeTab === 'existing-lead' && <div className="mb-4"> Existing Lead List</div>}
                 {activeTab === 'deal' && <div className="mb-4"> Deal List</div>}
             </div>

@@ -24,6 +24,8 @@ export default function BdSales({ isSidebarOpen }) {
     numEmployees: "",
     percentage: "",
     remarks: "",
+    industry: "",
+    industryOther: "",
     spocs: [
       {
         id: 1,
@@ -47,30 +49,45 @@ export default function BdSales({ isSidebarOpen }) {
     status: "prospective",
   });
 
-  const BASE_URL = process.env.NEXT_PUBLIC_BASEAPIURL;
-
   // Fetch initial data
   useEffect(() => {
-    const fetchInitialData = async () => {
-      try {
-        const userRes = await fetch("/api/users/me", { method: "GET" });
-        const userData = await userRes.json();
-        if (userRes.ok && userData?.data?.userName) {
-          setFormData((prev) => ({ ...prev, salesName: userData.data.userName }));
-        }
+  const fetchInitialData = async () => {
+    try {
+      // Fetch logged-in user
+      const userRes = await fetch("/api/users/me", { method: "GET" });
+      const userData = await userRes.json();
 
-        const leadRes = await fetch(`${BASE_URL}/api/lead`);
-        const leadData = await leadRes.json();
-        if (leadRes.ok) setLeads(leadData);
-        else console.error("Failed to fetch leads:", leadData.error);
-      } catch (err) {
-        console.error("Initialization error:", err);
+      if (!userRes.ok || !userData?.data?.userName) {
+        throw new Error("Failed to fetch user data");
       }
-    };
-    fetchInitialData();
-  }, []);
 
-  // When user clicks a row in the table, load that lead into the form
+      const loggedInSalesName = userData.data.userName;
+      setFormData((prev) => ({ ...prev, salesName: loggedInSalesName }));
+
+      // Fetch all leads
+      const leadRes = await fetch("/api/lead");
+      const leadData = await leadRes.json();
+
+      if (!leadRes.ok) {
+        console.error("Failed to fetch leads:", leadData.error);
+        return;
+      }
+
+      // ✅ Filter only those leads where salesName === loggedInSalesName
+      const filteredLeads = leadData.filter(
+        (lead) => lead.salesName?.toLowerCase() === loggedInSalesName.toLowerCase()
+      );
+
+      setLeads(filteredLeads);
+    } catch (err) {
+      console.error("Initialization error:", err);
+    }
+  };
+
+  fetchInitialData();
+}, []); 
+
+// When user clicks a row in the table, load that lead into the form
   const handleLeadClick = (lead) => {
     setFormData({
       id: lead.id || "",
@@ -83,6 +100,8 @@ export default function BdSales({ isSidebarOpen }) {
       numEmployees: lead.numberOfEmployees || "",
       percentage: lead.percentage || "",
       remarks: lead.remarks || "",
+      industry: lead.industry || "",
+      industryOther: lead.industryOther || "",
       spocs: Array.isArray(lead.spocs) && lead.spocs.length > 0
         ? lead.spocs.map((spoc, idx) => ({
             id: spoc.id ?? idx + 1,
@@ -167,6 +186,8 @@ export default function BdSales({ isSidebarOpen }) {
           numEmployees: "",
           percentage: "",
           remarks: "",
+          industry: "",
+          industryOther: "",
           spocs: [
             {
               id: 1,
@@ -210,7 +231,7 @@ export default function BdSales({ isSidebarOpen }) {
     }
   };
 
-  // Move a prospective lead to new lead 111
+  // Move a prospective lead to Qualified Lead
   const handleMoveToLead = async () => {
     if (!formData.id) {
       toast.error("Lead ID missing. Submit the form first.");
@@ -218,7 +239,7 @@ export default function BdSales({ isSidebarOpen }) {
     }
 
     try {
-      const response = await fetch(`${BASE_URL}/api/lead/${formData.id}`, {
+      const response = await fetch(`/api/lead/${formData.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -230,7 +251,7 @@ export default function BdSales({ isSidebarOpen }) {
       const updatedLead = await response.json();
 
       if (response.ok) {
-        toast.success("Moved to New Lead and Status updated!");
+        toast.success("Moved to Qualified Lead and Status updated!");
         setFormData((prev) => ({
           ...prev,
           leadType: "new",
@@ -252,7 +273,7 @@ export default function BdSales({ isSidebarOpen }) {
     }
   };
 
-  // Move a new lead to deal (existing)
+  // Move a Qualified Lead to deal (existing)
   const handleMoveToDeal = async () => {
     if (!formData.id) {
       toast.error("Submit the lead first before moving to Deal.");
@@ -260,7 +281,7 @@ export default function BdSales({ isSidebarOpen }) {
     }
 
     try {
-      const response = await fetch(`${BASE_URL}/api/lead/${formData.id}`, {
+      const response = await fetch(`/api/lead/${formData.id}`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
@@ -285,7 +306,8 @@ export default function BdSales({ isSidebarOpen }) {
             lead.id === updatedLead.id ? updatedLead : lead
           )
         );
-        setActiveTab("deal");
+        // Switch to the "Existing Deal" tab so the user sees the moved lead
+        setActiveTab("existing-deal");
       } else {
         toast.error(`Failed to move to deal: ${updatedLead.error}`);
       }
@@ -336,6 +358,7 @@ export default function BdSales({ isSidebarOpen }) {
                 formData={formData}
                 setFormData={setFormData}
                 handleMoveToLead={handleMoveToLead}
+                moveToLeadLabel="Move to Qualified Lead"
               />
             )}
 

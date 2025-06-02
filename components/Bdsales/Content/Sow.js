@@ -1,11 +1,23 @@
 "use client";
 import React, { useState, useRef } from "react";
 
+const TECHNOLOGY_OPTIONS = [
+  { value: "development", label: "Development" },
+  { value: "testing", label: "Testing" },
+  { value: "devops", label: "DevOps" },
+  { value: "ai_ml", label: "AI/ML" },
+  { value: "ai", label: "AI" },
+  { value: "digital_marketing", label: "Digital Marketing" },
+  { value: "data_analytics", label: "Data Analytics" },
+  { value: "other", label: "Other" },
+];
+
 export default function SOPForm() {
   const [formData, setFormData] = useState({
     clientName: "",
     employeeName: "",
-    employeeId: "",
+    technology: "",
+    otherTechnology: "",
     startDate: "",
     endDate: "",
   });
@@ -19,17 +31,6 @@ export default function SOPForm() {
   // Restrict input to letters and spaces only
   const handleAlphaInput = (e) => {
     if (e.nativeEvent && e.nativeEvent.data && !/[A-Za-z\s]/.test(e.nativeEvent.data)) {
-      e.preventDefault();
-    }
-  };
-
-  // Restrict input to alphanumeric, hyphen, and underscore only (no spaces or other special chars)
-  const handleAlphaNumHyphenUnderscoreInput = (e) => {
-    if (
-      e.nativeEvent &&
-      e.nativeEvent.data &&
-      !/[A-Za-z0-9_-]/.test(e.nativeEvent.data)
-    ) {
       e.preventDefault();
     }
   };
@@ -62,10 +63,11 @@ export default function SOPForm() {
         if (value.trim().length < 3) return "Employee Name must be at least 3 characters.";
         if (value.trim().length > 30) return "Employee Name must be at most 30 characters.";
         return "";
-      case "employeeId":
-        if (!value.trim()) return "Employee ID is required.";
-        if (!/^[A-Za-z0-9_-]+$/.test(value))
-          return "Employee ID can only contain letters, numbers, hyphens (-), and underscores (_).";
+      case "technology":
+        if (!value) return "Technology is required.";
+        return "";
+      case "otherTechnology":
+        if (allValues.technology === "other" && !value.trim()) return "Please specify the technology.";
         return "";
       case "startDate":
         if (!value) return "Start Date is required.";
@@ -132,7 +134,13 @@ export default function SOPForm() {
   // Live validation on input change
   const handleChange = (e) => {
     const { name, value } = e.target;
-    const updatedForm = { ...formData, [name]: value };
+    let updatedForm = { ...formData, [name]: value };
+
+    // If technology is changed and is not "other", clear otherTechnology
+    if (name === "technology" && value !== "other") {
+      updatedForm.otherTechnology = "";
+    }
+
     setFormData(updatedForm);
 
     // Validate this field and update errors
@@ -140,6 +148,8 @@ export default function SOPForm() {
     setErrors((prev) => ({
       ...prev,
       [name]: errMsg || undefined,
+      // If technology is changed and is not "other", clear otherTechnology error
+      ...(name === "technology" && value !== "other" ? { otherTechnology: undefined } : {}),
     }));
   };
 
@@ -174,10 +184,13 @@ export default function SOPForm() {
     const formDataToSend = new FormData();
     formDataToSend.append("clientName", formData.clientName);
     formDataToSend.append("employeeName", formData.employeeName);
-    formDataToSend.append("employeeId", formData.employeeId);
+    formDataToSend.append(
+      "Technology",
+      formData.technology === "other" ? formData.otherTechnology : formData.technology
+    );
     formDataToSend.append("startDate", formData.startDate);
     formDataToSend.append("endDate", formData.endDate);
-    formDataToSend.append("type", "PO"); // SOP handled as PO
+    formDataToSend.append("type", "PO"); // SOW handled as PO
 
     if (selectedFile) {
       formDataToSend.append("fileUpload", selectedFile);
@@ -190,21 +203,31 @@ export default function SOPForm() {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
+          // DO NOT set 'Content-Type' when using FormData
         },
         body: formDataToSend,
       });
 
-      const data = await res.json();
+      let data;
+      try {
+        data = await res.json();
+      } catch (err) {
+        // If response is not JSON (e.g., HTML error page), handle gracefully
+        setLoading(false);
+        alert("Server error: Received invalid response. Please contact support.");
+        return;
+      }
 
       if (res.ok) {
         setLoading(false); // Stop spinner BEFORE alert
-        alert("SOP (PO) submitted successfully!");
+        alert("SOW submitted successfully!");
 
         // Clear form fields and file input after successful submission
         setFormData({
           clientName: "",
           employeeName: "",
-          employeeId: "",
+          technology: "",
+          otherTechnology: "",
           startDate: "",
           endDate: "",
         });
@@ -217,7 +240,7 @@ export default function SOPForm() {
         return;
       } else {
         setLoading(false); // Stop spinner BEFORE alert
-        alert(data.message || "Submission failed.");
+        alert(data && data.message ? data.message : "Submission failed.");
         return;
       }
     } catch (error) {
@@ -234,7 +257,7 @@ export default function SOPForm() {
       className="max-w-lg mx-auto space-y-4 p-4 border rounded-lg shadow"
       noValidate
     >
-      <h2 className="text-2xl font-semibold text-gray-800 mb-4">SOP (PO) Agreement</h2>
+      <h2 className="text-2xl font-semibold text-gray-800 mb-4">SOW Agreement</h2>
       <fieldset disabled={loading} className="space-y-4">
         {/* Client Name */}
         <label className="block font-medium mb-1" htmlFor="clientName">
@@ -278,24 +301,49 @@ export default function SOPForm() {
           <p id="employeeName-error" className="text-red-600 text-xs mt-1 mb-3">{errors.employeeName}</p>
         )}
 
-        {/* Employee ID */}
-        <label className="block font-medium mb-1" htmlFor="employeeId">
-          Employee ID <span className="text-red-600">*</span>
+        {/* Technology Dropdown */}
+        <label className="block font-medium mb-1" htmlFor="technology">
+          Technology <span className="text-red-600">*</span>
         </label>
-        <input
-          type="text"
-          name="employeeId"
-          value={formData.employeeId}
+        <select
+          name="technology"
+          value={formData.technology}
           onChange={handleChange}
-          onBeforeInput={handleAlphaNumHyphenUnderscoreInput}
           required
-          className={`w-full p-2 border border-gray-400 rounded ${errors.employeeId ? "border-red-500" : ""}`}
-          placeholder="Enter employee ID"
-          aria-invalid={!!errors.employeeId}
-          aria-describedby="employeeId-error"
-        />
-        {errors.employeeId && (
-          <p id="employeeId-error" className="text-red-600 text-xs mt-1 mb-3">{errors.employeeId}</p>
+          className={`w-full p-2 border border-gray-400 rounded ${errors.technology ? "border-red-500" : ""}`}
+          aria-invalid={!!errors.technology}
+          aria-describedby="technology-error"
+        >
+          <option value="">Select technology</option>
+          {TECHNOLOGY_OPTIONS.map((opt) => (
+            <option key={opt.value} value={opt.value}>{opt.label}</option>
+          ))}
+        </select>
+        {errors.technology && (
+          <p id="technology-error" className="text-red-600 text-xs mt-1 mb-3">{errors.technology}</p>
+        )}
+
+        {/* Other Technology Text Field */}
+        {formData.technology === "other" && (
+          <>
+            <label className="block font-medium mb-1" htmlFor="otherTechnology">
+              Please specify <span className="text-red-600">*</span>
+            </label>
+            <input
+              type="text"
+              name="otherTechnology"
+              value={formData.otherTechnology}
+              onChange={handleChange}
+              required
+              className={`w-full p-2 border border-gray-400 rounded ${errors.otherTechnology ? "border-red-500" : ""}`}
+              placeholder="Specify technology"
+              aria-invalid={!!errors.otherTechnology}
+              aria-describedby="otherTechnology-error"
+            />
+            {errors.otherTechnology && (
+              <p id="otherTechnology-error" className="text-red-600 text-xs mt-1 mb-3">{errors.otherTechnology}</p>
+            )}
+          </>
         )}
 
         {/* Start Date */}
