@@ -5,8 +5,8 @@ import { AgreementType, Technology } from '@prisma/client';
 import { cookies } from 'next/headers';
 
 const verifyAuth = async () => {
-  const cookieStore = cookies();
-  const token = cookieStore.get('token')?.value;
+  const cookieStore = await cookies();
+  const token = cookieStore.get('token')?.value || null;
 
   if (!token) {
     console.error('No token provided in cookies');
@@ -46,17 +46,18 @@ export async function POST(request: Request) {
       fileUploadPath = file.name;
     }
 
+    // Default to current date for startDate and endDate if not provided
     const agreement = await prisma.agreement.create({
       data: {
-        clientName: clientName || null,
-        employeeName: employeeName || null,
+        clientName: clientName || '',
+        employeeName: employeeName || '',
         type: type ? (type as AgreementType) : null,
-        startDate: startDate ? new Date(startDate) : null,
-        endDate: endDate ? new Date(endDate) : null,
+        startDate: startDate ? new Date(startDate) : new Date(),
+        endDate: endDate ? new Date(endDate) : new Date(),
         technology: technology ? (technology as Technology) : null,
-        otherTechnology: technology === 'other' ? (otherTechnology || null) : null,
+        otherTechnology: technology === 'other' ? (otherTechnology || '') : null,
         fileUpload: fileUploadPath,
-      }
+      },
     });
 
     return NextResponse.json({
@@ -67,5 +68,15 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error('Error creating agreement:', error);
     return NextResponse.json({ success: false, message: 'Failed to create agreement' }, { status: 500 });
+  }
+}
+
+export async function GET() {
+  try {
+    const agreements = await prisma.agreement.findMany();
+    return NextResponse.json({ success: true, data: agreements });
+  } catch (error) {
+    console.error('Error fetching agreements:', error);
+    return NextResponse.json({ success: false, message: 'Failed to fetch agreements' }, { status: 500 });
   }
 }

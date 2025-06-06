@@ -9,6 +9,21 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET!,
 });
 
+// Define a specific type for the `data` object
+interface RequirementData {
+  requirementName: string;
+  companyName: string;
+  jobDescription: string;
+  experience: number;
+  noticePeriod: number;
+  positions: number;
+  primarySkills: string;
+  secondarySkills: string;
+  closePositions: string;
+}
+
+let data: RequirementData = {} as RequirementData;
+
 // Fetch all requirements
 export async function GET() {
   try {
@@ -24,7 +39,6 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   try {
     const contentType = req.headers.get("content-type") || "";
-    let data: any = {};
     let jdImageUrl: string | null = null;
 
     if (contentType.includes("multipart/form-data")) {
@@ -95,7 +109,6 @@ export async function POST(req: NextRequest) {
 export async function PUT(req: NextRequest) {
   try {
     const contentType = req.headers.get("content-type") || "";
-    let data: any = {};
     let jdImageUrl: string | undefined = undefined;
 
     if (contentType.includes("multipart/form-data")) {

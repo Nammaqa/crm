@@ -15,8 +15,8 @@ export async function OPTIONS() {
   return withCors(new NextResponse(null, { status: 204 }));
 }
 
-export async function GET(_: NextRequest, context: { params: { id: string } }) {
-  const { id } = context.params;
+export async function GET(_: NextRequest, context: { params: Promise<{ id: string }> }) {
+  const { id } = await context.params;
   const leadId = parseInt(id);
 
   if (isNaN(leadId)) {
@@ -39,15 +39,15 @@ export async function GET(_: NextRequest, context: { params: { id: string } }) {
   }
 }
 
-export async function PUT(req: NextRequest, context: { params: { id: string } }) {
-  const { id } = context.params;
+export async function PUT(req: NextRequest, context: { params: Promise<{ id: string }> }) {
+  const { id } = await context.params;
   const leadId = parseInt(id);
 
   if (!id || isNaN(leadId)) {
     return withCors(NextResponse.json({ error: "Invalid lead ID" }, { status: 400 }));
   }
 
-  let body: any;
+  let body: Record<string, unknown>;
   try {
     body = await req.json();
   } catch (err) {
@@ -139,8 +139,8 @@ export async function PUT(req: NextRequest, context: { params: { id: string } })
   }
 }
 
-export async function DELETE(_: NextRequest, context: { params: { id: string } }) {
-  const { id } = context.params;
+export async function DELETE(_: NextRequest, context: { params: Promise<{ id: string }> }) {
+  const { id } = await context.params;
   const leadId = parseInt(id);
 
   if (isNaN(leadId)) {
@@ -157,15 +157,15 @@ export async function DELETE(_: NextRequest, context: { params: { id: string } }
   }
 }
 
-export async function PATCH(req: NextRequest, context: { params: { id: string } }) {
-  const { id } = context.params;
+export async function PATCH(req: NextRequest, context: { params: Promise<{ id: string }> }) {
+  const { id } = await context.params;
   const leadId = parseInt(id);
 
   if (isNaN(leadId)) {
     return withCors(NextResponse.json({ error: "Invalid lead ID" }, { status: 400 }));
   }
 
-  let body: any;
+  let body: { leadType: string; status: string };
   try {
     body = await req.json();
   } catch (err) {

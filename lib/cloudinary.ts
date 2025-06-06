@@ -16,8 +16,14 @@ export const uploadToCloudinary = async (
   try {
     return new Promise((resolve, reject) => {
       const stream = streamifier.createReadStream(file);
+
+      // Dynamically set resource_type based on file type
+      const isPdf = fileName.toLowerCase().endsWith('.pdf');
+      const isDoc = fileName.toLowerCase().match(/\.(doc|docx|ppt|pptx|xls|xlsx)$/);
+      const resourceType = (isPdf || isDoc) ? 'raw' : 'image';
+
       const uploadStream = cloudinary.uploader.upload_stream(
-        { public_id: fileName, folder: "employees", resource_type: "image" },
+        { public_id: fileName, folder: "sales", resource_type: resourceType },
         (error, result) => {
           if (error) {
             console.error("❌ Cloudinary Upload Failed:", error);

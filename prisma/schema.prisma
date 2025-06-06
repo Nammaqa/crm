@@ -27,8 +27,8 @@ model Agreement {
   technology   Technology?
   otherTechnology String?
   poNumber     Int?
-  startDate    DateTime
-  endDate      DateTime
+  startDate    DateTime?
+  endDate      DateTime?
   fileUpload   String?
   createdAt    DateTime       @default(now())
   updatedAt    DateTime       @updatedAt

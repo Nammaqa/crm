@@ -32,13 +32,7 @@ export default function AgreementList() {
       setLoading(true);
       setError("");
       try {
-        const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-        if (!token) throw new Error("No authentication token found. Please login again.");
-        const res = await fetch(`${BASE_URL}/api/agreements`, {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          },
-        });
+        const res = await fetch(`${BASE_URL}/api/agreements`);
         if (!res.ok) throw new Error("Failed to fetch agreements");
         const json = await res.json();
         // json.data is an array of all agreements

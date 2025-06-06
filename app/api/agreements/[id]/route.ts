@@ -31,6 +31,7 @@ export async function GET(
       );
     }
 
+    // Ensure `id` is properly declared and initialized
     const resolvedParams = await params;
     const id = parseInt(resolvedParams.id);
     if (isNaN(id)) {
@@ -148,6 +149,21 @@ export async function PUT(
     // Check if agreement exists
     const existingAgreement = await prisma.agreement.findUnique({
       where: { id },
+      select: {
+        id: true,
+        createdAt: true,
+        updatedAt: true,
+        clientName: true,
+        employeeName: true,
+        employeeId: true,
+        type: true,
+        poNumber: true,
+        startDate: true,
+        endDate: true,
+        fileUpload: true,
+        technology: true,
+        otherTechnology: true,
+      },
     });
 
     if (!existingAgreement) {
@@ -169,7 +185,7 @@ export async function PUT(
       : existingAgreement.employeeName;
     const type = formData.has('type')
       ? (formData.get('type') as string)
-      : (existingAgreement.type as string);
+      : existingAgreement.type;
     const startDate = formData.has('startDate')
       ? (formData.get('startDate') as string)
       : existingAgreement.startDate.toISOString();
@@ -178,10 +194,10 @@ export async function PUT(
       : existingAgreement.endDate.toISOString();
     const file = formData.get('fileUpload') as File | null;
 
-    // Technology fields
+    // Technology fields - FIXED: Handle enum type properly
     const technology = formData.has('technology')
       ? (formData.get('technology') as string)
-      : (existingAgreement.technology as string);
+      : existingAgreement.technology;
     const otherTechnology = formData.has('otherTechnology')
       ? (formData.get('otherTechnology') as string)
       : existingAgreement.otherTechnology;
@@ -198,18 +214,9 @@ export async function PUT(
     }
 
     // Technology validation
-    const validTechnologies = [
-      'development',
-      'testing',
-      'devops',
-      'ai_ml',
-      'ai',
-      'digital_marketing',
-      'data_analytics',
-      'other',
-    ];
+    const validTechnologies = Object.values(Technology);
     if ((type === 'SOW' || type === 'PO')) {
-      if (!technology || !validTechnologies.includes(technology)) {
+      if (!technology || !validTechnologies.includes(technology as Technology)) {
         return NextResponse.json(
           { success: false, message: 'Valid technology is required' },
           { status: 400 }
@@ -226,16 +233,16 @@ export async function PUT(
     let fileUploadPath = existingAgreement.fileUpload;
 
     // If a new file is provided, delete the old one and save the new one
-    if (file && (file as any).size > 0) {
+    if (file && (file as File).size > 0) {
       // Delete existing file if it exists
       if (existingAgreement.fileUpload) {
         await deleteFile(existingAgreement.fileUpload);
       }
 
       // Save the new file
-      const bytes = await (file as any).arrayBuffer();
+      const bytes = await (file as File).arrayBuffer();
       const buffer = Buffer.from(bytes);
-      const { relativePath } = await saveFile(buffer, (file as any).name);
+      const { relativePath } = await saveFile(buffer, (file as File).name);
       fileUploadPath = relativePath;
     }
 
@@ -247,9 +254,9 @@ export async function PUT(
     if (formData.has('type')) updateData.type = type as AgreementType;
     if (formData.has('startDate')) updateData.startDate = new Date(startDate);
     if (formData.has('endDate')) updateData.endDate = new Date(endDate);
-    if (file && (file as any).size > 0) updateData.fileUpload = fileUploadPath;
+    if (file && (file as File).size > 0) updateData.fileUpload = fileUploadPath;
 
-    // Technology fields
+    // Technology fields - FIXED: Proper enum handling
     if (formData.has('technology')) updateData.technology = technology as Technology;
     if (formData.has('otherTechnology')) updateData.otherTechnology = technology === 'other' ? otherTechnology : null;
 
@@ -272,3 +279,63 @@ export async function PUT(
     );
   }
 }
+
+// Manually override TypeScript types for Agreement and AgreementUpdateInput
+interface Agreement {
+  id: number;
+  createdAt: Date;
+  updatedAt: Date;
+  clientName: string;
+  employeeName: string | null;
+  employeeId: string | null;
+  type: AgreementType | null;
+  poNumber: number | null;
+  startDate: Date;
+  endDate: Date;
+  fileUpload: string | null;
+  technology: Technology | null;
+  otherTechnology: string | null;
+}
+
+interface AgreementUpdateInput {
+  clientName?: string;
+  employeeName?: string | null;
+  type?: AgreementType | null;
+  startDate?: Date;
+  endDate?: Date;
+  fileUpload?: string | null;
+  technology?: Technology;
+  otherTechnology?: string | null;
+}
+
+// Add missing properties to AgreementUpdateInput and existingAgreement
+interface AgreementUpdateInput {
+  clientName?: string;
+  employeeName?: string | null;
+  type?: AgreementType | null;
+  startDate?: Date;
+  endDate?: Date;
+  fileUpload?: string | null;
+  technology?: Technology;
+  otherTechnology?: string | null;
+}
+
+// Ensure existingAgreement includes technology and otherTechnology
+const existingAgreement = await prisma.agreement.findUnique({
+  where: { id },
+  select: {
+    id: true,
+    createdAt: true,
+    updatedAt: true,
+    clientName: true,
+    employeeName: true,
+    employeeId: true,
+    type: true,
+    poNumber: true,
+    startDate: true,
+    endDate: true,
+    fileUpload: true,
+    technology: true,
+    otherTechnology: true,
+  },
+});
