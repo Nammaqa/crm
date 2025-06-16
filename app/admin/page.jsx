@@ -1,18 +1,11 @@
-"use client";
-import { useState } from "react";
-import Sidebar from "@components/Admin/Sidebar";
+import validateAdmin from "@/actions/validateAdmin";
+import { redirect } from "next/navigation";
+import SidebarContainer from "@components/Admin/AdminSidebarContainer";
 
-
-export default function Dashboard() {
-    const [selectedSection, setSelectedSection] = useState("overview");
-
-    return (
-        <div className=" ">
-            {/* Sidebar Container */}
-            <Sidebar selectedSection={selectedSection} setSelectedSection={setSelectedSection} />
-
-        </div>
-    );
+export default async function Dashboard() {
+    const isAdmin = await validateAdmin();
+    if (!isAdmin) redirect("/login");
+    return <SidebarContainer />
 }
 
 

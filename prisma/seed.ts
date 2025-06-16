@@ -37,30 +37,32 @@ async function main() {
   // Add some example agreements if none exist
   const agreementCount = await prisma.agreement.count();
   
-  if (agreementCount === 0) {
-    await prisma.agreement.createMany({
-      data: [
-        {
-          clientName: 'Acme Corporation',
-          employeeName: 'John Doe',
-          employeeId: 'EMP001',
-          type: 'MSA',
-          startDate: new Date('2023-01-01'),
-          endDate: new Date('2023-12-31'),
-        },
-        {
-          clientName: 'TechCorp Inc.',
-          employeeName: 'Jane Smith',
-          employeeId: 'EMP002',
-          type: 'NDA',
-          startDate: new Date('2023-02-15'),
-          endDate: new Date('2023-08-15'),
-        },
-      ],
-    });
+  if (agreementCount === 0) 
+  {
+  //   await prisma.agreement.createMany({
+  //     data: [
+  //       {
+  //         clientName: 'Acme Corporation',
+  //         employeeName: 'John Doe',
+  //         employeeId: 'EMP001',
+  //         type: 'MSA',
+  //         startDate: new Date('2023-01-01'),
+  //         endDate: new Date('2023-12-31'),
+  //       },
+  //       {
+  //         clientName: 'TechCorp Inc.',
+  //         employeeName: 'Jane Smith',
+  //         employeeId: 'EMP002',
+  //         type: 'NDA',
+  //         startDate: new Date('2023-02-15'),
+  //         endDate: new Date('2023-08-15'),
+  //       },
+  //     ],
+  //   });
     
-    console.log('Added sample agreements');
-  } else {
+  //   console.log('Added sample agreements');
+  // } 
+  // else
     console.log('Agreements already exist, skipping creation');
   }
 }
@@ -73,4 +75,4 @@ main()
     console.error(e);
     await prisma.$disconnect();
     process.exit(1);
-  });
+  })

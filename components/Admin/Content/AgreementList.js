@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 
 // Define the tabs and their keys
 const TABS = [
-  { key: "bdsales", label: "BD/Sales" },
+  // { key: "bdsales", label: "BD/Sales" },
   { key: "msa", label: "MSA" },
   { key: "nda", label: "NDA" },
   { key: "requirement", label: "Requirement" },
@@ -13,7 +13,7 @@ const TABS = [
 export default function AgreementList() {
   const [activeTab, setActiveTab] = useState("bdsales");
   const [data, setData] = useState({
-    bdsales: [],
+    // bdsales: [],
     msa: [],
     nda: [],
     requirement: [],
@@ -26,32 +26,33 @@ export default function AgreementList() {
   // Set your API base URL in .env as NEXT_PUBLIC_BASEAPIURL
   const BASE_URL = process.env.NEXT_PUBLIC_BASEAPIURL;
 
-  // Fetch all agreements from the API and categorize by type
+  // Fetch all agreements and requirements from the API and categorize by type
   useEffect(() => {
     async function fetchAll() {
       setLoading(true);
       setError("");
       try {
-        const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-        if (!token) throw new Error("No authentication token found. Please login again.");
-        const res = await fetch(`${BASE_URL}/api/agreements`, {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          },
-        });
-        if (!res.ok) throw new Error("Failed to fetch agreements");
-        const json = await res.json();
-        // json.data is an array of all agreements
+        // Fetch agreements
+        const resAgreements = await fetch(`${BASE_URL}/api/agreements`);
+        if (!resAgreements.ok) throw new Error("Failed to fetch agreements");
+        const jsonAgreements = await resAgreements.json();
+
+        // Fetch requirements
+        const resRequirements = await fetch(`${BASE_URL}/api/requirements`);
+        if (!resRequirements.ok) throw new Error("Failed to fetch requirements");
+        const jsonRequirements = await resRequirements.json();
+
+        // Categorize agreements
         const categorized = {
-          bdsales: [],
+          // bdsales: [],
           msa: [],
           nda: [],
           requirement: [],
           sow: [],
           po: [],
         };
-        if (Array.isArray(json.data)) {
-          json.data.forEach((item) => {
+        if (Array.isArray(jsonAgreements.data)) {
+          jsonAgreements.data.forEach((item) => {
             // Normalize type to lower case for matching
             const type = (item.type || "").toLowerCase();
             if (categorized[type]) {
@@ -59,6 +60,11 @@ export default function AgreementList() {
             }
           });
         }
+        // Add requirements to the requirement tab
+        if (Array.isArray(jsonRequirements)) {
+          categorized.requirement = jsonRequirements;
+        }
+
         setData(categorized);
       } catch (err) {
         setError(err.message || "Error fetching agreement data");
@@ -75,7 +81,6 @@ export default function AgreementList() {
     const rows = data[tab] || [];
     if (rows.length === 0) return <div className="py-4 text-gray-500">No data found.</div>;
 
-    // Render each table based on the tab
     switch (tab) {
       case "bdsales":
         return (
@@ -94,11 +99,11 @@ export default function AgreementList() {
             <tbody>
               {rows.map((row, idx) => (
                 <tr key={row.id || idx}>
-                  <td className="border px-2 py-1">{row.salesName}</td>
-                  <td className="border px-2 py-1">{row.leadType}</td>
-                  <td className="border px-2 py-1">{row.dealType}</td>
-                  <td className="border px-2 py-1">{row.companyName}</td>
-                  <td className="border px-2 py-1">{row.numEmployees}</td>
+                  <td className="border px-2 py-1">{row.salesName || ""}</td>
+                  <td className="border px-2 py-1">{row.leadType || ""}</td>
+                  <td className="border px-2 py-1">{row.dealType || ""}</td>
+                  <td className="border px-2 py-1">{row.companyName || ""}</td>
+                  <td className="border px-2 py-1">{row.numEmployees || row.numberOfEmployees || ""}</td>
                   <td className="border px-2 py-1">
                     {Array.isArray(row.spocs)
                       ? row.spocs.map((spoc, i) => (
@@ -132,9 +137,9 @@ export default function AgreementList() {
             <tbody>
               {rows.map((row, idx) => (
                 <tr key={row.id || idx}>
-                  <td className="border px-2 py-1">{row.clientName}</td>
-                  <td className="border px-2 py-1">{row.startDate}</td>
-                  <td className="border px-2 py-1">{row.endDate}</td>
+                  <td className="border px-2 py-1">{row.clientName || ""}</td>
+                  <td className="border px-2 py-1">{row.startDate || ""}</td>
+                  <td className="border px-2 py-1">{row.endDate || ""}</td>
                   <td className="border px-2 py-1">
                     {row.fileUpload ? (
                       <a href={row.fileUpload} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">
@@ -163,9 +168,9 @@ export default function AgreementList() {
             <tbody>
               {rows.map((row, idx) => (
                 <tr key={row.id || idx}>
-                  <td className="border px-2 py-1">{row.clientName}</td>
-                  <td className="border px-2 py-1">{row.startDate}</td>
-                  <td className="border px-2 py-1">{row.endDate}</td>
+                  <td className="border px-2 py-1">{row.clientName || ""}</td>
+                  <td className="border px-2 py-1">{row.startDate || ""}</td>
+                  <td className="border px-2 py-1">{row.endDate || ""}</td>
                   <td className="border px-2 py-1">
                     {row.fileUpload ? (
                       <a href={row.fileUpload} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">
@@ -200,16 +205,16 @@ export default function AgreementList() {
             <tbody>
               {rows.map((row, idx) => (
                 <tr key={row.id || idx}>
-                  <td className="border px-2 py-1">{row.requirementName}</td>
-                  <td className="border px-2 py-1">{row.companyName}</td>
-                  <td className="border px-2 py-1">{row.jobDescription}</td>
-                  <td className="border px-2 py-1">{row.experience}</td>
-                  <td className="border px-2 py-1">{row.noticePeriod}</td>
-                  <td className="border px-2 py-1">{row.positions}</td>
-                  <td className="border px-2 py-1">{row.primarySkills}</td>
-                  <td className="border px-2 py-1">{row.secondarySkills}</td>
-                  <td className="border px-2 py-1">{row.requirementType}</td>
-                  <td className="border px-2 py-1">{row.workLocation}</td>
+                  <td className="border px-2 py-1">{row.requirementName || ""}</td>
+                  <td className="border px-2 py-1">{row.companyName || ""}</td>
+                  <td className="border px-2 py-1">{row.jobDescription || ""}</td>
+                  <td className="border px-2 py-1">{row.experience || ""}</td>
+                  <td className="border px-2 py-1">{row.noticePeriod || ""}</td>
+                  <td className="border px-2 py-1">{row.positions || ""}</td>
+                  <td className="border px-2 py-1">{row.primarySkills || ""}</td>
+                  <td className="border px-2 py-1">{row.secondarySkills || ""}</td>
+                  <td className="border px-2 py-1">{row.requirementType || ""}</td>
+                  <td className="border px-2 py-1">{row.workLocation || ""}</td>
                 </tr>
               ))}
             </tbody>
@@ -230,10 +235,10 @@ export default function AgreementList() {
             <tbody>
               {rows.map((row, idx) => (
                 <tr key={row.id || idx}>
-                  <td className="border px-2 py-1">{row.sowName}</td>
-                  <td className="border px-2 py-1">{row.clientName}</td>
-                  <td className="border px-2 py-1">{row.startDate}</td>
-                  <td className="border px-2 py-1">{row.endDate}</td>
+                  <td className="border px-2 py-1">{row.sowName || row.clientName || ""}</td>
+                  <td className="border px-2 py-1">{row.clientName || ""}</td>
+                  <td className="border px-2 py-1">{row.startDate || ""}</td>
+                  <td className="border px-2 py-1">{row.endDate || ""}</td>
                   <td className="border px-2 py-1">
                     {row.fileUpload ? (
                       <a href={row.fileUpload} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">
@@ -264,11 +269,11 @@ export default function AgreementList() {
             <tbody>
               {rows.map((row, idx) => (
                 <tr key={row.id || idx}>
-                  <td className="border px-2 py-1">{row.poNumber}</td>
-                  <td className="border px-2 py-1">{row.clientName}</td>
-                  <td className="border px-2 py-1">{row.amount}</td>
-                  <td className="border px-2 py-1">{row.startDate}</td>
-                  <td className="border px-2 py-1">{row.endDate}</td>
+                  <td className="border px-2 py-1">{row.poNumber || ""}</td>
+                  <td className="border px-2 py-1">{row.clientName || ""}</td>
+                  <td className="border px-2 py-1">{row.amount || ""}</td>
+                  <td className="border px-2 py-1">{row.startDate || ""}</td>
+                  <td className="border px-2 py-1">{row.endDate || ""}</td>
                   <td className="border px-2 py-1">
                     {row.fileUpload ? (
                       <a href={row.fileUpload} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">

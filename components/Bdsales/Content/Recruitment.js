@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
+import Image from "next/image";
 
 function RecruitmentForm() {
   const initialFormData = {
@@ -311,9 +312,11 @@ function RecruitmentForm() {
               />
               {jdImagePreview && (
                 <div className="mt-2 flex items-center gap-2">
-                  <img
+                  <Image
                     src={jdImagePreview}
                     alt="JD Preview"
+                    width={96}
+                    height={96}
                     className="h-24 w-auto rounded border"
                   />
                   <Button

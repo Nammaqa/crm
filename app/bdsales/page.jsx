@@ -1,16 +1,11 @@
-"use client";
-import { useState } from "react";
-import Sidebar from "@components/Bdsales/Sidebar";
+import { validateBdSales } from "@/actions/validateBdSales";
+import { redirect } from "next/navigation";
+import SidebarContainer from "@components/Bdsales/SidebarContainer";
 
+export default async function Dashboard() {
 
-export default function Dashboard() {
-    const [selectedSection, setSelectedSection] = useState("overview");
+    const isSales = await validateBdSales();
+    if (!isSales) redirect("/login");
 
-    return (
-        <>
-            {/* Sidebar Container */}
-            <Sidebar selectedSection={selectedSection} setSelectedSection={setSelectedSection} />
-
-        </>
-    );
+    return <SidebarContainer />
 }

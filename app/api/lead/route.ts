@@ -161,7 +161,6 @@ export async function POST(req: NextRequest) {
         companysize,
         companyID: companyID ? companyID : null,
         numberOfEmployees,
-        employeeID,
         employeeName,
         replacementReason,
         replacementToDate: replacementToDate ? new Date(replacementToDate) : null,

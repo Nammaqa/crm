@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { Spoc } from "@prisma/client";
 
 // Helper to add CORS headers to all responses
 function withCors(response: NextResponse) {
@@ -10,16 +9,15 @@ function withCors(response: NextResponse) {
   return response;
 }
 
-// Handle preflight OPTIONS request
-export async function OPTIONS() {
-  return withCors(new NextResponse(null, { status: 204 }));
-}
-
-export async function GET(_: NextRequest, context: { params: { id: string } }) {
-  const { id } = context.params;
+// GET handler
+export async function GET(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id } = await params;
   const leadId = parseInt(id);
 
-  if (isNaN(leadId)) {
+  if (!id || isNaN(leadId)) {
     return withCors(NextResponse.json({ error: "Invalid lead ID" }, { status: 400 }));
   }
 
@@ -32,6 +30,7 @@ export async function GET(_: NextRequest, context: { params: { id: string } }) {
     if (!lead) {
       return withCors(NextResponse.json({ error: "Lead not found" }, { status: 404 }));
     }
+
     return withCors(NextResponse.json(lead));
   } catch (error: unknown) {
     console.error("[GET ERROR]:", error);
@@ -39,8 +38,12 @@ export async function GET(_: NextRequest, context: { params: { id: string } }) {
   }
 }
 
-export async function PUT(req: NextRequest, context: { params: { id: string } }) {
-  const { id } = context.params;
+// PUT handler
+export async function PUT(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id } = await params;
   const leadId = parseInt(id);
 
   if (!id || isNaN(leadId)) {
@@ -65,28 +68,12 @@ export async function PUT(req: NextRequest, context: { params: { id: string } })
       return withCors(NextResponse.json({ error: "Lead not found" }, { status: 404 }));
     }
 
-    const {
-      salesName = existingLead.salesName,
-      leadType = existingLead.leadType,
-      businessType = existingLead.businessType,
-      companyName = existingLead.companyName,
-      companysize = existingLead.companysize,
-      companyID = existingLead.companyID,
-      numberOfEmployees = existingLead.numberOfEmployees,
-      employeeID = existingLead.employeeID,
-      employeeName = existingLead.employeeName,
-      replacementReason = existingLead.replacementReason,
-      replacementToDate = existingLead.replacementToDate,
-      replacementRequestDate = existingLead.replacementRequestDate,
-      companySelect = existingLead.companySelect,
-      companyNameGST = existingLead.companyNameGST,
-      status = existingLead.status,
-      technology = existingLead.technology,
-      industry = existingLead.industry,
-      percentage = existingLead.percentage,
-      remarks = existingLead.remarks,
-      spocs = existingLead.spocs,
-    } = body;
+    // Convert empty string to null for enum fields
+    const safeIndustry = !body.industry || body.industry === "" ? null : body.industry;
+    const safeTechnology = !body.technology || body.technology === "" ? null : body.technology;
+    const safeLeadType = !body.leadType || body.leadType === "" ? null : body.leadType;
+    const safeStatus = !body.status || body.status === "" ? null : body.status;
+    const safeReplacementReason = !body.replacementReason || body.replacementReason === "" ? null : body.replacementReason;
 
     // If spocs are provided, delete old ones before creating new
     if (body.spocs) {
@@ -96,29 +83,29 @@ export async function PUT(req: NextRequest, context: { params: { id: string } })
     const updatedLead = await prisma.lead.update({
       where: { id: leadId },
       data: {
-        salesName,
-        leadType,
-        businessType,
-        companyName,
-        companysize,
-        companyID,
-        numberOfEmployees,
-        employeeID,
-        employeeName,
-        replacementReason,
-        replacementToDate: replacementToDate ? new Date(replacementToDate) : undefined,
-        replacementRequestDate: replacementRequestDate ? new Date(replacementRequestDate) : undefined,
-        companySelect,
-        companyNameGST,
-        status,
-        technology,
-        industry,
-        percentage,
-        remarks,
+        salesName: body.salesName ?? existingLead.salesName,
+        leadType: safeLeadType ?? existingLead.leadType,
+        businessType: body.businessType ?? existingLead.businessType,
+        companyName: body.companyName ?? existingLead.companyName,
+        companysize: body.companysize ?? existingLead.companysize,
+        companyID: body.companyID ?? existingLead.companyID,
+        numberOfEmployees: body.numberOfEmployees ?? existingLead.numberOfEmployees,
+        employeeName: body.employeeName ?? existingLead.employeeName,
+        replacementReason: safeReplacementReason ?? existingLead.replacementReason,
+        replacementRequestDate: body.replacementRequestDate
+          ? new Date(body.replacementRequestDate)
+          : existingLead.replacementRequestDate,
+        companySelect: body.companySelect ?? existingLead.companySelect,
+        companyNameGST: body.companyNameGST ?? existingLead.companyNameGST,
+        status: safeStatus ?? existingLead.status,
+        technology: safeTechnology ?? existingLead.technology,
+        industry: safeIndustry ?? existingLead.industry,
+        percentage: body.percentage ?? existingLead.percentage,
+        remarks: body.remarks ?? existingLead.remarks,
         updatedAt: new Date(),
         ...(body.spocs && {
           spocs: {
-            create: spocs.map((spoc: Spoc) => ({
+            create: body.spocs.map((spoc: any) => ({
               name: spoc.name,
               email: spoc.email,
               contact: spoc.contact,
@@ -139,29 +126,39 @@ export async function PUT(req: NextRequest, context: { params: { id: string } })
   }
 }
 
-export async function DELETE(_: NextRequest, context: { params: { id: string } }) {
-  const { id } = context.params;
+// DELETE handler
+export async function DELETE(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id } = await params;
   const leadId = parseInt(id);
 
-  if (isNaN(leadId)) {
+  if (!id || isNaN(leadId)) {
     return withCors(NextResponse.json({ error: "Invalid lead ID" }, { status: 400 }));
   }
 
   try {
-    await prisma.spoc.deleteMany({ where: { leadId } });
-    const deletedLead = await prisma.lead.delete({ where: { id: leadId } });
-    return withCors(NextResponse.json(deletedLead));
+    await prisma.lead.delete({
+      where: { id: leadId },
+    });
+
+    return withCors(NextResponse.json({ message: "Lead deleted successfully" }));
   } catch (error: unknown) {
     console.error("[DELETE ERROR]:", error);
     return withCors(NextResponse.json({ error: (error as Error).message }, { status: 500 }));
   }
 }
 
-export async function PATCH(req: NextRequest, context: { params: { id: string } }) {
-  const { id } = context.params;
+// PATCH handler
+export async function PATCH(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id } = await params;
   const leadId = parseInt(id);
 
-  if (isNaN(leadId)) {
+  if (!id || isNaN(leadId)) {
     return withCors(NextResponse.json({ error: "Invalid lead ID" }, { status: 400 }));
   }
 
@@ -174,25 +171,23 @@ export async function PATCH(req: NextRequest, context: { params: { id: string } 
   }
 
   try {
-    const { leadType, status } = body;
-
-    console.log("[PATCH] Received body:", body);
-
     const updatedLead = await prisma.lead.update({
       where: { id: leadId },
       data: {
-        leadType,
-        status,
+        ...body,
         updatedAt: new Date(),
       },
       include: { spocs: true },
     });
-
-    console.log("[PATCH] Updated lead:", updatedLead);
 
     return withCors(NextResponse.json(updatedLead));
   } catch (error: unknown) {
     console.error("[PATCH ERROR]:", error);
     return withCors(NextResponse.json({ error: (error as Error).message }, { status: 500 }));
   }
+}
+
+// OPTIONS handler for CORS
+export async function OPTIONS() {
+  return withCors(new NextResponse(null, { status: 200 }));
 }

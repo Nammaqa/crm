@@ -190,7 +190,7 @@ export default function SOPForm() {
     );
     formDataToSend.append("startDate", formData.startDate);
     formDataToSend.append("endDate", formData.endDate);
-    formDataToSend.append("type", "PO"); // SOW handled as PO
+    formDataToSend.append("type", "SOW"); // SOW handled as PO
 
     if (selectedFile) {
       formDataToSend.append("fileUpload", selectedFile);
@@ -211,7 +211,7 @@ export default function SOPForm() {
       let data;
       try {
         data = await res.json();
-      } catch (err) {
+      } catch {
         // If response is not JSON (e.g., HTML error page), handle gracefully
         setLoading(false);
         alert("Server error: Received invalid response. Please contact support.");

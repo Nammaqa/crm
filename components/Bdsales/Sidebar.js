@@ -11,8 +11,7 @@ import Recruitment from "@components/Bdsales/Content/Recruitment";
 import MsaNda from '@/components/Bdsales/Content/MsaNda';
 import Sow from "@components/Bdsales/Content/Sow";
 import Po from "@components/Bdsales/Content/Po";
-// ...other imports as needed
-
+import AgreementList from "@components/Admin/Content/AgreementList"; // <-- NEW IMPORT
 import {
   FaChartPie,
   FaHandshake,
@@ -20,21 +19,8 @@ import {
   FaFileContract,
   FaClipboardList,
   FaShoppingCart,
-  FaListAlt, // New icon for Agreement List
+  // FaListAlt, // Use this for Agreement List
 } from "react-icons/fa";
-
-// Placeholder AgreementList component
-function AgreementList() {
-  return (
-    <div>
-      <h2 className="text-2xl font-bold mb-4">Agreement List</h2>
-      {/* Replace with your actual agreement list table/component */}
-      <div className="bg-white p-4 rounded shadow">
-        <p>This is where the Agreement List will be displayed.</p>
-      </div>
-    </div>
-  );
-}
 
 // Sidebar sections with dynamic content
 const sections = [
@@ -44,12 +30,12 @@ const sections = [
   { id: "msa", label: "MSA & NDA", icon: <FaFileContract size={20} />, content: <MsaNda /> },
   { id: "sow", label: "Statement of Work", icon: <FaClipboardList size={20} />, content: <Sow /> },
   { id: "po", label: "Purchase Order", icon: <FaShoppingCart size={20} />, content: <Po /> },
-  // New Agreement List section
-  { id: "agreement-list", label: "Agreement List", icon: <FaListAlt size={20} />, content: <AgreementList /> },
+  // Agreement List is a navigation link, not inline content
+  { id: "agreement-list", label: "Agreement List", icon: <FaClipboardList size={20} />, content: <AgreementList /> }, // <-- NEW SECTION
 ];
 
 export default function Bdsles() {
-  const [selectedSection, setSelectedSection] = useState("overview"); // Default section
+  const [selectedSection, setSelectedSection] = useState("overview");
   const router = useRouter();
 
   // Logout handler
@@ -59,6 +45,14 @@ export default function Bdsles() {
       router.push("/login");
     } catch {
       alert("Logout failed");
+    }
+  };
+
+  const handleSectionClick = (section) => {
+    if (section.isLink && section.href) {
+      router.push(section.href);
+    } else {
+      setSelectedSection(section.id);
     }
   };
 
@@ -82,9 +76,8 @@ export default function Bdsles() {
           {sections.map((section) => (
             <li
               key={section.id}
-              className={`flex items-center p-2 rounded-md cursor-pointer text-sm transition-all hover:bg-gray-700 ${selectedSection === section.id ? "bg-gray-700" : ""
-                }`}
-              onClick={() => setSelectedSection(section.id)}
+              className={`flex items-center p-2 rounded-md cursor-pointer text-sm transition-all hover:bg-gray-700 ${selectedSection === section.id && !section.isLink ? "bg-gray-700" : ""}`}
+              onClick={() => handleSectionClick(section)}
               tabIndex={0}
             >
               <div className="w-8 text-center">{section.icon}</div>
@@ -106,7 +99,8 @@ export default function Bdsles() {
       {/* Main Content Area */}
       <main className="max-h-screen flex-1 flex justify-center items-start p-6 overflow-y-scroll scrollbar-hide">
         <div className="w-full max-w-6xl pt-6 ">
-          {sections.find((s) => s.id === selectedSection)?.content}
+          {/* Only render content for non-link sections */}
+          {sections.find((s) => s.id === selectedSection && !s.isLink)?.content}
         </div>
       </main>
     </div>
