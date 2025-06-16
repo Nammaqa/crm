@@ -38,32 +38,36 @@ function Page() {
 
         try {
             const res = await fetch("/api/auth/login", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(payload),
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
             });
 
             const data = await res.json();
 
-            if (res.ok) {
-                toast.success("Login successful!");
-                // localStorage.setItem("token", data.token.toString());
+            if (res.ok && data.user) {
+            toast.success("Login successful!");
 
-                // If you want to decode and use the role, you can do so here:
-                // const decoded = jwtDecode<{ role: string }>(data.token);
-                // const userRole = decoded?.role;
-                // Redirect based on role if needed
+            const role = data.user.role; // 👈 get the role from sanitized user object
 
-                window.location.href = '/bdsales';
+            // ✅ Redirect based on role
+            if (role === "ADMIN") {
+                window.location.href = "/admin";
+            } else if (role === "SALES") {
+                window.location.href = "/bdsales";
+            } else {
+                window.location.href = "/dashboard"; // fallback
+            }
 
             } else {
-                toast.error(data.message || "Login failed.");
+            toast.error(data.message || "Login failed.");
             }
         } catch (err) {
             toast.error("Something went wrong. Try again.");
             console.error("Login error:", err);
         }
-    };
+        };
+
 
     return (
         <div className="container">

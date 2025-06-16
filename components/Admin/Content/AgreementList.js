@@ -91,12 +91,12 @@ export default function AgreementList() {
       setError("");
       try {
         // Fetch agreements
-        const resAgreements = await `fetch(${BASE_URL}/api/agreements);`
+        const resAgreements = await fetch(`${BASE_URL}/api/agreements`);
         if (!resAgreements.ok) throw new Error("Failed to fetch agreements");
         const jsonAgreements = await resAgreements.json();
 
         // Fetch requirements
-        const resRequirements = await `fetch(${BASE_URL}/api/requirements);`
+        const resRequirements = await fetch(`${BASE_URL}/api/requirements`);
         if (!resRequirements.ok) throw new Error("Failed to fetch requirements");
         const jsonRequirements = await resRequirements.json();
 
