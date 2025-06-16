@@ -65,14 +65,14 @@ export async function POST(request: Request) {
 
       // Always save with .pdf extension and unique name
       const baseName = file.name.replace(/\.pdf$/i, '').replace(/[^a-zA-Z0-9_\-]/g, '_');
-      savedFileName = ${baseName}-${Date.now()}.pdf;
+      savedFileName = savedFileName = `${baseName}-${Date.now()}.pdf`;
 
       const uploadResult = await new Promise<{ secure_url: string }>((resolve, reject) => {
         const stream = cloudinary.uploader.upload_stream(
           {
             folder: "agreements",
-            resource_type: "auto", // "auto" supports PDF uploads
-            public_id: savedFileName ?? agreement-${Date.now()},
+            resource_type: "raw", // Correct for PDFs
+            public_id: savedFileName ?? `${baseName}-${Date.now()}.pdf`,
             format: "pdf",
           },
           (error, result) => {
