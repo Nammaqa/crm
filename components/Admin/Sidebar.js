@@ -1,4 +1,3 @@
-
 "use client";
 import { useState } from "react";
 import { FaBars, FaTimes } from "react-icons/fa";
@@ -33,7 +32,8 @@ import {
   FaLaptopCode,
   FaFileInvoice,
   FaBriefcase,
-  FaFileAlt // <-- NEW ICON for Agreement List
+  FaFileAlt,
+  FaSignOutAlt
 } from "react-icons/fa";
 import { FaUser } from "react-icons/fa";
 
@@ -58,6 +58,12 @@ const sections = [
 export default function Dashboard() {
   const [selectedSection, setSelectedSection] = useState("overview"); // Default section
   const [open, setOpen] = useState(true);
+
+  // Add a logout button to the sidebar
+  function handleLogout() {
+    localStorage.removeItem('token');
+    window.location.href = '/login';
+  }
 
   return (
     <div className="flex h-screen w-full overflow-hidden">
@@ -103,6 +109,19 @@ export default function Dashboard() {
             </li>
           ))}
         </ul>
+
+        {/* Logout Button */}
+        <button
+          onClick={handleLogout}
+          className="mt-auto flex items-center p-2 rounded-md cursor-pointer text-sm transition-all bg-red-600 hover:bg-red-700 text-white"
+        >
+          <div className="w-8 text-center">
+            <FaSignOutAlt size={20} />
+          </div>
+          <span className={`transition-all duration-300 ${!open ? "opacity-0 w-0" : "opacity-100 w-auto"}`}>
+            Logout
+          </span>
+        </button>
       </div>
 
       {/* Main Content Area */}
@@ -112,5 +131,6 @@ export default function Dashboard() {
         </div>
       </main>
     </div>
+    
   );
 }
