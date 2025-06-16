@@ -6,7 +6,7 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "postinstall": "prisma generate && prisma migrate deploy &&  prisma db seed",
+    "postinstall": "prisma generate && prisma db push && prisma db seed",
     "migrate": "prisma migrate dev --name init",
     "lint": "next lint"
   },
