@@ -1,15 +1,8 @@
-/*
-  Warnings:
-
-  - Changed the type of `leadType` on the `Lead` table. No cast exists, the column would be dropped and recreated, which cannot be done if there is data, since the column is required.
-
-*/
--- CreateEnum
+-- Add the enum first
 CREATE TYPE "LeadType" AS ENUM ('prospective', 'new', 'existing', 'deal');
 
--- AlterTable
-ALTER TABLE "Lead" DROP COLUMN "leadType",
-ADD COLUMN     "leadType" "LeadType" NOT NULL;
+-- Add the new column with a default
+ALTER TABLE "Lead" ADD COLUMN "leadType" "LeadType" NOT NULL DEFAULT 'prospective';
 
--- DropEnum
-DROP TYPE "leadstatus";
+-- (Optional) If the old column was a different enum, drop it
+DROP TYPE IF EXISTS "leadstatus";
