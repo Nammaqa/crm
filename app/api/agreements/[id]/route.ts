@@ -44,13 +44,30 @@ export async function POST(request: Request) {
     const file = formData.get('fileUpload') as File;
 
     let fileUploadPath: string | null = null;
+    let savedFileName: string | null = null;
     if (file && file.size > 0) {
+      // Only allow PDF
+      if (
+        file.type !== 'application/pdf' ||
+        !file.name.toLowerCase().endsWith('.pdf')
+      ) {
+        return NextResponse.json({ success: false, message: 'Only PDF files are allowed.' }, { status: 400 });
+      }
       const arrayBuffer = await file.arrayBuffer();
       const buffer = Buffer.from(arrayBuffer);
 
+      // Always save with .pdf extension and unique name
+      const baseName = file.name.replace(/\.pdf$/i, '').replace(/[^a-zA-Z0-9_\-]/g, '_');
+      savedFileName = `${baseName}-${Date.now()}.pdf;`
+
       const uploadResult = await new Promise<{ secure_url: string }>((resolve, reject) => {
         const stream = cloudinary.uploader.upload_stream(
-          { folder: "agreements", resource_type: "raw" },
+          {
+            folder: "agreements",
+            resource_type: "auto", // Use "auto" for PDFs to match type definitions
+            public_id: savedFileName || undefined,
+            format: "pdf",
+          },
           (error, result) => {
             if (error || !result) return reject(error || new Error("Cloudinary upload failed"));
             resolve(result as { secure_url: string });
@@ -77,7 +94,8 @@ export async function POST(request: Request) {
     return NextResponse.json({
       success: true,
       message: 'Agreement created successfully',
-      data: agreement
+      data: agreement,
+      fileName: savedFileName // Return the saved file name for frontend use
     }, { status: 201 });
   } catch (error) {
     console.error('Error creating agreement:', error);
