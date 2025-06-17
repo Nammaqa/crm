@@ -5,7 +5,6 @@ const TABS = [
   // { key: "bdsales", label: "BD/Sales" },
   { key: "msa", label: "MSA" },
   { key: "nda", label: "NDA" },
-  { key: "requirement", label: "Requirement" },
   { key: "sow", label: "Statement of Work" },
   { key: "po", label: "Purchase Order" },
 ];
@@ -16,7 +15,6 @@ export default function AgreementList() {
     // bdsales: [],
     msa: [],
     nda: [],
-    requirement: [],
     sow: [],
     po: [],
   });
