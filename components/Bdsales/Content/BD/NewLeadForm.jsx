@@ -13,6 +13,7 @@ function allowAlpha(value) {
 }
 
 export default function QualifiedLeadForm({ formData, setFormData, handleMoveToDeal, handleSubmitLead }) {
+  const { existingLeadDetails } = formData;
   const [error, setError] = useState("");
 
   // Validate company name: required, alphabets and spaces only
@@ -77,19 +78,19 @@ export default function QualifiedLeadForm({ formData, setFormData, handleMoveToD
           onValueChange={(value) => setFormData((prev) => ({ ...prev, businessType: value }))}>
           <div className="flex flex-wrap items-center gap-4">
             <div className="flex items-center">
-              <RadioGroupItem id="managed" value="Managed" />
+              <RadioGroupItem id="managed" value="Managed" className="border-black" />
               <Label htmlFor="managed" className="ml-2">Managed</Label>
             </div>
             <div className="flex items-center">
-              <RadioGroupItem id="staffing" value="Staffing" />
+              <RadioGroupItem id="staffing" value="Staffing" className="border-black" />
               <Label htmlFor="staffing" className="ml-2">Staffing</Label>
             </div>
             <div className="flex items-center">
-              <RadioGroupItem id="permanent" value="Permanent" />
+              <RadioGroupItem id="permanent" value="Permanent" className="border-black" />
               <Label htmlFor="permanent" className="ml-2">Permanent</Label>
             </div>
             <div className="flex items-center">
-              <RadioGroupItem id="crowd-testing" value="Crowd Testing" />
+              <RadioGroupItem id="crowd-testing" value="Crowd Testing" className="border-black" />
               <Label htmlFor="crowd-testing" className="ml-2">Crowd Testing</Label>
             </div>
           </div>
@@ -110,7 +111,11 @@ export default function QualifiedLeadForm({ formData, setFormData, handleMoveToD
           onValueChange={(value) => setFormData(prev => ({ ...prev, percentage: parseInt(value, 10) }))}>
           {[10, 30, 50, 70, 90].map((value) => (
             <div key={value} className="flex items-center space-x-2">
-              <RadioGroupItem value={String(value)} id={`percentage-${value}`} />
+              <RadioGroupItem
+                value={String(value)}
+                id={`percentage-${value}`}  // Fixed string interpolation
+                className="border-black"
+              />
               <Label htmlFor={`percentage-${value}`}>{value}%</Label>
             </div>
           ))}
@@ -125,7 +130,7 @@ export default function QualifiedLeadForm({ formData, setFormData, handleMoveToD
           variant="outline"
           onClick={handleFormSubmit}
         >
-          {formData.percentage === 90 ? "Move to Deal/Closure" : "Save Qualified Lead"}
+          {formData.percentage === 90 ? "Move to Deal/Closure" : ""}
         </Button>
       </div>
     </div>
