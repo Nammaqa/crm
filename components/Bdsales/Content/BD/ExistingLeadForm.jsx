@@ -56,92 +56,95 @@ export default function ExistingLeadForm({ formData, setFormData, leads, handleM
     <div className="mb-4 p-5 border rounded-md shadow-md">
       <h3 className="text-lg font-semibold">Existing Lead Details</h3>
 
-      <div className="mb-4">
-        <Label>Type:</Label>
-        <RadioGroup
-          className="mt-2"
-          value={formData.dealType}
-          onValueChange={(value) => setFormData(prev => ({ ...prev, dealType: value }))}
-        >
-          <div className="flex items-center space-x-4">
-            <div className="flex items-center">
-              <RadioGroupItem id="replacement" value="replacement" />
-              <Label htmlFor="replacement" className="ml-2">Replacement</Label>
-            </div>
-            <div className="flex items-center">
-              <RadioGroupItem id="new" value="new" />
-              <Label htmlFor="new" className="ml-2">New</Label>
-            </div>
+            <div className="mb-4">
+              <Label>Type:</Label>
+              <RadioGroup
+        className="mt-2"
+        value={formData.dealType}
+        onValueChange={(value) => setFormData(prev => ({ ...prev, dealType: value }))}
+      >
+        <div className="flex items-center space-x-4">
+          <div className="flex items-center">
+            <RadioGroupItem id="replacement" value="replacement" className="border-black" />
+            <Label htmlFor="replacement" className="ml-2">Replacement</Label>
           </div>
-        </RadioGroup>
-      </div>
+          <div className="flex items-center">
+            <RadioGroupItem id="new" value="new" className="border-black" />
+            <Label htmlFor="new" className="ml-2">New</Label>
+          </div>
+        </div>
+      </RadioGroup>
+            </div>
 
       {/* Replacement Fields */}
       {formData.dealType === "replacement" && (
-        <div className="mb-4 p-4 border rounded-md shadow-sm space-y-2">
-          <Input
-            placeholder="Employee Name"
-            value={existingLeadDetails.employeeName}
-            onChange={(e) => {
-              const value = e.target.value;
-              if (/^[a-zA-Z\s]*$/.test(value)) {
-                setFormData(prev => ({
-                  ...prev,
-                  existingLeadDetails: { ...prev.existingLeadDetails, employeeName: value }
-                }));
-                setErrors(prev => ({ ...prev, employeeName: "" }));
-              } else {
-                setErrors(prev => ({ ...prev, employeeName: "Only alphabets and spaces allowed" }));
-              }
-            }}
-          />
-          {errors.employeeName && <p className="text-red-500 text-sm">{errors.employeeName}</p>}
+  <div className="mb-4 p-4 border rounded-md shadow-sm space-y-2">
+    <Input
+      placeholder="Employee Name"
+      value={existingLeadDetails.employeeName}
+      required
+      onChange={(e) => {
+        const value = e.target.value;
+        if (/^[a-zA-Z\s]*$/.test(value)) {
+          setFormData(prev => ({
+            ...prev,
+            existingLeadDetails: { ...prev.existingLeadDetails, employeeName: value }
+          }));
+          setErrors(prev => ({ ...prev, employeeName: "" }));
+        } else {
+          setErrors(prev => ({ ...prev, employeeName: "Only alphabets and spaces allowed" }));
+        }
+      }}
+    />
+    {errors.employeeName && <p className="text-red-500 text-sm">{errors.employeeName}</p>}
 
-          <Select
-            value={existingLeadDetails.replacementReason}
-            onValueChange={(value) =>
-              setFormData(prev => ({
-                ...prev,
-                existingLeadDetails: { ...prev.existingLeadDetails, replacementReason: value }
-              }))
-            }
-          >
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="Select Reason" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="resigned">Resigned</SelectItem>
-              <SelectItem value="performance-issue">Performance Issue</SelectItem>
-              <SelectItem value="employee-concern">Employee Concern</SelectItem>
-            </SelectContent>
-          </Select>
-          {errors.replacementReason && <p className="text-red-500 text-sm">{errors.replacementReason}</p>}
+    <Select
+      value={existingLeadDetails.replacementReason}
+      onValueChange={(value) =>
+        setFormData(prev => ({
+          ...prev,
+          existingLeadDetails: { ...prev.existingLeadDetails, replacementReason: value }
+        }))
+      }
+    >
+      <SelectTrigger className="w-full">
+        <SelectValue placeholder="Select Reason" />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value="resigned">Resigned</SelectItem>
+        <SelectItem value="performance-issue">Performance Issue</SelectItem>
+        <SelectItem value="employee-concern">Employee Concern</SelectItem>
+      </SelectContent>
+    </Select>
+    {errors.replacementReason && <p className="text-red-500 text-sm">{errors.replacementReason}</p>}
 
-          <Input
-            type="date"
-            value={existingLeadDetails.replacementToDate}
-            onChange={(e) =>
-              setFormData(prev => ({
-                ...prev,
-                existingLeadDetails: { ...prev.existingLeadDetails, replacementToDate: e.target.value }
-              }))
-            }
-          />
-          {errors.replacementToDate && <p className="text-red-500 text-sm">{errors.replacementToDate}</p>}
+    <Input
+      type="date"
+      value={existingLeadDetails.replacementToDate}
+      required
+      onChange={(e) =>
+        setFormData(prev => ({
+          ...prev,
+          existingLeadDetails: { ...prev.existingLeadDetails, replacementToDate: e.target.value }
+        }))
+      }
+    />
+    {errors.replacementToDate && <p className="text-red-500 text-sm">{errors.replacementToDate}</p>}
 
-          <Input
-            type="date"
-            value={existingLeadDetails.replacementRequestDate}
-            onChange={(e) =>
-              setFormData(prev => ({
-                ...prev,
-                existingLeadDetails: { ...prev.existingLeadDetails, replacementRequestDate: e.target.value }
-              }))
-            }
-          />
-          {errors.replacementRequestDate && <p className="text-red-500 text-sm">{errors.replacementRequestDate}</p>}
-        </div>
-      )}
+    <Input
+      type="date"
+      value={existingLeadDetails.replacementRequestDate}
+      required
+      onChange={(e) =>
+        setFormData(prev => ({
+          ...prev,
+          existingLeadDetails: { ...prev.existingLeadDetails, replacementRequestDate: e.target.value }
+        }))
+      }
+    />
+    {errors.replacementRequestDate && <p className="text-red-500 text-sm">{errors.replacementRequestDate}</p>}
+  </div>
+)}
 
       {/* Qualified Lead Fields */}
       {formData.dealType === "new" && (
