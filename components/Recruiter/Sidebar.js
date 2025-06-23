@@ -42,20 +42,20 @@ import {
 // Sidebar sections with dynamic content
 const sections = [
   { id: "overview", label: "Overview", icon: <FaChartPie size={20} />, content: <Overview /> },
-  { id: "add-user", label: "Add User", icon: <FaUser size={20} />, content: <Adduser /> },
-  { id: "bd-sales", label: "BD/Sales", icon: <FaHandshake size={20} />, content: <BdSales /> },
-  { id: "agreement-list", label: "Agreement List", icon: <FaFileAlt size={20} />, content: <AgreementList /> },
+//   { id: "add-user", label: "Add User", icon: <FaUser size={20} />, content: <Adduser /> },
+//   { id: "bd-sales", label: "BD/Sales", icon: <FaHandshake size={20} />, content: <BdSales /> },
+//   { id: "agreement-list", label: "Agreement List", icon: <FaFileAlt size={20} />, content: <AgreementList /> },
   { id: "requirement-list", label: "Requirement List", icon: <FaListAlt size={20} />, content: <RequirementList /> },
-  { id: "recruitment", label: "Requirement", icon: <FaUsers size={20} />, content: <Recruitment /> },
-  { id: "joblist", label: "Job list", icon: <FaBriefcase size={20} />, content: <JobList /> },
-  { id: "msa", label: "MSA", icon: <FaFileContract size={20} />, content: <Msa /> },
-  { id: "nda", label: "NDA", icon: <FaFileContract size={20} />, content: <Nda /> },
-  { id: "sow", label: "Statement of Work", icon: <FaClipboardList size={20} />, content: <Sow /> },
-  { id: "po", label: "Purchase Order", icon: <FaShoppingCart size={20} />, content: <Po /> },
-  { id: "ac-manager", label: "A/C Manager", icon: <FaBuilding size={20} />, content: <AcManager /> },
-  { id: "marketing", label: "Marketing", icon: <FaBullhorn size={20} />, content: <Marketing /> },
-  { id: "it-team", label: "IT Team", icon: <FaLaptopCode size={20} />, content: <ItTeam /> },
-  { id: "invoice", label: "Invoice", icon: <FaFileInvoice size={20} />, content: <Invoice /> },
+//   { id: "recruitment", label: "Requirement", icon: <FaUsers size={20} />, content: <Recruitment /> },
+//   { id: "joblist", label: "Job list", icon: <FaBriefcase size={20} />, content: <JobList /> },
+//   { id: "msa", label: "MSA", icon: <FaFileContract size={20} />, content: <Msa /> },
+//   { id: "nda", label: "NDA", icon: <FaFileContract size={20} />, content: <Nda /> },
+//   { id: "sow", label: "Statement of Work", icon: <FaClipboardList size={20} />, content: <Sow /> },
+//   { id: "po", label: "Purchase Order", icon: <FaShoppingCart size={20} />, content: <Po /> },
+//   { id: "ac-manager", label: "A/C Manager", icon: <FaBuilding size={20} />, content: <AcManager /> },
+//   { id: "marketing", label: "Marketing", icon: <FaBullhorn size={20} />, content: <Marketing /> },
+//   { id: "it-team", label: "IT Team", icon: <FaLaptopCode size={20} />, content: <ItTeam /> },
+//   { id: "invoice", label: "Invoice", icon: <FaFileInvoice size={20} />, content: <Invoice /> },
 ];
 
 export default function Dashboard() {

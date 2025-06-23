@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -301,24 +301,39 @@ function RecruitmentForm() {
             {/* JD Image Upload (Optional) */}
             <div className="flex flex-col mb-5">
               <Label htmlFor="jdImage" className="mb-2">
-                JD Image (optional):
+                JD Image / Document (optional):
               </Label>
               <Input
                 id="jdImage"
                 name="jdImage"
                 type="file"
-                accept="image/*"
+                accept="image/*,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
                 onChange={handleJdImageChange}
               />
-              {jdImagePreview && (
+              {formData.jdImage && (
                 <div className="mt-2 flex items-center gap-2">
-                  <Image
-                    src={jdImagePreview}
-                    alt="JD Preview"
-                    width={96}
-                    height={96}
-                    className="h-24 w-auto rounded border"
-                  />
+                  {formData.jdImage.type.startsWith("image/") ? (
+                    <Image
+                      src={jdImagePreview}
+                      alt="JD Preview"
+                      width={96}
+                      height={96}
+                      className="h-24 w-auto rounded border"
+                    />
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium">
+                        {formData.jdImage.name}
+                      </span>
+                      {formData.jdImage.type === "application/pdf" && (
+                        <span className="text-xs text-gray-500">(PDF)</span>
+                      )}
+                      {(formData.jdImage.type === "application/msword" ||
+                        formData.jdImage.type === "application/vnd.openxmlformats-officedocument.wordprocessingml.document") && (
+                        <span className="text-xs text-gray-500">(Word)</span>
+                      )}
+                    </div>
+                  )}
                   <Button
                     type="button"
                     variant="destructive"
@@ -330,8 +345,8 @@ function RecruitmentForm() {
                 </div>
               )}
             </div>
-            {/* ...rest of the form fields remain unchanged... */}
             {/* Primary Skills, Secondary Skills, Experience, Notice Period, Positions, etc. */}
+            {/* Continue as before */}
             <div className="flex flex-col mb-5">
               <Label htmlFor="primarySkills" className="mb-2">
                 Primary Skills: <span className="text-red-500">*</span>
@@ -421,7 +436,7 @@ function RecruitmentForm() {
                 <span className="text-red-600 text-xs mt-1">{errors.positions}</span>
               )}
             </div>
-            {/* Requirement Type */}
+            {/* Requirement Type */} 
             <div className="flex flex-col mb-5">
               <Label className="mb-2">
                 Recruitment Type: <span className="text-red-500">*</span>

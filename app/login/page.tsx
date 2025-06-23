@@ -55,7 +55,9 @@ function Page() {
                 window.location.href = "/admin";
             } else if (role === "SALES") {
                 window.location.href = "/bdsales";
-            } else {
+            }else if (role === "RECRUITER") {
+                window.location.href = "/recruiter";
+            }    else {
                 window.location.href = "/dashboard"; // fallback
             }
 
