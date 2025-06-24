@@ -95,6 +95,7 @@ model Spoc {
 }
 
 enum Role {
+  SUPERADMIN
   ADMIN
   RECRUITER
   SALES

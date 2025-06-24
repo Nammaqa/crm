@@ -1,5 +1,4 @@
-// prisma/seed.ts
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Role } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
@@ -7,18 +6,17 @@ const prisma = new PrismaClient();
 async function main() {
   // Check if admin user already exists
   const adminExists = await prisma.user.findFirst({
-    where: { 
+    where: {
       OR: [
         { userName: 'admin' },
-        { wbEmailId: 'admin@example.com' }
-      ]
-    }
+        { wbEmailId: 'admin@example.com' },
+      ],
+    },
   });
 
   if (!adminExists) {
-    // Create admin user
     const hashedPassword = await bcrypt.hash('admin123', 12);
-    
+
     const admin = await prisma.user.create({
       data: {
         userName: 'admin',
@@ -28,42 +26,45 @@ async function main() {
         role: 'ADMIN',
       },
     });
-    
-    console.log(`Created admin user: ${admin.userName}`);
+
+    console.log(`✅ Created ADMIN user: ${admin.userName}`);
   } else {
-    console.log('Admin user already exists, skipping creation');
+    console.log('ℹ️ Admin user already exists, skipping creation');
   }
 
-  // Add some example agreements if none exist
+  // Check if superadmin user already exists
+  const superadminExists = await prisma.user.findFirst({
+    where: {
+      OR: [
+        { userName: 'superadmin' },
+        { wbEmailId: 'superadmin@example.com' },
+      ],
+    },
+  });
+
+  if (!superadminExists) {
+    const hashedPassword = await bcrypt.hash('superadmin123', 12);
+
+    const superadmin = await prisma.user.create({
+      data: {
+        userName: 'superadmin',
+        wbEmailId: 'superadmin@example.com',
+        password: hashedPassword,
+        phoneNumber: '9876543210',
+        role: Role.SUPERADMIN,
+      },
+    });
+
+    console.log(`✅ Created SUPERADMIN user: ${superadmin.userName}`);
+  } else {
+    console.log('ℹ️ Superadmin user already exists, skipping creation');
+  }
+
   const agreementCount = await prisma.agreement.count();
-  
-  if (agreementCount === 0) 
-  {
-  //   await prisma.agreement.createMany({
-  //     data: [
-  //       {
-  //         clientName: 'Acme Corporation',
-  //         employeeName: 'John Doe',
-  //         employeeId: 'EMP001',
-  //         type: 'MSA',
-  //         startDate: new Date('2023-01-01'),
-  //         endDate: new Date('2023-12-31'),
-  //       },
-  //       {
-  //         clientName: 'TechCorp Inc.',
-  //         employeeName: 'Jane Smith',
-  //         employeeId: 'EMP002',
-  //         type: 'NDA',
-  //         startDate: new Date('2023-02-15'),
-  //         endDate: new Date('2023-08-15'),
-  //       },
-  //     ],
-  //   });
-    
-  //   console.log('Added sample agreements');
-  // } 
-  // else
-    console.log('Agreements already exist, skipping creation');
+  if (agreementCount === 0) {
+    console.log('ℹ️ No agreements present; consider seeding sample agreements if needed.');
+  } else {
+    console.log('ℹ️ Agreements already exist, skipping creation');
   }
 }
 
@@ -72,7 +73,7 @@ main()
     await prisma.$disconnect();
   })
   .catch(async (e) => {
-    console.error(e);
+    console.error('❌ Error in seeding:', e);
     await prisma.$disconnect();
     process.exit(1);
-  })
+  });

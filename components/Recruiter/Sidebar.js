@@ -4,7 +4,7 @@ import { FaBars, FaTimes } from "react-icons/fa";
 import Image from "next/image";
 
 // Import section components
-import Overview from "@components/Admin/Content/Overview";
+import Overview from "@components/Recruiter/content/Overview";
 import BdSales from "@components/Admin/Content/BdSales";
 import Recruitment from "@components/Admin/Content/Recruitment";
 import Msa from "@components/Admin/Content/Msa";
