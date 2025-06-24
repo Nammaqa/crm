@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { getRoleFromToken } from "@/lib/decodeRoleFromToken";
 
 // Define the tabs and their keys
 const TABS = [
@@ -12,6 +13,8 @@ export default function AgreementList() {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [role, setRole] = useState(null);
+  const [modalFile, setModalFile] = useState(null);
 
   // Set your API base URL in .env as NEXT_PUBLIC_BASEAPIURL
   const BASE_URL = process.env.NEXT_PUBLIC_BASEAPIURL;
@@ -60,6 +63,10 @@ export default function AgreementList() {
     }
     fetchAll();
     // eslint-disable-next-line
+  }, []);
+
+  useEffect(() => {
+    setRole(getRoleFromToken());
   }, []);
 
   // Format date for display
@@ -115,12 +122,21 @@ export default function AgreementList() {
                   <td className="border px-2 py-1">{row.budget || ""}</td>
                   <td className="border px-2 py-1">
                     {row.jdImage ? (
-                      <button
-                        onClick={() => handleDownload(row.jdImage, row.requirementName ? `${row.requirementName}_JD` : undefined)}
-                        className="text-blue-600 underline hover:text-blue-800 cursor-pointer"
-                      >
-                          View
-                      </button>
+                      role === "SUPERADMIN" ? (
+                        <button
+                          onClick={() => handleDownload(row.jdImage, row.requirementName ? `${row.requirementName}_JD` : undefined)}
+                          className="text-blue-600 underline hover:text-blue-800 cursor-pointer"
+                        >
+                          Download
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => setModalFile(row.jdImage)}
+                          className="text-blue-600 underline hover:text-blue-800 cursor-pointer"
+                        >
+                          View Only
+                        </button>
+                      )
                     ) : (
                       "N/A"
                     )}
@@ -136,38 +152,57 @@ export default function AgreementList() {
   }
 
   return (
-    <div>
-      <h2 className="text-2xl font-bold mb-4">Requirement List</h2>
-      {/* Tab Buttons */}
-      <div className="flex space-x-2 mb-4">
-        {TABS.map((tab) => (
-          <button
-            key={tab.key}
-            className={`px-4 py-2 rounded-t transition-colors ${
-              activeTab === tab.key
-                ? "bg-blue-600 text-white"
-                : "bg-gray-200 text-gray-800 hover:bg-gray-300"
-            }`}
-            onClick={() => setActiveTab(tab.key)}
-          >
-            {tab.label}
-          </button>
-        ))}
+    <>
+      <div>
+        <h2 className="text-2xl font-bold mb-4">Requirement List</h2>
+        {/* Tab Buttons */}
+        <div className="flex space-x-2 mb-4">
+          {TABS.map((tab) => (
+            <button
+              key={tab.key}
+              className={`px-4 py-2 rounded-t transition-colors ${
+                activeTab === tab.key
+                  ? "bg-blue-600 text-white"
+                  : "bg-gray-200 text-gray-800 hover:bg-gray-300"
+              }`}
+              onClick={() => setActiveTab(tab.key)}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+        {/* Table Content */}
+        <div className="bg-white border rounded-b shadow p-4">
+          {loading ? (
+            <div className="flex justify-center items-center py-8">
+              <div className="text-gray-600">Loading...</div>
+            </div>
+          ) : error ? (
+            <div className="text-red-500 py-4 text-center">{error}</div>
+          ) : (
+            <div className="overflow-x-auto">
+              {renderTable(activeTab)}
+            </div>
+          )}
+        </div>
       </div>
-      {/* Table Content */}
-      <div className="bg-white border rounded-b shadow p-4">
-        {loading ? (
-          <div className="flex justify-center items-center py-8">
-            <div className="text-gray-600">Loading...</div>
+      {modalFile && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-white rounded-lg shadow-lg p-4 max-w-2xl w-full relative">
+            <button
+              className="absolute top-2 right-2 text-gray-600 hover:text-black text-xl"
+              onClick={() => setModalFile(null)}
+            >
+              &times;
+            </button>
+            <iframe
+              src={modalFile}
+              title="Document Preview"
+              className="w-full h-[70vh] border rounded"
+            />
           </div>
-        ) : error ? (
-          <div className="text-red-500 py-4 text-center">{error}</div>
-        ) : (
-          <div className="overflow-x-auto">
-            {renderTable(activeTab)}
-          </div>
-        )}
-      </div>
-    </div>
+        </div>
+      )}
+    </>
   );
 }

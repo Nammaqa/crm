@@ -10,7 +10,7 @@ export default async function validateAdmin() {
     try {
         const data = await verifyJwtToken(token);
 
-        return data?.role === 'ADMIN';
+        return data?.role === 'ADMIN' || "SUPERADMIN";
     } catch {
         return false;
     }
