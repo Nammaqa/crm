@@ -321,16 +321,21 @@ function RecruitmentForm() {
                       className="h-24 w-auto rounded border"
                     />
                   ) : (
-                    <div className="flex items-center gap-2">
+                   <div className="flex items-center gap-2">
                       <span className="text-sm font-medium">
-                        {formData.jdImage.name}
+                        {formData.jdImage?.name || "No file selected"}
                       </span>
-                      {formData.jdImage.type === "application/pdf" && (
+
+                      {formData.jdImage?.type === "application/pdf" && (
                         <span className="text-xs text-gray-500">(PDF)</span>
                       )}
-                      {(formData.jdImage.type === "application/msword" ||
-                        formData.jdImage.type === "application/vnd.openxmlformats-officedocument.wordprocessingml.document") && (
+
+                      {["application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"].includes(formData.jdImage?.type) && (
                         <span className="text-xs text-gray-500">(Word)</span>
+                      )}
+
+                      {!["application/pdf", "application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"].includes(formData.jdImage?.type) && (
+                        <span className="text-xs text-gray-400">(Unsupported file type)</span>
                       )}
                     </div>
                   )}
