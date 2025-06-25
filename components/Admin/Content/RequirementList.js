@@ -19,32 +19,6 @@ export default function AgreementList() {
   // Set your API base URL in .env as NEXT_PUBLIC_BASEAPIURL
   const BASE_URL = process.env.NEXT_PUBLIC_BASEAPIURL;
 
-  // Function to handle file download/view
-  const handleDownload = async (fileUrl, fileName = null) => {
-    if (!fileUrl) {
-      alert('No file available for download');
-      return;
-    }
-    try {
-      const link = document.createElement('a');
-      link.href = fileUrl;
-      if (fileName) {
-        link.download = fileName;
-      } else {
-        const urlParts = fileUrl.split('/');
-        const defaultName = urlParts[urlParts.length - 1] || 'jd_document';
-        link.download = defaultName;
-      }
-      link.target = '_blank';
-      link.rel = 'noopener noreferrer';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    } catch (error) {
-      window.open(fileUrl, '_blank', 'noopener noreferrer');
-    }
-  };
-
   // Fetch requirements from the API
   useEffect(() => {
     async function fetchAll() {
@@ -77,6 +51,69 @@ export default function AgreementList() {
     } catch (error) {
       return dateString;
     }
+  };
+
+  // Secure Document Viewer
+  const SecureDocumentViewer = ({ fileUrl, onClose }) => {
+    useEffect(() => {
+      const handleKeyDown = (e) => {
+        // Disable Ctrl+S, Ctrl+P, PrintScreen, etc.
+        if ((e.ctrlKey && (e.key === 's' || e.key === 'p')) || e.key === 'PrintScreen') {
+          e.preventDefault();
+          alert('This action is disabled for security reasons.');
+        }
+      };
+
+      window.addEventListener('keydown', handleKeyDown);
+      return () => window.removeEventListener('keydown', handleKeyDown);
+    }, []);
+
+    const isPDF = fileUrl.toLowerCase().endsWith('.pdf');
+
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+        <div className="bg-white rounded-lg shadow-lg p-4 max-w-5xl w-full relative" style={{ minWidth: '80%' }}>
+          <button
+            className="absolute top-2 right-2 text-gray-600 hover:text-black text-xl"
+            onClick={onClose}
+            aria-label="Close document viewer"
+          >
+            &times;
+          </button>
+          
+          <div className="relative h-[70vh] overflow-hidden">
+            <div className="absolute inset-0 bg-transparent pointer-events-none">
+              <svg xmlns="http://www.w3.org/2000/svg" width="400" height="200" opacity="0.1">
+                <text x="50%" y="50%" fontFamily="Arial" fontSize="20" fill="black" textAnchor="middle" dominantBaseline="middle" transform="rotate(-45, 200, 100)">
+                  CONFIDENTIAL - VIEW ONLY
+                </text>
+              </svg>
+            </div>
+            {isPDF ? (
+              <iframe
+                src={`https://docs.google.com/gview?url=${encodeURIComponent(fileUrl)}&embedded=true`}
+                title="Document Preview"
+                className="w-full h-full border-none"
+                sandbox="allow-same-origin allow-scripts"
+                onContextMenu={(e) => e.preventDefault()}
+              />
+            ) : (
+              <iframe
+                src={fileUrl}
+                title="Document Preview"
+                className="w-full h-full border-none"
+                sandbox="allow-same-origin"
+                onContextMenu={(e) => e.preventDefault()}
+              />
+            )}
+          </div>
+          
+          <div className="mt-4 text-sm text-gray-500 text-center">
+            This document is for viewing purposes only. Right-click and download functions are disabled.
+          </div>
+        </div>
+      </div>
+    );
   };
 
   // Render the table for the selected tab
@@ -121,24 +158,13 @@ export default function AgreementList() {
                   <td className="border px-2 py-1">{row.closePositions || ""}</td>
                   <td className="border px-2 py-1">{row.budget || ""}</td>
                   <td className="border px-2 py-1">
-                    {row.jdImage ? (
-                      role === "SUPERADMIN" ? (
-                        <button
-                          onClick={() => handleDownload(row.jdImage, row.requirementName ? `${row.requirementName}_JD` : undefined)}
-                          className="text-blue-600 underline hover:text-blue-800 cursor-pointer"
-                        >
-                          Download
-                        </button>
-                      ) : (
-                        <button
-                          onClick={() => setModalFile(row.jdImage)}
-                          className="text-blue-600 underline hover:text-blue-800 cursor-pointer"
-                        >
-                          View Only
-                        </button>
-                      )
-                    ) : (
-                      "N/A"
+                    {row.jdImage && (
+                      <button
+                        onClick={() => setModalFile(row.jdImage)}
+                        className="text-blue-600 underline hover:text-blue-800 cursor-pointer"
+                      >
+                        View Document
+                      </button>
                     )}
                   </td>
                 </tr>
@@ -186,23 +212,7 @@ export default function AgreementList() {
           )}
         </div>
       </div>
-      {modalFile && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-          <div className="bg-white rounded-lg shadow-lg p-4 max-w-2xl w-full relative">
-            <button
-              className="absolute top-2 right-2 text-gray-600 hover:text-black text-xl"
-              onClick={() => setModalFile(null)}
-            >
-              &times;
-            </button>
-            <iframe
-              src={modalFile}
-              title="Document Preview"
-              className="w-full h-[70vh] border rounded"
-            />
-          </div>
-        </div>
-      )}
+      {modalFile && <SecureDocumentViewer fileUrl={modalFile} onClose={() => setModalFile(null)} />}
     </>
   );
 }
