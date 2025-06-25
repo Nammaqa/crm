@@ -51,13 +51,16 @@ function Page() {
             const role = data.user.role; // 👈 get the role from sanitized user object
 
             // ✅ Redirect based on role
-            if (role === "ADMIN" || role === "SUPERADMIN") {
+            if (role === "ADMIN") {
                 window.location.href = "/admin";
             } else if (role === "SALES") {
                 window.location.href = "/bdsales";
             }else if (role === "RECRUITER") {
                 window.location.href = "/recruiter";
-            }    else {
+            } else if (role === "SUPERADMIN") {
+                window.location.href = "/superAdmin";
+            }
+               else {
                 window.location.href = "/dashboard"; // fallback
             }
 

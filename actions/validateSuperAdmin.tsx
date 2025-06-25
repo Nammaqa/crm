@@ -2,7 +2,7 @@
 import { cookies } from "next/headers";
 import { verifyJwtToken } from "@/lib/jwt";
 
-export default async function validateAdmin() {
+export default async function validateSuperAdmin() {
     const cookieStore = cookies();
     const token = (await cookieStore).get("token")?.value;
     if (!token) return false;
@@ -10,7 +10,7 @@ export default async function validateAdmin() {
     try {
         const data = await verifyJwtToken(token);
 
-        return data?.role === 'ADMIN';
+        return data?.role === "SUPERADMIN";
     } catch {
         return false;
     }
