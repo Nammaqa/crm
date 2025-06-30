@@ -12,6 +12,8 @@ import MsaNda from '@/components/Bdsales/Content/MsaNda';
 import Sow from "@components/Bdsales/Content/Sow";
 import Po from "@components/Bdsales/Content/Po";
 import AgreementList from "@components/Admin/Content/AgreementList"; // <-- NEW IMPORT
+import RequirementList from "@components/Admin/Content/RequirementList";
+
 import {
   FaChartPie,
   FaHandshake,
@@ -19,7 +21,7 @@ import {
   FaFileContract,
   FaClipboardList,
   FaShoppingCart,
-  // FaListAlt, // Use this for Agreement List
+  FaListAlt,
 } from "react-icons/fa";
 
 // Sidebar sections with dynamic content
@@ -30,6 +32,7 @@ const sections = [
   { id: "msa", label: "MSA & NDA", icon: <FaFileContract size={20} />, content: <MsaNda /> },
   { id: "sow", label: "Statement of Work", icon: <FaClipboardList size={20} />, content: <Sow /> },
   { id: "po", label: "Purchase Order", icon: <FaShoppingCart size={20} />, content: <Po /> },
+    { id: "requirement-list", label: "Requirement List", icon: <FaListAlt size={20} />, content: <RequirementList /> },
   // Agreement List is a navigation link, not inline content
   { id: "agreement-list", label: "Agreement List", icon: <FaClipboardList size={20} />, content: <AgreementList /> }, // <-- NEW SECTION
 ];
