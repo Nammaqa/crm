@@ -3,9 +3,9 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
-  directUrl      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DATABASE_URL")
 }
 
 model User {
@@ -23,16 +23,15 @@ model Agreement {
   id              Int            @id @default(autoincrement())
   clientName      String
   employeeName    String?
-  //employeeId    String?
   type            AgreementType?
-  technology      Technology?
-  otherTechnology String?
   poNumber        Int?
   startDate       DateTime?
   endDate         DateTime?
   fileUpload      String?
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
+  technology      Technology?
+  otherTechnology String?
 }
 
 model Requirement {
@@ -40,7 +39,6 @@ model Requirement {
   requirementName String
   companyName     String
   jobDescription  String
-  jdImage         String? 
   experience      Int
   noticePeriod    Int
   positions       Int
@@ -49,16 +47,16 @@ model Requirement {
   closePositions  String
   requirementType String
   workLocation    String
-  budget          Int?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
+  jdImage         String?
+  budget          Int?
 }
 
 model Lead {
   id                     Int                @id @default(autoincrement())
   salesName              String
   companyName            String
-  companyID              String?               
   numberOfEmployees      Int                @default(0)
   employeeName           String?
   replacementToDate      DateTime?
@@ -73,10 +71,11 @@ model Lead {
   percentage             Int?
   remarks                String?
   technology             Technology?
-  technologyOther        String?            // <-- Added for specifying 'other' technology
   replacementReason      ReplacementReason?
-  leadType               LeadType           // Make this LeadType? (optional) if you need to migrate
   businessType           String?
+  companyID              String?
+  technologyOther        String?
+  leadType               LeadType
   spocs                  Spoc[]
 }
 
@@ -95,11 +94,11 @@ model Spoc {
 }
 
 enum Role {
-  SUPERADMIN
   ADMIN
   RECRUITER
   SALES
   ACCOUNT_MANAGER
+  SUPERADMIN
   IT_ADMIN
 }
 
@@ -137,9 +136,9 @@ enum Technology {
   devops
   ai_ml
   ai
+  other
   digital_marketing
   data_analytics
-  other
 }
 
 enum Industry {
@@ -160,3 +159,47 @@ enum Industry {
   other
 }
 
+
+// schema.prisma
+
+enum DeviceType {
+  LAPTOP
+  MOBILE
+}
+
+model Device {
+  id               String     @id @default(uuid())
+  slNo             String
+  employeeId       String
+  employeeName     String
+  employeeStatus   String
+  projectWorking   String
+  deviceType       DeviceType
+
+  // Common Fields
+  modelName        String
+  deviceId         String      @unique
+  deviceStatus     String      // In Use, Returned, Lost, etc.
+  assignedDate     DateTime
+
+  // Laptop-specific fields
+  processor        String?     // nullable
+  ram              String?
+  storage          String?
+  osVersion        String?
+  accessories      String?     // e.g., Charger, Bag, Dock
+  warrantyExpiry   DateTime?
+
+  // Mobile-specific fields
+  color            String?
+  config           String?     // e.g., 6GB/128GB
+  imeiNumber       String?     @unique
+  phoneNumber      String?
+  simCardNumber    String?
+  carrier          String?
+  mdmEnrolled      Boolean?
+  remarks          String?
+
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+}
