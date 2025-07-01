@@ -4,7 +4,7 @@ import { FaBars, FaTimes } from "react-icons/fa";
 import Image from "next/image";
 
 // Import section components
-import Overview from "@components/Admin/Content/Overview";
+import Overview from "@components/Recruiter/content/Overview";
 import BdSales from "@components/Admin/Content/BdSales";
 import Recruitment from "@components/Admin/Content/Recruitment";
 import Msa from "@components/Admin/Content/Msa";
@@ -13,7 +13,8 @@ import Sow from "@components/Admin/Content/Sow";
 import Po from "@components/Admin/Content/Po";
 import AcManager from "@components/Admin/Content/AcManager";
 import Marketing from "@components/Admin/Content/Marketing";
-import ItTeam from "@components/Admin/Content/ItTeam";
+import  DeviceInventoryPage  from "@/components/ItTeam/content/ItemsList";
+
 import Invoice from "@components/Admin/Content/Invoice";
 import JobList from "@components/Admin/Content/JobList";
 import Adduser from "@components/Admin/Content/AddUser";
@@ -42,19 +43,9 @@ import {
 // Sidebar sections with dynamic content
 const sections = [
   { id: "overview", label: "Overview", icon: <FaChartPie size={20} />, content: <Overview /> },
-  { id: "add-user", label: "Add User", icon: <FaUser size={20} />, content: <Adduser /> },
-  { id: "bd-sales", label: "BD/Sales", icon: <FaHandshake size={20} />, content: <BdSales /> },
-  { id: "agreement-list", label: "Agreement List", icon: <FaFileAlt size={20} />, content: <AgreementList /> },
-  { id: "requirement-list", label: "Requirement List", icon: <FaListAlt size={20} />, content: <RequirementList /> },
-  { id: "recruitment", label: "Requirement", icon: <FaUsers size={20} />, content: <Recruitment /> },
-  { id: "joblist", label: "Job list", icon: <FaBriefcase size={20} />, content: <JobList /> },
-  { id: "msa", label: "MSA", icon: <FaFileContract size={20} />, content: <Msa /> },
-  { id: "nda", label: "NDA", icon: <FaFileContract size={20} />, content: <Nda /> },
-  { id: "sow", label: "Statement of Work", icon: <FaClipboardList size={20} />, content: <Sow /> },
-  { id: "po", label: "Purchase Order", icon: <FaShoppingCart size={20} />, content: <Po /> },
-  { id: "ac-manager", label: "A/C Manager", icon: <FaBuilding size={20} />, content: <AcManager /> },
-  { id: "marketing", label: "Marketing", icon: <FaBullhorn size={20} />, content: <Marketing /> },
-  { id: "invoice", label: "Invoice", icon: <FaFileInvoice size={20} />, content: <Invoice /> },
+//   { id: "requirement-list", label: "Requirement List", icon: <FaListAlt size={20} />, content: <RequirementList /> },
+  { id: "it-team", label: "IT Team", icon: <FaLaptopCode size={20} />, content: <DeviceInventoryPage /> },
+
 ];
 
 export default function Dashboard() {

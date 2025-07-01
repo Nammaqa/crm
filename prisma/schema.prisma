@@ -100,6 +100,7 @@ enum Role {
   RECRUITER
   SALES
   ACCOUNT_MANAGER
+  IT_ADMIN
 }
 
 enum AgreementType {
@@ -158,3 +159,4 @@ enum Industry {
   consulting
   other
 }
+

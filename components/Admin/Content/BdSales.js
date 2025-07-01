@@ -182,31 +182,39 @@ export default function BdSales({ isSidebarOpen }) {
               </div>
               <div>
                 <h4 className="text-lg font-semibold mb-2">Lead Types</h4>
-                <ResponsiveContainer width="100%" height={250}>
-                  <PieChart>
-                    <Pie data={leadTypeData} dataKey="value" nameKey="name" outerRadius={100}>
-                      {leadTypeData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <Legend />
-                    <Tooltip />
-                  </PieChart>
-                </ResponsiveContainer>
+                {leadTypeData.length > 0 ? (
+                  <ResponsiveContainer width="100%" height={250}>
+                    <PieChart>
+                      <Pie data={leadTypeData} dataKey="value" nameKey="name" outerRadius={100}>
+                        {leadTypeData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <Legend />
+                      <Tooltip />
+                    </PieChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <p className="text-sm text-gray-500 text-center">No lead type data to display</p>
+                )}
               </div>
               <div>
                 <h4 className="text-lg font-semibold mb-2">Technology</h4>
-                <ResponsiveContainer width="100%" height={250}>
-                  <PieChart>
-                    <Pie data={technologyData} dataKey="value" nameKey="name" outerRadius={100}>
-                      {technologyData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <Legend />
-                    <Tooltip />
-                  </PieChart>
-                </ResponsiveContainer>
+                {technologyData.length > 0 ? (
+                  <ResponsiveContainer width="100%" height={250}>
+                    <PieChart>
+                      <Pie data={technologyData} dataKey="value" nameKey="name" outerRadius={100}>
+                        {technologyData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <Legend />
+                      <Tooltip />
+                    </PieChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <p className="text-sm text-gray-500 text-center">No technology data to display</p>
+                )}
               </div>
             </div>
           )}
