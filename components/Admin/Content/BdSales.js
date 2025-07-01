@@ -18,13 +18,14 @@ import {
 } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, LineChart, Line, PieChart, Pie, Cell, Legend } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, PieChart, Pie, Cell, Legend } from "recharts";
 
 const COLORS = ["#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#6366f1", "#ec4899"];
 
 export default function BdSales({ isSidebarOpen }) {
   const [salesUsers, setSalesUsers] = useState([]);
   const [selectedSales, setSelectedSales] = useState("");
+  const [selectedMonth, setSelectedMonth] = useState("all");
   const [leads, setLeads] = useState([]);
   const [expandedLeadId, setExpandedLeadId] = useState(null);
   const [stats, setStats] = useState({ today: 0, week: 0, month: 0, quarter: 0, halfYear: 0, year: 0 });
@@ -51,15 +52,19 @@ export default function BdSales({ isSidebarOpen }) {
       try {
         const res = await fetch(`${BASE_URL}/api/admin/lead?salesName=${encodeURIComponent(selectedSales)}`);
         const data = await res.json();
-        setLeads(data);
-        calculateStats(data);
+        let filtered = data;
+        if (selectedMonth !== "all") {
+          filtered = data.filter(lead => new Date(lead.createdAt).getMonth() + 1 === Number(selectedMonth));
+        }
+        setLeads(filtered);
+        calculateStats(filtered);
       } catch (err) {
         console.error("Failed to fetch leads", err);
         setLeads([]);
       }
     };
     fetchLeads();
-  }, [selectedSales]);
+  }, [selectedSales, selectedMonth]);
 
   const calculateStats = (leads) => {
     const now = new Date();
@@ -128,6 +133,20 @@ export default function BdSales({ isSidebarOpen }) {
                 <SelectContent>
                   {salesUsers.map((user) => (
                     <SelectItem key={user.id} value={user.userName}>{user.userName}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label htmlFor="monthFilter">Filter by Month:</Label>
+              <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+                <SelectTrigger className="w-40">
+                  <SelectValue placeholder="Select Month" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All</SelectItem>
+                  {[...Array(12)].map((_, i) => (
+                    <SelectItem key={i + 1} value={(i + 1).toString()}>{new Date(0, i).toLocaleString('default', { month: 'long' })}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
