@@ -1,334 +1,280 @@
+// app/components/BdSales.js
 "use client";
-import React, { useState, useEffect } from "react";
-import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
+import React, { useEffect, useState } from "react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import BdTable from "./BdTable/BdTable";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, PieChart, Pie, Cell, Legend } from "recharts";
+
+const COLORS = ["#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#6366f1", "#ec4899"];
 
 export default function BdSales({ isSidebarOpen }) {
+  const [salesUsers, setSalesUsers] = useState([]);
+  const [selectedSales, setSelectedSales] = useState("");
+  const [selectedMonth, setSelectedMonth] = useState("all");
   const [leads, setLeads] = useState([]);
-  const [formData, setFormData] = useState({
-    salesName: "",
-    leadType: "",
-    dealType: "",
-    companyName: "",
-    companyID: "",
-    numEmployees: "",
-    spocs: [{ id: 1, name: "", email: "", contact: "", altContact: "", designation: "", location: "" }],
-    existingLeadDetails: {
-      employeeID: "",
-      employeeName: "",
-      replacementReason: "",
-      replacementToDate: "",
-      replacementRequestDate: "",
-      companySelect: "",
-      companyNameGST: "",
-    },
-  });
+  const [expandedLeadId, setExpandedLeadId] = useState(null);
+  const [stats, setStats] = useState({ today: 0, week: 0, month: 0, quarter: 0, halfYear: 0, year: 0 });
 
   const BASE_URL = process.env.NEXT_PUBLIC_BASEAPIURL;
 
   useEffect(() => {
-    const fetchLeads = async () => {
+    const fetchSalesUsers = async () => {
       try {
-        const response = await fetch("");
-        if (!response.ok) {
-          throw new Error("Failed to fetch leads");
-        }
-        const data = await response.json();
-        setLeads(data);
-      } catch (error) {
-        console.error("Error fetching leads:", error.message);
+        const res = await fetch(`${BASE_URL}/api/users?role=SALES`);
+        const data = await res.json();
+        setSalesUsers(data);
+      } catch (err) {
+        console.error("Failed to fetch users", err);
+        setSalesUsers([]);
       }
     };
+    fetchSalesUsers();
+  }, [BASE_URL]);
 
-    fetchLeads();
-  }, []);
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      const response = await fetch(`${BASE_URL}/submit`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(formData),
-      });
-
-      const data = await response.json();
-      if (response.ok) {
-        alert("Form submitted successfully!");
-      } else {
-        console.error("Error:", data);
-        alert("Submission failed!");
+  useEffect(() => {
+    const fetchLeads = async () => {
+      if (!selectedSales) return;
+      try {
+        const res = await fetch(`${BASE_URL}/api/admin/lead?salesName=${encodeURIComponent(selectedSales)}`);
+        const data = await res.json();
+        let filtered = data;
+        if (selectedMonth !== "all") {
+          filtered = data.filter(lead => new Date(lead.createdAt).getMonth() + 1 === Number(selectedMonth));
+        }
+        setLeads(filtered);
+        calculateStats(filtered);
+      } catch (err) {
+        console.error("Failed to fetch leads", err);
+        setLeads([]);
       }
-    } catch (error) {
-      console.error("Network Error:", error);
-      alert("Network error! Check your connection.");
-    }
+    };
+    fetchLeads();
+  }, [selectedSales, selectedMonth]);
+
+  const calculateStats = (leads) => {
+    const now = new Date();
+    const startOf = (period) => {
+      const d = new Date();
+      if (period === "week") d.setDate(d.getDate() - d.getDay());
+      if (period === "month") d.setDate(1);
+      if (period === "quarter") d.setMonth(Math.floor(d.getMonth() / 3) * 3, 1);
+      if (period === "halfYear") d.setMonth(d.getMonth() >= 6 ? 6 : 0, 1);
+      if (period === "year") d.setMonth(0, 1);
+      d.setHours(0, 0, 0, 0);
+      return d;
+    };
+
+    const stats = {
+      today: leads.filter(l => new Date(l.createdAt).toDateString() === now.toDateString()).length,
+      week: leads.filter(l => new Date(l.createdAt) >= startOf("week")).length,
+      month: leads.filter(l => new Date(l.createdAt) >= startOf("month")).length,
+      quarter: leads.filter(l => new Date(l.createdAt) >= startOf("quarter")).length,
+      halfYear: leads.filter(l => new Date(l.createdAt) >= startOf("halfYear")).length,
+      year: leads.filter(l => new Date(l.createdAt) >= startOf("year")).length,
+    };
+
+    setStats(stats);
   };
 
-  const addSPOC = () => {
-    setFormData((prev) => ({
-      ...prev,
-      spocs: [
-        ...prev.spocs,
-        { id: prev.spocs.length + 1, name: "", email: "", contact: "", altContact: "", designation: "", location: "" },
-      ],
-    }));
-  };
+  const chartData = Object.entries(stats).map(([label, count]) => ({ label, count }));
 
-  const removeSPOC = (id) => {
-    setFormData((prev) => ({
-      ...prev,
-      spocs: prev.spocs.filter((spoc) => spoc.id !== id),
-    }));
+  const leadTypeData = Object.entries(
+    leads.reduce((acc, lead) => {
+      acc[lead.leadType] = (acc[lead.leadType] || 0) + 1;
+      return acc;
+    }, {})
+  ).map(([type, count]) => ({ name: type, value: count }));
+
+  const technologyData = Object.entries(
+    leads.reduce((acc, lead) => {
+      acc[lead.technology] = (acc[lead.technology] || 0) + 1;
+      return acc;
+    }, {})
+  ).map(([tech, count]) => ({ name: tech, value: count }));
+
+  const statLabels = {
+    today: "Today",
+    week: "Week",
+    month: "Month",
+    quarter: "Quarter",
+    halfYear: "HalfYear",
+    year: "Year"
   };
 
   return (
-    <div className={`transition-all duration-300 ${isSidebarOpen ? "lg:pl-64" : "lg:pl-20"} pl-0 flex-1 w-full p-0`}>
+    <div className={`transition-all duration-300 ${isSidebarOpen ? "lg:pl-64" : "lg:pl-20"} pl-0 flex-1 w-full p-4`}>
       <Card className="mx-auto">
         <CardHeader>
-          <CardTitle>BD/Sales Details</CardTitle>
+          <CardTitle>BD/Sales Lead Viewer</CardTitle>
         </CardHeader>
         <CardContent>
-          <form className="space-y-6">
-            {/* Sales Name */}
+          <div className="mb-6 flex gap-4 items-end">
             <div>
-              <Label>Sales Name:</Label>
-              <Input
-                id="salesName"
-                placeholder="Enter Sales Name"
-                value={formData.salesName}
-                onChange={(e) => setFormData((prev) => ({ ...prev, salesName: e.target.value }))}
-                required
-              />
-            </div>
-
-            {/* Lead Selection */}
-            <div>
-              <Label>Lead:</Label>
-              <Select
-                value={formData.leadType}
-                onValueChange={(value) => setFormData((prev) => ({ ...prev, leadType: value }))}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select Lead Type" />
+              <Label htmlFor="salesName">Select Sales User:</Label>
+              <Select value={selectedSales} onValueChange={setSelectedSales}>
+                <SelectTrigger className="w-64">
+                  <SelectValue placeholder="Select Sales User" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="prospective">Add Prospective Lead</SelectItem>
-                  <SelectItem value="new">Add Qualified Lead</SelectItem>
-                  <SelectItem value="existing">Add Existing Deal</SelectItem>
+                  {salesUsers.map((user) => (
+                    <SelectItem key={user.id} value={user.userName}>{user.userName}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
-
-            {/* Prospective Lead Section */}
-            {formData.leadType === "prospective" && (
-              <div className="mb-4 p-5 border rounded-md shadow-md space-y-4">
-                {/* Company Name */}
-                <div className="space-y-2">
-                  <Label htmlFor="companyName" className="block text-sm font-medium">
-                    Company Name :
-                  </Label>
-                  <Input
-                    id="companyName"
-                    placeholder="Enter company name"
-                    value={formData.companyName}
-                    onChange={(e) => setFormData((prev) => ({ ...prev, companyName: e.target.value }))}
-                    required
-                    className="w-full p-2 border rounded-md"
-                  />
-                </div>
-
-                {/* SPOC Details */}
-                <div className="space-y-4">
-                  <h3 className="text-lg font-semibold">SPOC Details</h3>
-                  <div className="space-y-2">
-                    <Label htmlFor="spocName" className="block text-sm font-medium">SPOC Name</Label>
-                    <Input id="spocName" placeholder="Enter SPOC name" className="w-full p-2 border rounded-md" />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="spocLinkedin" className="block text-sm font-medium">SPOC LinkedIn</Label>
-                    <Input id="spocLinkedin" placeholder="Enter SPOC LinkedIn" className="w-full p-2 border rounded-md" />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="designation" className="block text-sm font-medium">Designation</Label>
-                    <Input id="designation" placeholder="Enter designation" className="w-full p-2 border rounded-md" />
-                  </div>
-                </div>
-
-                {/* Technology Dropdown */}
-                <div className="space-y-2">
-                  <Label htmlFor="technology" className="block text-sm font-medium">Technology</Label>
-                  <Select>
-                    <SelectTrigger className="w-full p-2 border rounded-md">
-                      <SelectValue placeholder="Select Technology" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="development">Development</SelectItem>
-                      <SelectItem value="test">Testing</SelectItem>
-                      <SelectItem value="devops">DevOps</SelectItem>
-                      <SelectItem value="ai">AI/ML</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {/* Percentage Radio Buttons */}
-                <div className="space-y-2">
-                  <Label htmlFor="percentage" className="block text-sm font-medium">Percentage</Label>
-                  <RadioGroup className="space-y-2 flex flex-row" id="percentage">
-                    {[10, 30, 50, 70, 90].map((value) => (
-                      <div key={value} className="flex items-center space-x-2">
-                        <RadioGroupItem value={String(value)} id={`percentage-${value}`} />
-                        <Label htmlFor={`percentage-${value}`} className="text-sm">{value}%</Label>
-                      </div>
-                    ))}
-                  </RadioGroup>
-                </div>
-              </div>
-            )}
-
-            {/* New Lead Section */}
-            {formData.leadType === "new" && (
-              <div className="mb-4 p-5 border rounded-md shadow-md">
-                <Label htmlFor="companyName">Company Name :</Label>
-                <Input
-                  id="companyName"
-                  placeholder="Enter company name"
-                  value={formData.companyName}
-                  onChange={(e) => setFormData((prev) => ({ ...prev, companyName: e.target.value }))}
-                  required
-                />
-
-                {/* Deal Type */}
-                <div className="mb-4 mt-4">
-                  <Label>Type:</Label>
-                  <RadioGroup
-                    className="mt-2"
-                    value={formData.dealType}
-                    onValueChange={(value) => setFormData((prev) => ({ ...prev, dealType: value }))}
-                  >
-                    <div className="flex items-center space-x-4">
-                      <div className="flex items-center">
-                        <RadioGroupItem id="business" value="Business" name="type" />
-                        <Label htmlFor="business" className="ml-2">Business</Label>
-                      </div>
-                      <div className="flex items-center">
-                        <RadioGroupItem id="freelance" value="Freelance" name="type" />
-                        <Label htmlFor="freelance" className="ml-2">Freelance</Label>
-                      </div>
-                    </div>
-                  </RadioGroup>
-                </div>
-
-                {/* SPOC Details */}
-                <div className="mb-4">
-                  <h3 className="text-lg font-semibold">Primary SPOC</h3>
-                  {formData.spocs.map((spoc, index) => (
-                    <div key={spoc.id} className="bg-white p-4 rounded-md shadow-sm mt-2 space-y-2">
-                      <Input
-                        placeholder="Name"
-                        value={spoc.name}
-                        onChange={(e) => {
-                          const updatedSpocs = [...formData.spocs];
-                          updatedSpocs[index].name = e.target.value;
-                          setFormData((prev) => ({ ...prev, spocs: updatedSpocs }));
-                        }}
-                        required
-                      />
-                      <Input
-                        type="email"
-                        placeholder="Email ID"
-                        value={spoc.email}
-                        onChange={(e) => {
-                          const updatedSpocs = [...formData.spocs];
-                          updatedSpocs[index].email = e.target.value;
-                          setFormData((prev) => ({ ...prev, spocs: updatedSpocs }));
-                        }}
-                        required
-                      />
-                      <Input
-                        placeholder="Contact Number"
-                        value={spoc.contact}
-                        onChange={(e) => {
-                          const updatedSpocs = [...formData.spocs];
-                          updatedSpocs[index].contact = e.target.value;
-                          setFormData((prev) => ({ ...prev, spocs: updatedSpocs }));
-                        }}
-                        required
-                      />
-                      <Input
-                        placeholder="Alt Contact Number (Optional)"
-                        value={spoc.altContact}
-                        onChange={(e) => {
-                          const updatedSpocs = [...formData.spocs];
-                          updatedSpocs[index].altContact = e.target.value;
-                          setFormData((prev) => ({ ...prev, spocs: updatedSpocs }));
-                        }}
-                      />
-                      <Input
-                        placeholder="Designation"
-                        value={spoc.designation}
-                        onChange={(e) => {
-                          const updatedSpocs = [...formData.spocs];
-                          updatedSpocs[index].designation = e.target.value;
-                          setFormData((prev) => ({ ...prev, spocs: updatedSpocs }));
-                        }}
-                      />
-                      <Input
-                        placeholder="Location"
-                        value={spoc.location}
-                        onChange={(e) => {
-                          const updatedSpocs = [...formData.spocs];
-                          updatedSpocs[index].location = e.target.value;
-                          setFormData((prev) => ({ ...prev, spocs: updatedSpocs }));
-                        }}
-                      />
-                      {formData.spocs.length > 1 && (
-                        <Button variant="destructive" size="sm" onClick={() => removeSPOC(spoc.id)}>
-                          Remove SPOC
-                        </Button>
-                      )}
-                    </div>
+            <div>
+              <Label htmlFor="monthFilter">Filter by Month:</Label>
+              <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+                <SelectTrigger className="w-40">
+                  <SelectValue placeholder="Select Month" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All</SelectItem>
+                  {[...Array(12)].map((_, i) => (
+                    <SelectItem key={i + 1} value={(i + 1).toString()}>{new Date(0, i).toLocaleString('default', { month: 'long' })}</SelectItem>
                   ))}
-                  <Button className="mt-2" onClick={addSPOC}>
-                    Add SPOC
-                  </Button>
-                </div>
-
-                <Label htmlFor="companyID">Company ID:</Label>
-                <Input id="companyID" value={formData.companyID} readOnly />
-
-                <Label htmlFor="numEmployees">No of Employees:</Label>
-                <Input
-                  id="numEmployees"
-                  type="number"
-                  min="0"
-                  value={formData.numEmployees}
-                  onChange={(e) => setFormData((prev) => ({ ...prev, numEmployees: e.target.value }))}
-                  placeholder="Enter No of Employees"
-                  required
-                />
-              </div>
-            )}
-
-            {/* Submit Button */}
-            <div className="flex justify-end">
-              <Button type="submit" onClick={handleSubmit}>
-                Submit
-              </Button>
+                </SelectContent>
+              </Select>
             </div>
-          </form>
+          </div>
+
+          {/* Stat Counters */}
+          {selectedSales && (
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
+              {Object.entries(stats).map(([key, value]) => (
+                <div key={key} className="rounded bg-slate-100 p-4 text-center">
+                  <p className="text-sm font-medium">{statLabels[key]}</p>
+                  <p className="text-2xl font-bold">{value}</p>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Charts */}
+          {selectedSales && (
+            <div className="grid md:grid-cols-2 gap-8 mb-10">
+              <div>
+                <h4 className="text-lg font-semibold mb-2">Leads Distribution</h4>
+                <ResponsiveContainer width="100%" height={250}>
+                  <BarChart data={chartData}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="label" />
+                    <YAxis />
+                    <Tooltip />
+                    <Bar dataKey="count" fill="#3b82f6" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+              <div>
+                <h4 className="text-lg font-semibold mb-2">Lead Types</h4>
+                {leadTypeData.length > 0 ? (
+                  <ResponsiveContainer width="100%" height={250}>
+                    <PieChart>
+                      <Pie data={leadTypeData} dataKey="value" nameKey="name" outerRadius={100}>
+                        {leadTypeData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <Legend />
+                      <Tooltip />
+                    </PieChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <p className="text-sm text-gray-500 text-center">No lead type data to display</p>
+                )}
+              </div>
+              <div>
+                <h4 className="text-lg font-semibold mb-2">Technology</h4>
+                {technologyData.length > 0 ? (
+                  <ResponsiveContainer width="100%" height={250}>
+                    <PieChart>
+                      <Pie data={technologyData} dataKey="value" nameKey="name" outerRadius={100}>
+                        {technologyData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <Legend />
+                      <Tooltip />
+                    </PieChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <p className="text-sm text-gray-500 text-center">No technology data to display</p>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Leads Table */}
+          {leads.length > 0 && (
+            <div>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Company Name</TableHead>
+                    <TableHead>Company ID</TableHead>
+                    <TableHead>Lead Type</TableHead>
+                    <TableHead>Technology</TableHead>
+                    <TableHead>No. of Employees</TableHead>
+                    <TableHead>Action</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {leads.map((lead) => (
+                    <React.Fragment key={lead.id}>
+                      <TableRow>
+                        <TableCell>{lead.companyName}</TableCell>
+                        <TableCell>{lead.companyID}</TableCell>
+                        <TableCell>{lead.leadType}</TableCell>
+                        <TableCell>{lead.technology}</TableCell>
+                        <TableCell>{lead.numberOfEmployees}</TableCell>
+                        <TableCell>
+                          <Button variant="outline" onClick={() => setExpandedLeadId(lead.id === expandedLeadId ? null : lead.id)}>
+                            {expandedLeadId === lead.id ? "Hide" : "View More"}
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                      {expandedLeadId === lead.id && (
+                        <TableRow>
+                          <TableCell colSpan={6} className="bg-gray-50">
+                            <div className="text-sm">
+                              <p><strong>Remarks:</strong> {lead.remarks || "-"}</p>
+                              <p><strong>Created At:</strong> {new Date(lead.createdAt).toLocaleString()}</p>
+                              <p><strong>Company Size:</strong> {lead.companySize || "-"}</p>
+                              <p><strong>Industry:</strong> {lead.industry || "-"}</p>
+                              <p><strong>SPOCs:</strong></p>
+                              {lead.spocs?.map((spoc, idx) => (
+                                <div key={idx} className="ml-4 mt-1">
+                                  - {spoc.name} ({spoc.designation})<br />
+                                  <span className="text-xs text-gray-600">{spoc.email} | {spoc.contact}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </React.Fragment>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
         </CardContent>
       </Card>
-      <BdTable />
     </div>
   );
 }

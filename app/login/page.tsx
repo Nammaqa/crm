@@ -60,6 +60,9 @@ function Page() {
             } else if (role === "SUPERADMIN") {
                 window.location.href = "/superAdmin";
             }
+            else if (role === "IT_ADMIN") {
+                window.location.href = "/itadmin";
+            }
                else {
                 window.location.href = "/dashboard"; // fallback
             }
