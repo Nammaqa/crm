@@ -1,4 +1,3 @@
-
 "use client";
 import { useState, useEffect } from "react";
 import { Label } from "@/components/ui/label";
@@ -71,16 +70,28 @@ const TECHNOLOGY_LABELS = {
   other: "Other",
 };
 
-// Utility function to generate random Company ID (alphanumeric)
-function generateCompanyID() {
-  return (
-    "COMP-" +
-    Math.random()
-      .toString(36)
-      .replace(/[^a-z0-9]+/gi, "")
-      .substr(2, 8)
-      .toUpperCase()
-  );
+// Company Type enums and labels
+const COMPANY_TYPE_ENUMS = [
+  "product",
+  "service",
+  "both",
+];
+const COMPANY_TYPE_LABELS = {
+  product: "Product Based",
+  service: "Service Based",
+  both: "Both",
+};
+
+// Utility function to generate Company ID: first 4 letters of company name + yyyy-mm-dd
+function generateCompanyID(companyName) {
+  if (!companyName) return "";
+  // Remove non-alphabetic characters and spaces, take first 4 letters, pad if less
+  const namePart = companyName.replace(/[^a-zA-Z]/g, "").toUpperCase().padEnd(4, "X").slice(0, 4);
+  const today = new Date();
+  const yyyy = today.getFullYear();
+  const mm = String(today.getMonth() + 1).padStart(2, "0");
+  const dd = String(today.getDate()).padStart(2, "0");
+  return `${namePart}-${yyyy}-${mm}-${dd}`;
 }
 
 // Validation helpers
@@ -245,6 +256,14 @@ export default function ProspectiveLeadForm({ formData, setFormData, handleMoveT
     setShowIndustryOther(value === "other");
   };
 
+  // Company Type select handler
+  const handleCompanyTypeChange = (value) => {
+    setFormData((prev) => ({
+      ...prev,
+      companyType: value,
+    }));
+  };
+
   return (
     <div className="mb-4 p-5 border rounded-md shadow-md space-y-4">
       <div className="space-y-1">
@@ -288,7 +307,7 @@ export default function ProspectiveLeadForm({ formData, setFormData, handleMoveT
             onClick={() =>
               setFormData((prev) => ({
                 ...prev,
-                companyID: generateCompanyID(),
+                companyID: generateCompanyID(formData.companyName),
               }))
             }
           >
@@ -318,6 +337,26 @@ export default function ProspectiveLeadForm({ formData, setFormData, handleMoveT
             setFormData((prev) => ({ ...prev, numEmployees: e.target.value }))
           }
         />
+      </div>
+
+      {/* Company Type Dropdown */}
+      <div className="space-y-1">
+        <Label>Company Type</Label>
+        <Select
+          value={formData.companyType || ""}
+          onValueChange={handleCompanyTypeChange}
+        >
+          <SelectTrigger className="w-full">
+            <SelectValue placeholder="Select Company Type" />
+          </SelectTrigger>
+          <SelectContent>
+            {COMPANY_TYPE_ENUMS.map((value) => (
+              <SelectItem key={value} value={value}>
+                {COMPANY_TYPE_LABELS[value]}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       <h3 className="text-lg font-semibold">Primary SPOC</h3>
