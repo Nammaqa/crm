@@ -203,3 +203,45 @@ model Device {
   createdAt        DateTime    @default(now())
   updatedAt        DateTime    @updatedAt
 }
+
+
+model Candidate {
+  id                        Int      @id @default(autoincrement())
+  name                      String
+  contactNumber             String
+  alternateContactNumber    String?
+  email                     String
+  sourcedFrom               String?
+  employmentType            String?
+  domainExperience          String?
+  company                   String?
+  role                      String?
+  currentCTC                Float?
+  expectedCTC               Float?
+  workingStatus             String?
+  noticePeriod              Int?
+  location                  String?
+  relocate                  Boolean?
+  preferredLocation         String?
+  interviewAvailability     String?
+  clientName                String?
+  demandCode                String?
+  interviewTakenBy          String?
+  comments                  String[]
+  status                    String?
+  followUps                 String?
+  updatedBy                 String?
+  offersAny                 Boolean
+  screeningComment          String?
+  technicalSkills           String
+  relevantExperience        String
+  primarySkillExp           String?
+  secondarySkillExp         String?
+  nammaqaUpdate             String?
+  clientInterviewStatus     String?
+  feedback                  String?
+  resumeLink                String?
+  offerDetails              String?
+  createdAt                 DateTime @default(now())
+  updatedAt                 DateTime @updatedAt
+}

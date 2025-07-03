@@ -19,7 +19,8 @@ import JobList from "@components/Admin/Content/JobList";
 import Adduser from "@components/Admin/Content/AddUser";
 import AgreementList from "@components/Admin/Content/AgreementList";
 import RequirementList from "@components/Admin/Content/RequirementList";
-
+import CandidateForm from "@components/Recruiter/content/CandidateForm";
+import CandidateList from "@components/Recruiter/content/CandidateList";
 // Import icons
 import {
   FaChartPie,
@@ -36,16 +37,18 @@ import {
   FaFileAlt,
   FaSignOutAlt,
   FaListAlt,
-  FaUser,
 } from "react-icons/fa";
+import CandidateEditForm from "./content/CandidateEditForm";
 
 // Sidebar sections with dynamic content
 const sections = [
   { id: "overview", label: "Overview", icon: <FaChartPie size={20} />, content: <Overview /> },
   { id: "requirement-list", label: "Requirement List", icon: <FaListAlt size={20} />, content: <RequirementList /> },
+  { id: "candidate-form", label: "Candidate Form", icon: <FaListAlt size={20} />, content: <CandidateForm /> },
+  { id: "candidate-list", label: "Candidate List", icon: <FaListAlt size={20} />, content: <CandidateList /> },
 ];
 
-export default function Dashboard() {
+export default function Dashboard({ editContent }) {
   const [selectedSection, setSelectedSection] = useState("overview");
   const [open, setOpen] = useState(true);
 
@@ -58,9 +61,8 @@ export default function Dashboard() {
     <div className="flex h-screen w-full">
       {/* Sidebar (Left Side) */}
       <aside
-        className={`bg-gray-900 text-white h-full p-5 pt-8 transition-all duration-300 flex flex-col border-r border-gray-800 shadow-md ${
-          open ? "w-64" : "w-20"
-        } relative overflow-y-auto overflow-x-hidden`} // Only vertical scroll
+        className={`bg-gray-900 text-white h-full p-5 pt-8 transition-all duration-300 flex flex-col border-r border-gray-800 shadow-md ${open ? "w-64" : "w-20"
+          } relative overflow-y-auto overflow-x-hidden`} // Only vertical scroll
       >
         {/* Toggle Button */}
         <button
@@ -71,7 +73,7 @@ export default function Dashboard() {
         </button>
 
         {/* Logo */}
-       <div className="flex items-center gap-x-4 mb-6">
+        <div className="flex items-center gap-x-4 mb-6">
           <Image
             src="/Wizzybox Logo.png"
             alt="Company Logo"
@@ -86,17 +88,15 @@ export default function Dashboard() {
           {sections.map((section) => (
             <li
               key={section.id}
-              className={`flex items-center p-2 rounded-md cursor-pointer text-sm transition-all hover:bg-gray-700 ${
-                selectedSection === section.id ? "bg-gray-700" : ""
-              }`}
+              className={`flex items-center p-2 rounded-md cursor-pointer text-sm transition-all hover:bg-gray-700 ${selectedSection === section.id ? "bg-gray-700" : ""
+                }`}
               onClick={() => setSelectedSection(section.id)}
               tabIndex={0}
             >
               <div className="w-8 text-center">{section.icon}</div>
               <span
-                className={`transition-all duration-300 ${
-                  !open ? "opacity-0 w-0" : "opacity-100 w-auto"
-                }`}
+                className={`transition-all duration-300 ${!open ? "opacity-0 w-0" : "opacity-100 w-auto"
+                  }`}
               >
                 {section.label}
               </span>
@@ -113,9 +113,8 @@ export default function Dashboard() {
             <FaSignOutAlt size={20} />
           </div>
           <span
-            className={`transition-all duration-300 ${
-              !open ? "opacity-0 w-0" : "opacity-100 w-auto"
-            }`}
+            className={`transition-all duration-300 ${!open ? "opacity-0 w-0" : "opacity-100 w-auto"
+              }`}
           >
             Logout
           </span>
@@ -124,10 +123,18 @@ export default function Dashboard() {
 
       {/* Main Content Area (Right Side) */}
       <main className="flex-1 h-full overflow-auto p-6 bg-gray-100">
-        <div className="w-full max-w-6xl pt-6">
-          {sections.find((s) => s.id === selectedSection)?.content}
-        </div>
+        {editContent ? (
+          <div className="w-full max-w-6xl pt-6">
+            {editContent} {/* ✅ FIXED: actually render passed content */}
+          </div>
+        ) : (
+          <div className="w-full max-w-6xl pt-6">
+            {sections.find((s) => s.id === selectedSection)?.content}
+          </div>
+        )}
       </main>
+
+
     </div>
   );
 }
