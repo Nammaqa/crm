@@ -74,51 +74,17 @@ const CandidateEditForm = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    const payload = {
-      name: formData["Name"],
-      contactNumber: formData["Contact Number"],
-      alternateContactNumber: formData["Alternate Contact Number"],
-      email: formData["Email ID"],
-      sourcedFrom: formData["Sourced From"],
-      employmentType: formData["Employment Type"],
-      domainExperience: formData["Domain Experience (Primary)"],
-      company: formData["Current / Previous Company"],
-      role: formData["Role"],
-      currentCTC: parseFloat(formData["Current CTC (In LPA)"]) || 0,
-      expectedCTC: parseFloat(formData["Expected CTC (In LPA)"]) || 0,
-      workingStatus: formData["Current Working Status"],
-      noticePeriod: parseInt(formData["Notice Period (In Days)"]) || 0,
-      location: formData["Current Location (Nearest City)"],
-      relocate: formData["Ready to Relocate for Other Location"] === "Yes",
-      preferredLocation: formData["Prefered Location (City)"],
-      interviewAvailability: formData["Availability for the Interview"],
-      clientName: formData["Client Name"],
-      demandCode: formData["Demand Code"],
-      interviewTakenBy: formData["Interview taken by"],
-      comments: formData["Comments"] ? [formData["Comments"]] : [],
-      status: formData["Status"],
-      followUps: formData["Follow Ups"],
-      updatedBy: formData["Updated By"],
-      offersAny: formData["Offers Any"] === "Yes",
-      screeningComment: formData["Screening Comment (L2)"],
-      technicalSkills: formData["Technical Skills"],
-      relevantExperience: formData["Relavant Experience"],
-      primarySkillExp: formData["Relevant Experience in Primary Skill"],
-      secondarySkillExp: formData["Relevant Experience in Secondary Skill"],
-      nammaqaUpdate: formData["NammaQA update"],
-      clientInterviewStatus: formData["Client Interview Status"],
-      feedback: formData["Feedback"],
-      resumeLink: typeof formData["Upload Resume"] === "string"
-        ? formData["Upload Resume"]
-        : formData["Upload Resume"]?.name || null,
-      offerDetails: formData["Offer Details"]
-    };
+    const form = new FormData();
+    for (const key in formData) {
+      if (formData[key]) {
+        form.append(key, formData[key]);
+      }
+    }
 
     try {
       const res = await fetch(`/api/candidates/${candidateId}`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
+        body: form,
       });
 
       if (res.ok) {
@@ -131,6 +97,7 @@ const CandidateEditForm = () => {
       console.error("PUT error:", error);
     }
   };
+
 
   const fields = [
     "Name", "Contact Number", "Alternate Contact Number", "Email ID", "Sourced From",
