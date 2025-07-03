@@ -11,24 +11,38 @@ export default function EditRecruiterPage() {
   const candidateId = params?.id;
 
   const [authorized, setAuthorized] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const validate = async () => {
-      const res = await fetch("/api/validateRecruiter");
-      const data = await res.json();
-      if (data.valid) {
-        setAuthorized(true);
-      } else {
+      try {
+        const res = await fetch("/api/validateRecruiter");
+        const data = await res.json();
+
+        if (data.valid) {
+          setAuthorized(true);
+        } else {
+          router.push("/login");
+        }
+      } catch (error) {
+        console.error("Validation error:", error);
         router.push("/login");
+      } finally {
+        setLoading(false);
       }
     };
 
     validate();
   }, [router]);
 
-  if (!authorized) return <div>Checking access...</div>;
+  if (loading) return <div>Checking access...</div>;
+  if (!authorized) return null;
+  if (!candidateId) {
+    router.push("/404");
+    return null;
+  }
 
   return (
-    <SidebarContainer editContent={<CandidateEditForm candidateId={candidateId} />} />
+    <SidebarContainer editContent={<CandidateEditForm />} />
   );
 }

@@ -51,7 +51,7 @@ const CandidateEditForm = () => {
   useEffect(() => {
     const fetchCandidate = async () => {
       try {
-        const res = await fetch(/api/candidates/${candidateId});
+        const res = await fetch(`/api/candidates/${candidateId}`);
         const data = await res.json();
         const mapped = mapBackendToFrontend(data);
         setFormData(mapped);
@@ -115,7 +115,7 @@ const CandidateEditForm = () => {
     };
 
     try {
-      const res = await fetch(/api/candidates/${candidateId}, {
+      const res = await fetch(`/api/candidates/${candidateId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
@@ -202,7 +202,7 @@ const CandidateEditForm = () => {
                 <input
                   type="text"
                   value={formData[field] || ""}
-                  placeholder={Enter ${field}}
+                  placeholder={`Enter ${field}`}
                   onChange={(e) => handleInputChange(field, e.target.value)}
                   style={styles.input}
                 />

@@ -115,7 +115,7 @@ const CandidateForm = () => {
                   name={field}
                   rows="3"
                   style={styles.textarea}
-                  placeholder={Enter ${field}}
+                  placeholder={`Enter ${field}`}
                   value={formData[field] || ''}
                   onChange={(e) => handleInputChange(field, e.target.value)}
                 />
@@ -124,7 +124,7 @@ const CandidateForm = () => {
                   type="text"
                   id={field}
                   name={field}
-                  placeholder={Enter ${field}}
+                  placeholder={`Enter ${field}`}
                   style={styles.input}
                   value={formData[field] || ''}
                   onChange={(e) => handleInputChange(field, e.target.value)}

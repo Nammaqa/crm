@@ -1,10 +1,18 @@
 import { PrismaClient } from "@prisma/client";
+
 const prisma = new PrismaClient();
 
 export async function GET(req, { params }) {
   try {
+    const id = parseInt(params.id);
+    if (isNaN(id)) {
+      return new Response(JSON.stringify({ error: "Invalid candidate ID" }), {
+        status: 400,
+      });
+    }
+
     const candidate = await prisma.candidate.findUnique({
-      where: { id: parseInt(params.id) },
+      where: { id },
     });
 
     if (!candidate) {
@@ -27,9 +35,17 @@ export async function GET(req, { params }) {
 
 export async function PUT(req, { params }) {
   try {
+    const id = parseInt(params.id);
+    if (isNaN(id)) {
+      return new Response(JSON.stringify({ error: "Invalid candidate ID" }), {
+        status: 400,
+      });
+    }
+
     const data = await req.json();
+
     const updated = await prisma.candidate.update({
-      where: { id: parseInt(params.id) },
+      where: { id },
       data,
     });
 
@@ -39,7 +55,12 @@ export async function PUT(req, { params }) {
     });
   } catch (error) {
     console.error("PUT error:", error);
-    return new Response(JSON.stringify({ error: "Failed to update" }), {
+
+    const errorMessage = error.code === "P2025"
+      ? "Candidate not found for update"
+      : "Failed to update candidate";
+
+    return new Response(JSON.stringify({ error: errorMessage }), {
       status: 500,
     });
   }
@@ -47,8 +68,15 @@ export async function PUT(req, { params }) {
 
 export async function DELETE(req, { params }) {
   try {
+    const id = parseInt(params.id);
+    if (isNaN(id)) {
+      return new Response(JSON.stringify({ error: "Invalid candidate ID" }), {
+        status: 400,
+      });
+    }
+
     await prisma.candidate.delete({
-      where: { id: parseInt(params.id) },
+      where: { id },
     });
 
     return new Response(JSON.stringify({ message: "Deleted successfully" }), {
@@ -57,8 +85,13 @@ export async function DELETE(req, { params }) {
     });
   } catch (error) {
     console.error("DELETE error:", error);
-    return new Response(JSON.stringify({ error: "Failed to delete candidate" }), {
+
+    const errorMessage = error.code === "P2025"
+      ? "Candidate not found for deletion"
+      : "Failed to delete candidate";
+
+    return new Response(JSON.stringify({ error: errorMessage }), {
       status: 500,
-        });
+    });
   }
 }
