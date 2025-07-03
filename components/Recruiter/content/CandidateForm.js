@@ -1,0 +1,201 @@
+'use client';
+import React, { useEffect, useState } from 'react';
+
+const CandidateForm = () => {
+  const [hasOffer, setHasOffer] = useState('No');
+  const [formData, setFormData] = useState({});
+  const [candidates, setCandidates] = useState([]);
+
+  const handleInputChange = (field, value) => {
+    setFormData({ ...formData, [field]: value });
+    if (field === 'Offers Any') setHasOffer(value);
+  };
+
+  const fetchCandidates = async () => {
+    try {
+      const res = await fetch('/api/candidates');
+      const data = await res.json();
+      setCandidates(data);
+    } catch (err) {
+      console.error('Error fetching candidates:', err);
+    }
+  };
+
+  useEffect(() => {
+    fetchCandidates();
+  }, []);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    try {
+      const body = {
+        ...formData,
+        offersAny: formData['Offers Any'] === 'Yes',
+        relocate: formData['Ready to Relocate for Other Location'] === 'Yes',
+        resumeLink: formData['Upload Resume'] || null,
+        comments: formData['Comments'] ? [formData['Comments']] : []
+      };
+
+      const res = await fetch('/api/candidates', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+
+      if (res.ok) {
+        alert('Candidate submitted!');
+        setFormData({});
+        setHasOffer('No');
+        fetchCandidates();
+      } else {
+        alert('Error submitting candidate');
+      }
+    } catch (error) {
+      console.error('Submission error:', error);
+    }
+  };
+
+  const fields = [
+    "Name", "Contact Number", "Alternate Contact Number", "Email ID", "Sourced From",
+    "Employment Type", "Domain Experience (Primary)", "Current / Previous Company", "Role",
+    "Current CTC (In LPA)", "Expected CTC (In LPA)", "Current Working Status", "Notice Period (In Days)",
+    "Current Location (Nearest City)", "Ready to Relocate for Other Location", "Prefered Location (City)",
+    "Availability for the Interview", "Client Name", "Demand Code", "Interview taken by",
+    "Comments", "Status", "Follow Ups", "Updated By", "Offers Any",
+    "Screening Comment (L2)", "Technical Skills", "Relavant Experience",
+    "Relevant Experience in Primary Skill", "Relevant Experience in Secondary Skill",
+    "NammaQA update", "Client Interview Status", "Feedback", "Upload Resume"
+  ];
+
+  return (
+    <div style={styles.container}>
+      <h2 style={styles.heading}>Candidate Information Form</h2>
+      <form style={styles.form} onSubmit={handleSubmit}>
+        {fields.map((field, index) => {
+          const isTextAreaField = field.toLowerCase().includes('skill');
+          const isFileField = field === "Upload Resume";
+          const isDropdownField = field === "Offers Any";
+
+          return (
+            <div key={index} style={styles.inputGroup}>
+              <label htmlFor={field} style={styles.label}>{field}</label>
+              {isDropdownField ? (
+                <select
+                  id={field}
+                  name={field}
+                  style={styles.input}
+                  onChange={(e) => handleInputChange(field, e.target.value)}
+                  value={formData[field] || ''}
+                >
+                  <option value="No">No</option>
+                  <option value="Yes">Yes</option>
+                </select>
+              ) : isFileField ? (
+                <input
+                  type="file"
+                  placeholder="Enter resume link or filename"
+                  value={formData[field] || ''}
+                  onChange={(e) => handleInputChange(field, e.target.value)}
+                  style={styles.input}
+                />
+              ) : isTextAreaField ? (
+                <textarea
+                  id={field}
+                  name={field}
+                  rows="3"
+                  style={styles.textarea}
+                  placeholder={`Enter ${field}`}
+                  value={formData[field] || ''}
+                  onChange={(e) => handleInputChange(field, e.target.value)}
+                />
+              ) : (
+                <input
+                  type="text"
+                  id={field}
+                  name={field}
+                  placeholder={`Enter ${field}`}
+                  style={styles.input}
+                  value={formData[field] || ''}
+                  onChange={(e) => handleInputChange(field, e.target.value)}
+                />
+              )}
+            </div>
+          );
+        })}
+
+        {hasOffer === 'Yes' && (
+          <div style={styles.inputGroup}>
+            <label htmlFor="Offer Details" style={styles.label}>Offer Details</label>
+            <input
+              type="text"
+              id="Offer Details"
+              name="Offer Details"
+              placeholder="Enter offer details"
+              style={styles.input}
+              value={formData['Offer Details'] || ''}
+              onChange={(e) => handleInputChange('Offer Details', e.target.value)}
+            />
+          </div>
+        )}
+
+        <button type="submit" style={styles.button}>Submit</button>
+      </form>
+    </div>
+  );
+};
+
+const styles = {
+  container: {
+    maxWidth: '1000px',
+    margin: '0 auto',
+    padding: '30px',
+    fontFamily: 'Arial, sans-serif',
+    backgroundColor: '#f9f9f9',
+    borderRadius: '12px',
+    boxShadow: '0 0 10px rgba(0,0,0,0.1)'
+  },
+  heading: {
+    textAlign: 'center',
+    marginBottom: '20px'
+  },
+  form: {
+    display: 'flex',
+    flexWrap: 'wrap',
+    gap: '20px'
+  },
+  inputGroup: {
+    flex: '1 1 45%',
+    display: 'flex',
+    flexDirection: 'column'
+  },
+  label: {
+    marginBottom: '6px',
+    fontWeight: 'bold'
+  },
+  input: {
+    padding: '10px',
+    fontSize: '14px',
+    borderRadius: '6px',
+    border: '1px solid #ccc'
+  },
+  textarea: {
+    padding: '10px',
+    fontSize: '14px',
+    borderRadius: '6px',
+    border: '1px solid #ccc',
+    resize: 'vertical'
+  },
+  button: {
+    marginTop: '30px',
+    padding: '12px 20px',
+    fontSize: '16px',
+    backgroundColor: '#003366',
+    color: '#fff',
+    border: 'none',
+    borderRadius: '6px',
+    cursor: 'pointer'
+  }
+};
+
+export default CandidateForm;
