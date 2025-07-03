@@ -47,28 +47,24 @@ const CandidateEditForm = () => {
     "Upload Resume": data.resumeLink,
     "Offer Details": data.offerDetails || ""
   });
-  console.log("🟡 CandidateEditForm mounted");
-  console.log("candidateId received:", candidateId);
+
   useEffect(() => {
     const fetchCandidate = async () => {
-        try {
-        const res = await fetch(`/api/candidates/${candidateId}`);
+      try {
+        const res = await fetch(/api/candidates/${candidateId});
         const data = await res.json();
-        console.log("Fetched candidate:", data);
         const mapped = mapBackendToFrontend(data);
         setFormData(mapped);
         setHasOffer(mapped["Offers Any"]);
-        } catch (err) {
+      } catch (err) {
         console.error("Error fetching candidate:", err);
-        }
+      }
     };
 
     if (candidateId) {
-        console.log("candidateId received:", candidateId);
-        fetchCandidate();
+      fetchCandidate();
     }
-    }, [candidateId]);
-
+  }, [candidateId]);
 
   const handleInputChange = (field, value) => {
     setFormData({ ...formData, [field]: value });
@@ -112,12 +108,14 @@ const CandidateEditForm = () => {
       nammaqaUpdate: formData["NammaQA update"],
       clientInterviewStatus: formData["Client Interview Status"],
       feedback: formData["Feedback"],
-      resumeLink: formData["Upload Resume"]?.name || null,
+      resumeLink: typeof formData["Upload Resume"] === "string"
+        ? formData["Upload Resume"]
+        : formData["Upload Resume"]?.name || null,
       offerDetails: formData["Offer Details"]
     };
 
     try {
-      const res = await fetch(`/api/candidates/${candidateId}`, {
+      const res = await fetch(/api/candidates/${candidateId}, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
@@ -146,6 +144,10 @@ const CandidateEditForm = () => {
     "NammaQA update", "Client Interview Status", "Feedback", "Upload Resume"
   ];
 
+  const handleBack = () => {
+    router.push('/recruiter');  
+  };
+
   return (
     <div style={styles.container}>
       <h2 style={styles.heading}>Edit Candidate</h2>
@@ -168,14 +170,27 @@ const CandidateEditForm = () => {
                   <option value="Yes">Yes</option>
                 </select>
               ) : isFile ? (
-                  field === "Upload Resume" ? (
-                    <input
+                <div>
+                  <input
                     type="file"
                     accept=".pdf,.doc,.docx"
                     onChange={(e) => handleInputChange(field, e.target.files?.[0])}
                     style={styles.input}
-                    />
-                ) : null
+                  />
+                  {/* Show existing resume link if present */}
+                  {formData["Upload Resume"] && typeof formData["Upload Resume"] === "string" && (
+                    <div style={{ marginTop: 8 }}>
+                      <a
+                        href={formData["Upload Resume"]}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{ color: "#003366", textDecoration: "underline", fontSize: "14px" }}
+                      >
+                        View Current Resume
+                      </a>
+                    </div>
+                  )}
+                </div>
               ) : isTextArea ? (
                 <textarea
                   value={formData[field] || ""}
@@ -187,7 +202,7 @@ const CandidateEditForm = () => {
                 <input
                   type="text"
                   value={formData[field] || ""}
-                  placeholder={`Enter ${field}`}
+                  placeholder={Enter ${field}}
                   onChange={(e) => handleInputChange(field, e.target.value)}
                   style={styles.input}
                 />
@@ -211,12 +226,21 @@ const CandidateEditForm = () => {
           </div>
         )}
 
-        <button
-          type="submit"
-          style={styles.button}
-        >
-          Update Candidate
-        </button>
+        <div style={{ display: 'flex', gap: '16px', marginTop: '30px' }}>
+          <button
+            type="submit"
+            style={{ ...styles.button, minWidth: '180px', minHeight: '48px' }}
+          >
+            Update Candidate
+          </button>
+          <button
+            type="button"
+            style={{ ...styles.button, backgroundColor: '#888', minWidth: '180px', minHeight: '48px' }}
+            onClick={handleBack}
+          >
+            Back
+          </button>
+        </div>
       </form>
     </div>
   );

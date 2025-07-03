@@ -1,14 +1,20 @@
 'use client';
 import React, { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 
 const CandidateForm = () => {
   const [hasOffer, setHasOffer] = useState('No');
   const [formData, setFormData] = useState({});
   const [candidates, setCandidates] = useState([]);
+  const router = useRouter();
 
   const handleInputChange = (field, value) => {
-    setFormData({ ...formData, [field]: value });
-    if (field === 'Offers Any') setHasOffer(value);
+    if (field === "Upload Resume") {
+      setFormData({ ...formData, [field]: value.target.files[0] });
+    } else {
+      setFormData({ ...formData, [field]: value });
+      if (field === 'Offers Any') setHasOffer(value);
+    }
   };
 
   const fetchCandidates = async () => {
@@ -29,18 +35,18 @@ const CandidateForm = () => {
     e.preventDefault();
 
     try {
-      const body = {
-        ...formData,
-        offersAny: formData['Offers Any'] === 'Yes',
-        relocate: formData['Ready to Relocate for Other Location'] === 'Yes',
-        resumeLink: formData['Upload Resume'] || null,
-        comments: formData['Comments'] ? [formData['Comments']] : []
-      };
+      const form = new FormData();
+      Object.entries(formData).forEach(([key, value]) => {
+        if (key === "Upload Resume" && value instanceof File) {
+          form.append(key, value);
+        } else {
+          form.append(key, value ?? "");
+        }
+      });
 
       const res = await fetch('/api/candidates', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body)
+        body: form
       });
 
       if (res.ok) {
@@ -54,6 +60,10 @@ const CandidateForm = () => {
     } catch (error) {
       console.error('Submission error:', error);
     }
+  };
+
+  const handleBack = () => {
+    router.push('/recruiter');  
   };
 
   const fields = [
@@ -94,9 +104,9 @@ const CandidateForm = () => {
               ) : isFileField ? (
                 <input
                   type="file"
-                  placeholder="Enter resume link or filename"
-                  value={formData[field] || ''}
-                  onChange={(e) => handleInputChange(field, e.target.value)}
+                  id={field}
+                  name={field}
+                  onChange={(e) => handleInputChange(field, e)}
                   style={styles.input}
                 />
               ) : isTextAreaField ? (
@@ -105,7 +115,7 @@ const CandidateForm = () => {
                   name={field}
                   rows="3"
                   style={styles.textarea}
-                  placeholder={`Enter ${field}`}
+                  placeholder={Enter ${field}}
                   value={formData[field] || ''}
                   onChange={(e) => handleInputChange(field, e.target.value)}
                 />
@@ -114,7 +124,7 @@ const CandidateForm = () => {
                   type="text"
                   id={field}
                   name={field}
-                  placeholder={`Enter ${field}`}
+                  placeholder={Enter ${field}}
                   style={styles.input}
                   value={formData[field] || ''}
                   onChange={(e) => handleInputChange(field, e.target.value)}
@@ -139,7 +149,10 @@ const CandidateForm = () => {
           </div>
         )}
 
-        <button type="submit" style={styles.button}>Submit</button>
+        <div style={{ display: 'flex', gap: '16px', marginTop: '30px' }}>
+          <button type="submit" style={styles.button}>Submit</button>
+  
+        </div>
       </form>
     </div>
   );
@@ -187,7 +200,6 @@ const styles = {
     resize: 'vertical'
   },
   button: {
-    marginTop: '30px',
     padding: '12px 20px',
     fontSize: '16px',
     backgroundColor: '#003366',

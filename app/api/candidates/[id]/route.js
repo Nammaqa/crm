@@ -59,6 +59,6 @@ export async function DELETE(req, { params }) {
     console.error("DELETE error:", error);
     return new Response(JSON.stringify({ error: "Failed to delete candidate" }), {
       status: 500,
-    });
+        });
   }
 }
