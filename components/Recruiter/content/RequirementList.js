@@ -12,7 +12,7 @@ const TABS = [
   { key: "requirement", label: "Requirement" },
 ];
 
-export default function AgreementList() {
+export default function RequirementList() {
   const [activeTab, setActiveTab] = useState("requirement");
   const [data, setData] = useState({
     requirement: [],
