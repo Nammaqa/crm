@@ -76,6 +76,7 @@ model Lead {
   companyID              String?
   technologyOther        String?
   leadType               LeadType
+  companyType            String?            // Product Base, Service Base, Both
   spocs                  Spoc[]
 }
 
