@@ -130,6 +130,7 @@ export async function POST(req: NextRequest) {
       percentage,
       remarks,
       spocs,
+      companyType, // new field
     } = body as Record<string, any>;
 
     // // Validate required fields
@@ -172,6 +173,7 @@ export async function POST(req: NextRequest) {
         industry: indMap.enumValue as Industry,
         percentage,
         remarks,
+        companyType, // new field
         spocs: {
           create: spocArray.map((spoc: SpocInput) => ({
             name: spoc.name,
