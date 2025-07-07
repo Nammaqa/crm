@@ -1,4 +1,3 @@
-// Example: d:\crm\components\ACmanager\content\ShortList.js
 "use client";
 import { useEffect, useState } from "react";
 
@@ -8,7 +7,7 @@ export default function ShortList() {
   useEffect(() => {
     fetch("/api/ACmanager")
       .then(res => res.json())
-      .then(data => setCandidates(data.filter(c => c.acmanagerStatus === "Shortlisted")));
+      .then(data => setCandidates(data.filter(c => c.acmanagerStatus === "Selected")));
   }, []);
 
   return (

@@ -26,11 +26,12 @@ import CandidateEditForm from "./content/CandidateEditForm";
 const sections = [
   { id: "overview", label: "Overview", icon: <FaChartPie size={20} />, content: <Overview /> },
   { id: "requirement-list", label: "Requirement List", icon: <FaListAlt size={20} />, content: <RequirementList /> },
+  { id: "acmanager", label: "Pending List", icon: <FaUsers size={20} />, content: <Acmanager /> },
   { id: "candidate-form", label: "Candidate Form", icon: <FaFileAlt size={20} />, content: <CandidateForm /> },
   { id: "candidate-list", label: "Candidate List", icon: <FaUsers size={20}/>, content: <CandidateList /> },
-  { id: "short-list", label: "Short List", icon: <FaListAlt size={20} />, content: <ShortList /> },
+  { id: "short-list", label: "Shortlisted", icon: <FaListAlt size={20} />, content: <ShortList /> },
   { id: "rejected-list", label: "Rejected List", icon: <FaListAlt size={20} />, content: <RejectedList /> },
-  { id: "acmanager", label: "AC Manager", icon: <FaUsers size={20} />, content: <Acmanager /> }, // <-- Added
+   // <-- Added
 ];
 
 export default function Dashboard({ editContent }) {

@@ -17,7 +17,8 @@ export default function AcManagerTable() {
             try {
                 const res = await fetch("/api/ACmanager");
                 const data = await res.json();
-                setCandidates(data);
+                // Only show candidates where acmanagerStatus is NOT "Selected" or "Rejected"
+                setCandidates(data.filter(c => c.acmanagerStatus !== "Selected" && c.acmanagerStatus !== "Rejected"));
             } catch (err) {
                 toast.error("Failed to fetch candidates");
             }
@@ -30,7 +31,7 @@ export default function AcManagerTable() {
         setSelectedCandidate(candidate);
     };
 
-    // Handle Shortlist
+    // Handle Shortlist (store as "Selected")
     const handleShortlist = async () => {
         if (!shortlistDate || !shortlistTime) {
             toast.error("Please select date and time.");
@@ -40,12 +41,12 @@ export default function AcManagerTable() {
             const res = await fetch(`/api/ACmanager/${selectedCandidate.id}`, {
                 method: "PATCH",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ acmanagerStatus: "Shortlisted" }),
+                body: JSON.stringify({ acmanagerStatus: "Selected" }),
             });
             if (res.ok) {
-                toast.success("Candidate Shortlisted!");
-                setCandidates(candidates.map(c => c.id === selectedCandidate.id ? { ...c, acmanagerStatus: "Shortlisted" } : c));
-                setSelectedCandidate({ ...selectedCandidate, acmanagerStatus: "Shortlisted" });
+                toast.success("Candidate Selected!");
+                setCandidates(candidates.filter(c => c.id !== selectedCandidate.id));
+                setSelectedCandidate(null);
             } else {
                 toast.error("Failed to update status");
             }
@@ -54,7 +55,7 @@ export default function AcManagerTable() {
         }
     };
 
-    // Handle Reject
+    // Handle Reject (store as "Rejected")
     const handleReject = async () => {
         if (!feedback) {
             toast.error("Please provide feedback.");
@@ -68,8 +69,8 @@ export default function AcManagerTable() {
             });
             if (res.ok) {
                 toast.error("Candidate Rejected.");
-                setCandidates(candidates.map(c => c.id === selectedCandidate.id ? { ...c, acmanagerStatus: "Rejected" } : c));
-                setSelectedCandidate({ ...selectedCandidate, acmanagerStatus: "Rejected" });
+                setCandidates(candidates.filter(c => c.id !== selectedCandidate.id));
+                setSelectedCandidate(null);
             } else {
                 toast.error("Failed to update status");
             }
@@ -103,7 +104,7 @@ export default function AcManagerTable() {
                             <TableCell>{item.company}</TableCell>
                             <TableCell>{item.role}</TableCell>
                             <TableCell>{item.relevantExperience || item.experience || "-"}</TableCell>
-                            <TableCell className={`font-bold ${item.acmanagerStatus === "Shortlisted" ? "text-green-500" : item.acmanagerStatus === "Rejected" ? "text-red-500" : "text-yellow-500"}`}>
+                            <TableCell className={`font-bold ${item.acmanagerStatus === "Selected" ? "text-green-500" : item.acmanagerStatus === "Rejected" ? "text-red-500" : "text-yellow-500"}`}>
                                 {item.acmanagerStatus || "Pending"}
                             </TableCell>
                             <TableCell className="flex gap-2">
@@ -123,6 +124,7 @@ export default function AcManagerTable() {
 
                     <div className="grid grid-cols-2 gap-4 text-sm text-gray-700">
                         <p><strong>Name:</strong> {selectedCandidate.name}</p>
+                        <p><strong>Client Name:</strong> {selectedCandidate.clientName || "-"}</p>
                         <p><strong>Company:</strong> {selectedCandidate.company}</p>
                         <p><strong>Role:</strong> {selectedCandidate.role}</p>
                         <p><strong>Experience:</strong> {selectedCandidate.relevantExperience || selectedCandidate.experience || "-"}</p>
@@ -131,11 +133,11 @@ export default function AcManagerTable() {
                         <p><strong>Secondary Skills:</strong> {selectedCandidate.secondarySkillExp}</p>
                         <p><strong>Work Type:</strong> {selectedCandidate.employmentType}</p>
                         <p><strong>CTC:</strong> {selectedCandidate.currentCTC ? `${selectedCandidate.currentCTC} LPA` : "-"}</p>
-                        <p><strong>Status:</strong> <span className={`font-bold ${selectedCandidate.acmanagerStatus === "Shortlisted" ? "text-green-500" : selectedCandidate.acmanagerStatus === "Rejected" ? "text-red-500" : "text-yellow-500"}`}>
+                        <p><strong>Expected CTC:</strong> {selectedCandidate.expectedCTC ? `${selectedCandidate.expectedCTC} LPA` : "-"}</p>
+                        <p><strong>Status:</strong> <span className={`font-bold ${selectedCandidate.acmanagerStatus === "Selected" ? "text-green-500" : selectedCandidate.acmanagerStatus === "Rejected" ? "text-red-500" : "text-yellow-500"}`}>
                             {selectedCandidate.acmanagerStatus || "Pending"}
                         </span></p>
-                    </div>
-
+                </div>
                     {/* Resume Section */}
                     {selectedCandidate.resumeLink && (
                         <div className="mt-6">
@@ -174,7 +176,7 @@ export default function AcManagerTable() {
                         </div>
                         <div className="mt-4">
                             <Button onClick={handleShortlist} className="bg-green-500 hover:bg-green-700 text-white w-full">
-                                Shortlist Candidate
+                                Select Candidate
                             </Button>
                         </div>
 

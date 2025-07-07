@@ -51,7 +51,6 @@ export async function PATCH(
   }
 }
 
-
 export async function GET() {
   try {
     const candidates = await prisma.candidate.findMany({

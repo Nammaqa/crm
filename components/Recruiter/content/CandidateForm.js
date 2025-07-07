@@ -6,16 +6,15 @@ const CandidateForm = () => {
   const [hasOffer, setHasOffer] = useState('No');
   const [formData, setFormData] = useState({});
   const [candidates, setCandidates] = useState([]);
+  const [companyIDs, setCompanyIDs] = useState([]);
   const router = useRouter();
 
-  const handleInputChange = (field, value) => {
-    if (field === "Upload Resume") {
-      setFormData({ ...formData, [field]: value.target.files[0] });
-    } else {
-      setFormData({ ...formData, [field]: value });
-      if (field === 'Offers Any') setHasOffer(value);
-    }
-  };
+  useEffect(() => {
+    fetch('/api/leads/companyids')
+      .then(res => res.json())
+      .then(data => setCompanyIDs(data));
+    fetchCandidates();
+  }, []);
 
   const fetchCandidates = async () => {
     try {
@@ -27,9 +26,14 @@ const CandidateForm = () => {
     }
   };
 
-  useEffect(() => {
-    fetchCandidates();
-  }, []);
+  const handleInputChange = (field, value) => {
+    if (field === "Upload Resume") {
+      setFormData({ ...formData, [field]: value.target.files[0] });
+    } else {
+      setFormData({ ...formData, [field]: value });
+      if (field === 'Offers Any') setHasOffer(value);
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -67,40 +71,40 @@ const CandidateForm = () => {
   };
 
   const fields = [
-   "Name",
-     "Contact Number",
-      "Alternate Contact Number", 
-      "Email ID",
-       "Sourced From",
+    "Name",
+    "Contact Number",
+    "Alternate Contact Number", 
+    "Email ID",
+    "Sourced From",
     "Employment Type",
-     "Domain Experience (Primary)",
-      "Current / Previous Company",
-       "Role",
+    "Domain Experience (Primary)",
+    "Current / Previous Company",
+    "Role",
     "Current CTC (In LPA)",
-     "Expected CTC (In LPA)",
-      "Current Working Status",
-       "Notice Period (In Days)",
+    "Expected CTC (In LPA)",
+    "Current Working Status",
+    "Notice Period (In Days)",
     "Current Location (Nearest City)",
-     "Ready to Relocate for Other Location",
-      "Prefered Location (City)",
+    "Ready to Relocate for Other Location",
+    "Prefered Location (City)",
     "Availability for the Interview",
-     "Client Name",
-      "Demand Code",
-       "Interview taken by",
+    "Client Name",
+    // "Demand Code", // handled separately below
+    "Interview taken by",
     // "Comments", 
     "Status",
-     "Follow Ups", 
-     "Updated By",
-      "Offers Any",
+    "Follow Ups", 
+    "Updated By",
+    "Offers Any",
     // "Screening Comment (L2)",
-     "Technical Skills",
-      "Relavant Experience",
+    "Technical Skills",
+    "Relavant Experience",
     "Relevant Experience in Primary Skill",
-     "Relevant Experience in Secondary Skill",
+    "Relevant Experience in Secondary Skill",
     "NammaQA update", 
     // "Client Interview Status",
-     "Feedback",
-      "Upload Resume"
+    "Feedback",
+    "Upload Resume"
   ];
 
   // Status options for the dropbox
@@ -109,9 +113,9 @@ const CandidateForm = () => {
     "Not Screened",
     "Internal Screening Rejected",
     "Internal Screening Selected",
-    "L1 Accepted",
+    "L1 Selected",
     "L1 Rejected",
-    "L2 Accepted",
+    "L2 Selected",
     "L2 Rejected",
     "Offer Accepted",
     "Didn't Accept Offer"
@@ -186,6 +190,23 @@ const CandidateForm = () => {
             </div>
           );
         })}
+
+        {/* Demand Code Dropdown */}
+        <div style={styles.inputGroup}>
+          <label htmlFor="Demand Code" style={styles.label}>Demand Code</label>
+          <select
+            id="Demand Code"
+            name="Demand Code"
+            style={styles.input}
+            value={formData["Demand Code"] || ""}
+            onChange={e => handleInputChange("Demand Code", e.target.value)}
+          >
+            <option value="">Select Demand Code</option>
+            {companyIDs.map(id => (
+              <option key={id} value={id}>{id}</option>
+            ))}
+          </select>
+        </div>
 
         {hasOffer === 'Yes' && (
           <div style={styles.inputGroup}>
