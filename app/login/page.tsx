@@ -59,6 +59,8 @@ function Page() {
                 window.location.href = "/recruiter";
             } else if (role === "SUPERADMIN") {
                 window.location.href = "/superAdmin";
+            }else if (role === "ACCOUNT_MANAGER") {
+                window.location.href = "/ACmanager";
             }
             else if (role === "IT_ADMIN") {
                 window.location.href = "/itadmin";

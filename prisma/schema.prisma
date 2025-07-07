@@ -209,7 +209,7 @@ model Candidate {
   id                        Int      @id @default(autoincrement())
   name                      String
   contactNumber             String
-  alternateContactNumber    String?
+  alternateContactNumber    String? 
   email                     String
   sourcedFrom               String?
   employmentType            String?
@@ -242,6 +242,7 @@ model Candidate {
   feedback                  String?
   resumeLink                String?
   offerDetails              String?
-  createdAt                 DateTime @default(now())
-  updatedAt                 DateTime @updatedAt
+ acmanagerStatus            String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 }
