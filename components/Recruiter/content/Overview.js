@@ -1,6 +1,6 @@
 "use client";
 import Image from "next/image";
-
+import { useEffect, useState } from "react";
 export default function Overview() {
 //   const summaryData = [
 //     { title: "My Open Deals", value: 5, content: "You have 5 ongoing deals in progress." },
@@ -8,7 +8,17 @@ export default function Overview() {
 //     { title: "My Calls Today", value: 8, content: "You've made 8 calls today with potential clients." },
 //     { title: "My Leads", value: 12, content: "You have 12 new qualified leads generated today." },
 //   ];
-
+  const [userName, setUserName] = useState("");
+   useEffect(() => {
+      fetch("/api/users/me")
+        .then((res) => res.json())
+        .then((resJson) => {
+          if (resJson.success && resJson.data) {
+            setUserName(resJson.data.userName);
+          }
+        })
+        .catch((err) => console.error("Failed to load user info", err));
+    }, []);
   return (
     <div className="min-h-screen  flex flex-col items-center p-6">
       {/* Header: Logo & Welcome Message */}
@@ -25,7 +35,7 @@ export default function Overview() {
             id="welcome-message"
             className="text-xl sm:text-2xl font-bold text-gray-800 text-center sm:text-left"
           >
-            Welcome, User
+            Welcome, {userName}
           </h1>
         </div>
       </div>

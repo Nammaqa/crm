@@ -4,7 +4,7 @@ import { FaBars, FaTimes } from "react-icons/fa";
 import Image from "next/image";
 
 // Import section components
-import Overview from "@components/Recruiter/content/Overview";
+import Overview from "@components/ACmanager/content/Overview";
 import RequirementList from "@components/Admin/Content/RequirementList";
 import CandidateForm from "@components/Recruiter/content/CandidateForm";
 import CandidateList from "@components/Recruiter/content/CandidateList";
