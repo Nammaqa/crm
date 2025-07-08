@@ -1,6 +1,6 @@
 import { NextResponse, NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { Industry, Technology } from "@prisma/client"; 
+import { Industry, Technology, LeadType, LeadStatus } from "@prisma/client";
 
 interface SpocInput {
   name: string;
@@ -11,13 +11,14 @@ interface SpocInput {
   location: string;
 }
 
-// These arrays must match your Prisma schema enums exactly!
 const TECHNOLOGY_ENUMS: Technology[] = [
   "development",
   "testing",
   "devops",
   "ai_ml",
   "ai",
+  "digital_marketing",
+  "data_analytics",
   "other"
 ];
 const INDUSTRY_ENUMS: Industry[] = [
@@ -37,6 +38,19 @@ const INDUSTRY_ENUMS: Industry[] = [
   "consulting",
   "other"
 ];
+const LEAD_TYPE_ENUMS: LeadType[] = [
+  "prospective",
+  "new",
+  "existing",
+  "deal"
+];
+const STATUS_ENUMS: LeadStatus[] = [
+  "prospective",
+  "newlead",
+  "existing",
+  "deal",
+  "NEW"
+];
 
 const ALLOWED_ORIGIN =
   process.env.NODE_ENV === 'production'
@@ -51,7 +65,6 @@ function withCors(res: Response) {
   return res;
 }
 
-// Health check endpoint for debugging
 export async function HEAD() {
   return withCors(new Response("OK", { status: 200 }));
 }
@@ -77,7 +90,6 @@ export async function GET() {
   }
 }
 
-// Updated to be generic and type-safe
 function mapToEnumOrOther<T extends string>(
   value: string,
   enumValues: readonly T[]
@@ -92,7 +104,6 @@ function mapToEnumOrOther<T extends string>(
 export async function POST(req: NextRequest) {
   let body: unknown;
   try {
-    // Check content-type header
     const contentType = req.headers.get("content-type");
     if (!contentType || !contentType.includes("application/json")) {
       return withCors(
@@ -108,7 +119,6 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    
     const {
       salesName,
       leadType,
@@ -130,20 +140,40 @@ export async function POST(req: NextRequest) {
       percentage,
       remarks,
       spocs,
-      companyType, // new field
+      companyType,
+      technologyOther,
+      industryOther,
     } = body as Record<string, any>;
 
-    // // Validate required fields
-    // if (!salesName || !companyName) {
-    //   return withCors(
-    //     NextResponse.json({ error: "Missing required fields: salesName, companyName" }, { status: 400 })
-    //   );
-    // }
+    // Validate required fields
+    if (!salesName || !companyName || !leadType || !status) {
+      return withCors(
+        NextResponse.json(
+          { error: "Missing required fields: salesName, companyName, leadType, status" },
+          { status: 400 }
+        )
+      );
+    }
+    if (!LEAD_TYPE_ENUMS.includes(leadType)) {
+      return withCors(
+        NextResponse.json(
+          { error: `Invalid leadType. Must be one of: ${LEAD_TYPE_ENUMS.join(", ")}` },
+          { status: 400 }
+        )
+      );
+    }
+    if (!STATUS_ENUMS.includes(status)) {
+      return withCors(
+        NextResponse.json(
+          { error: `Invalid status. Must be one of: ${STATUS_ENUMS.join(", ")}` },
+          { status: 400 }
+        )
+      );
+    }
 
     const techMap = mapToEnumOrOther<Technology>(technology, TECHNOLOGY_ENUMS);
     const indMap = mapToEnumOrOther<Industry>(industry, INDUSTRY_ENUMS);
 
-    // Defensive: ensure spocs is an array if present
     let spocArray: SpocInput[] = [];
     if (Array.isArray(spocs)) {
       spocArray = spocs;
@@ -161,7 +191,7 @@ export async function POST(req: NextRequest) {
         companyName,
         companysize,
         companyID: companyID ? companyID : null,
-        numberOfEmployees,
+        numberOfEmployees: numberOfEmployees ? Number(numberOfEmployees) : 0,
         employeeName,
         replacementReason,
         replacementToDate: replacementToDate ? new Date(replacementToDate) : null,
@@ -171,9 +201,9 @@ export async function POST(req: NextRequest) {
         status,
         technology: techMap.enumValue as Technology,
         industry: indMap.enumValue as Industry,
-        percentage,
+        percentage: percentage ? Number(percentage) : null,
         remarks,
-        companyType, // new field
+        technologyOther: technologyOther || null,
         spocs: {
           create: spocArray.map((spoc: SpocInput) => ({
             name: spoc.name,
@@ -190,9 +220,7 @@ export async function POST(req: NextRequest) {
 
     return withCors(NextResponse.json(lead, { status: 201 }));
   } catch (error: unknown) {
-    // Prisma validation errors
     if (typeof error === "object" && error && "code" in error && (error as any).code === "P2002") {
-      // Unique constraint failed
       return withCors(
         NextResponse.json(
           { error: "Duplicate entry", details: (error as any).meta },

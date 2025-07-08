@@ -137,10 +137,13 @@ const CandidateEditForm = () => {
       "Upload Resume"
   ];
 
-  const handleBack =() => {
-    
+const handleBack =async () => {
+    const isAdmin = await validateACmanager();
+     if(!isAdmin) {
     router.push(`/recruiter`);
-    
+    return
+    }
+    router.push(`/ACmanager`);
   };
 
   return (

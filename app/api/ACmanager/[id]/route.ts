@@ -1,0 +1,71 @@
+import { PrismaClient } from '@prisma/client';
+
+const prisma = new PrismaClient();
+
+export async function PATCH(
+  req: Request,
+  context: { params?: { id?: string } }
+): Promise<Response> {
+  // Use context.params directly (no await)
+  const id = context.params?.id ? parseInt(context.params.id, 10) : NaN;
+
+  if (isNaN(id)) {
+    return new Response(
+      JSON.stringify({ error: "Invalid candidate ID" }),
+      { status: 400, headers: { "Content-Type": "application/json" } }
+    );
+  }
+
+  let body: any;
+  try {
+    body = await req.json();
+  } catch {
+    return new Response(
+      JSON.stringify({ error: "Invalid JSON body" }),
+      { status: 400, headers: { "Content-Type": "application/json" } }
+    );
+  }
+
+  const { acmanagerStatus, demandCode, acupdateby } = body;
+  if (typeof acmanagerStatus === "undefined") {
+    return new Response(
+      JSON.stringify({ error: "Missing 'acmanagerStatus' in request body" }),
+      { status: 400, headers: { "Content-Type": "application/json" } }
+    );
+  }
+
+  try {
+    const updated = await prisma.candidate.update({
+      where: { id },
+      data: {
+        acmanagerStatus,
+        demandCode,
+        acupdateby,
+      },
+    });
+    return new Response(
+      JSON.stringify(updated),
+      { status: 200, headers: { "Content-Type": "application/json" } }
+    );
+  } catch (error) {
+    return new Response(
+      JSON.stringify({ error: "Failed to update status" }),
+      { status: 500, headers: { "Content-Type": "application/json" } }
+    );
+  }
+}
+
+export async function GET() {
+  try {
+    const candidates = await prisma.candidate.findMany({
+      orderBy: { createdAt: 'desc' }
+    });
+    return new Response(JSON.stringify(candidates), {
+      status: 200,
+      headers: { "Content-Type": "application/json" }
+    });
+  } catch (error) {
+    console.error("ACmanager API error:", error);
+    return new Response(JSON.stringify({ error: "Failed to fetch candidates" }), { status: 500 });
+  }
+}

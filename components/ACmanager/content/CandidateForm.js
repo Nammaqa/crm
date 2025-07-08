@@ -17,7 +17,7 @@ const sourcedFromOptions = [
 
 const employmentTypeOptions = [
   "Permanent",
-  "Contract",
+  "Contract-based",
   "C2H (Contract to Hire)"
 ];
 
@@ -31,21 +31,8 @@ const CandidateForm = () => {
   const [formData, setFormData] = useState({});
   const [candidates, setCandidates] = useState([]);
   const [companyIds, setCompanyIds] = useState([]);
-  const [userName, setUserName] = useState(""); // For Updated By
+  const [selectedDemandCode, setSelectedDemandCode] = useState({});
   const router = useRouter();
-
-  // Fetch logged-in user name (same as Overview.js)
-  useEffect(() => {
-    fetch("/api/users/me")
-      .then((res) => res.json())
-      .then((resJson) => {
-        if (resJson.success && resJson.data) {
-          setUserName(resJson.data.userName);
-          setFormData(prev => ({ ...prev, "Updated By": resJson.data.userName }));
-        }
-      })
-      .catch((err) => console.error("Failed to load user info", err));
-  }, []);
 
   const handleInputChange = (field, value) => {
     if (field === "Upload Resume") {
@@ -136,20 +123,24 @@ const CandidateForm = () => {
     "Availability for the Interview",
     "Client Name",
     "Demand Code",
-    // "Interview taken by",
-    // "Status",
-    // "Follow Ups", 
+    "Interview taken by",
+    "Comments", 
+    "Status",
+    "Follow Ups", 
     "Updated By",
     "Offers Any",
+    "Screening Comment (L2)",
     "Technical Skills",
     "Relavant Experience",
     "Relevant Experience in Primary Skill",
     "Relevant Experience in Secondary Skill",
     "NammaQA update", 
+    // "Client Interview Status",
     "Feedback",
     "Upload Resume"
   ];
 
+  // Status options for the dropbox
   const statusOptions = [
     "Screened",
     "Not Screened",
@@ -173,23 +164,6 @@ const CandidateForm = () => {
           const isDropdownField = field === "Offers Any";
           const isStatusField = field === "Status";
           const isDemandCodeField = field === "Demand Code";
-
-          // Updated By: show as read-only and auto-filled
-          if (field === "Updated By") {
-            return (
-              <div key={index} style={styles.inputGroup}>
-                <label htmlFor={field} style={styles.label}>{field}</label>
-                <input
-                  type="text"
-                  id={field}
-                  name={field}
-                  style={styles.input}
-                  value={userName}
-                  readOnly
-                />
-              </div>
-            );
-          }
 
           // Sourced From: dropdown
           if (field === "Sourced From") {
