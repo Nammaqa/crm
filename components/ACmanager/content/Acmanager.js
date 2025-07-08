@@ -3,6 +3,15 @@ import React, { useState, useEffect } from "react";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { toast } from "react-hot-toast";
+import Dialog from "@mui/material/Dialog";
+import DialogActions from "@mui/material/DialogActions";
+import DialogContent from "@mui/material/DialogContent";
+import DialogTitle from "@mui/material/DialogTitle";
+import Slide from "@mui/material/Slide";
+
+const Transition = React.forwardRef(function Transition(props, ref) {
+    return <Slide direction="up" ref={ref} {...props} />;
+});
 
 export default function AcManagerTable() {
     const [candidates, setCandidates] = useState([]);
@@ -10,6 +19,9 @@ export default function AcManagerTable() {
     const [shortlistDate, setShortlistDate] = useState("");
     const [shortlistTime, setShortlistTime] = useState("");
     const [feedback, setFeedback] = useState("");
+    const [dialogOpen, setDialogOpen] = useState(false);
+    const [companyIds, setCompanyIds] = useState([]);
+    const [selectedDemandCode, setSelectedDemandCode] = useState({}); // key: candidateId, value: companyId
 
     // Fetch candidates from API
     useEffect(() => {
@@ -17,7 +29,6 @@ export default function AcManagerTable() {
             try {
                 const res = await fetch("/api/ACmanager");
                 const data = await res.json();
-                // Only show candidates where acmanagerStatus is NOT "Selected" or "Rejected"
                 setCandidates(data.filter(c => c.acmanagerStatus !== "Selected" && c.acmanagerStatus !== "Rejected"));
             } catch (err) {
                 toast.error("Failed to fetch candidates");
@@ -26,9 +37,24 @@ export default function AcManagerTable() {
         fetchCandidates();
     }, []);
 
+    // Fetch all company IDs from /api/company-ids endpoint
+    useEffect(() => {
+        async function fetchCompanyIds() {
+            try {
+                const res = await fetch("/api/company-ids");
+                const data = await res.json();
+                setCompanyIds(Array.isArray(data) ? data : []);
+            } catch (err) {
+                setCompanyIds([]);
+            }
+        }
+        fetchCompanyIds();
+    }, []);
+
     // Handle View
     const handleView = (candidate) => {
         setSelectedCandidate(candidate);
+        setDialogOpen(true);
     };
 
     // Handle Shortlist (store as "Selected")
@@ -41,12 +67,15 @@ export default function AcManagerTable() {
             const res = await fetch(`/api/ACmanager/${selectedCandidate.id}`, {
                 method: "PATCH",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ acmanagerStatus: "Selected" }),
+                body: JSON.stringify({
+                    acmanagerStatus: "Selected",
+                    demandCode: selectedDemandCode[selectedCandidate.id] || ""
+                }),
             });
             if (res.ok) {
                 toast.success("Candidate Selected!");
                 setCandidates(candidates.filter(c => c.id !== selectedCandidate.id));
-                setSelectedCandidate(null);
+                handleDialogClose();
             } else {
                 toast.error("Failed to update status");
             }
@@ -70,13 +99,29 @@ export default function AcManagerTable() {
             if (res.ok) {
                 toast.error("Candidate Rejected.");
                 setCandidates(candidates.filter(c => c.id !== selectedCandidate.id));
-                setSelectedCandidate(null);
+                handleDialogClose();
             } else {
                 toast.error("Failed to update status");
             }
         } catch {
             toast.error("Failed to update status");
         }
+    };
+
+    const handleDialogClose = () => {
+        setDialogOpen(false);
+        setSelectedCandidate(null);
+        setShortlistDate("");
+        setShortlistTime("");
+        setFeedback("");
+    };
+
+    // Handle Demand Code change per candidate
+    const handleDemandCodeChange = (candidateId, value) => {
+        setSelectedDemandCode(prev => ({
+            ...prev,
+            [candidateId]: value
+        }));
     };
 
     return (
@@ -93,6 +138,7 @@ export default function AcManagerTable() {
                         <TableHead>Role</TableHead>
                         <TableHead>Experience</TableHead>
                         <TableHead>Status</TableHead>
+                        <TableHead>Demand Code</TableHead>
                         <TableHead>Action</TableHead>
                     </TableRow>
                 </TableHeader>
@@ -107,6 +153,21 @@ export default function AcManagerTable() {
                             <TableCell className={`font-bold ${item.acmanagerStatus === "Selected" ? "text-green-500" : item.acmanagerStatus === "Rejected" ? "text-red-500" : "text-yellow-500"}`}>
                                 {item.acmanagerStatus || "Pending"}
                             </TableCell>
+                            <TableCell>
+                                <select
+                                    value={selectedDemandCode[item.id] || ""}
+                                    onChange={e => handleDemandCodeChange(item.id, e.target.value)}
+                                    className="border p-2 rounded w-full"
+                                >
+                                    <option value="">Select Demand Code</option>
+                                    {companyIds.length === 0 && (
+                                        <option disabled value="">No Company IDs</option>
+                                    )}
+                                    {companyIds.map(id => (
+                                        <option key={id} value={id}>{id}</option>
+                                    ))}
+                                </select>
+                            </TableCell>
                             <TableCell className="flex gap-2">
                                 <Button onClick={() => handleView(item)} variant="outline" className="text-sm">
                                     View
@@ -117,87 +178,109 @@ export default function AcManagerTable() {
                 </TableBody>
             </Table>
 
-            {/* Candidate Details Section */}
-            {selectedCandidate && (
-                <div className="mt-6 p-6 border rounded-lg shadow-md bg-white">
-                    <h2 className="text-xl font-semibold text-center mb-4">Candidate Details</h2>
-
-                    <div className="grid grid-cols-2 gap-4 text-sm text-gray-700">
-                        <p><strong>Name:</strong> {selectedCandidate.name}</p>
-                        <p><strong>Client Name:</strong> {selectedCandidate.clientName || "-"}</p>
-                        <p><strong>Company:</strong> {selectedCandidate.company}</p>
-                        <p><strong>Role:</strong> {selectedCandidate.role}</p>
-                        <p><strong>Experience:</strong> {selectedCandidate.relevantExperience || selectedCandidate.experience || "-"}</p>
-                        <p><strong>Notice Period:</strong> {selectedCandidate.noticePeriod || "-"}</p>
-                        <p><strong>Primary Skills:</strong> {selectedCandidate.technicalSkills}</p>
-                        <p><strong>Secondary Skills:</strong> {selectedCandidate.secondarySkillExp}</p>
-                        <p><strong>Work Type:</strong> {selectedCandidate.employmentType}</p>
-                        <p><strong>CTC:</strong> {selectedCandidate.currentCTC ? `${selectedCandidate.currentCTC} LPA` : "-"}</p>
-                        <p><strong>Expected CTC:</strong> {selectedCandidate.expectedCTC ? `${selectedCandidate.expectedCTC} LPA` : "-"}</p>
-                        <p><strong>Status:</strong> <span className={`font-bold ${selectedCandidate.acmanagerStatus === "Selected" ? "text-green-500" : selectedCandidate.acmanagerStatus === "Rejected" ? "text-red-500" : "text-yellow-500"}`}>
-                            {selectedCandidate.acmanagerStatus || "Pending"}
-                        </span></p>
-                </div>
-                    {/* Resume Section */}
-                    {selectedCandidate.resumeLink && (
-                        <div className="mt-6">
-                            <h2 className="text-sm font-semibold">Resume</h2>
-                            <iframe src={selectedCandidate.resumeLink} className="w-full h-[300px] border rounded-md mt-2" title="Resume Preview"></iframe>
-                            <div className="mt-3">
-                                <Button onClick={() => window.open(selectedCandidate.resumeLink, "_blank")} variant="outline">
-                                    Open Resume in New Tab
-                                </Button>
+            {/* Candidate Details Dialog */}
+            <Dialog
+                open={dialogOpen}
+                TransitionComponent={Transition}
+                keepMounted
+                onClose={handleDialogClose}
+                aria-describedby="candidate-details-dialog"
+                maxWidth="md"
+                fullWidth
+            >
+                <DialogTitle>
+                    Candidate Details
+                </DialogTitle>
+                <DialogContent>
+                    {selectedCandidate && (
+                        <div>
+                            <div className="grid grid-cols-2 gap-4 text-sm text-gray-700 mb-4">
+                                <p><strong>Name:</strong> {selectedCandidate.name}</p>
+                                <p><strong>Client Name:</strong> {selectedCandidate.clientName || "-"}</p>
+                                <p><strong>Company:</strong> {selectedCandidate.company}</p>
+                                <p><strong>Role:</strong> {selectedCandidate.role}</p>
+                                <p><strong>Experience:</strong> {selectedCandidate.relevantExperience || selectedCandidate.experience || "-"}</p>
+                                <p><strong>Notice Period:</strong> {selectedCandidate.noticePeriod || "-"}</p>
+                                <p><strong>Primary Skills:</strong> {selectedCandidate.technicalSkills}</p>
+                                <p><strong>Secondary Skills:</strong> {selectedCandidate.secondarySkillExp}</p>
+                                <p><strong>Work Type:</strong> {selectedCandidate.employmentType}</p>
+                                <p><strong>CTC:</strong> {selectedCandidate.currentCTC ? `${selectedCandidate.currentCTC} LPA` : "-"}</p>
+                                <p><strong>Expected CTC:</strong> {selectedCandidate.expectedCTC ? `${selectedCandidate.expectedCTC} LPA` : "-"}</p>
+                                <p>
+                                    <strong>Status:</strong>{" "}
+                                    <span className={`font-bold ${selectedCandidate.acmanagerStatus === "Selected" ? "text-green-500" : selectedCandidate.acmanagerStatus === "Rejected" ? "text-red-500" : "text-yellow-500"}`}>
+                                        {selectedCandidate.acmanagerStatus || "Pending"}
+                                    </span>
+                                </p>
+                                <p className="col-span-2">
+                                    <strong>Demand Code:</strong>{" "}
+                                    {selectedDemandCode[selectedCandidate.id] || "-"}
+                                </p>
+                            </div>
+                            {/* Resume Section */}
+                            {selectedCandidate.resumeLink && (
+                                <div className="mb-6">
+                                    <h2 className="text-sm font-semibold">Resume</h2>
+                                    <iframe src={selectedCandidate.resumeLink} className="w-full h-[300px] border rounded-md mt-2" title="Resume Preview"></iframe>
+                                    <div className="mt-3">
+                                        <Button onClick={() => window.open(selectedCandidate.resumeLink, "_blank")} variant="outline">
+                                            Open Resume in New Tab
+                                        </Button>
+                                    </div>
+                                </div>
+                            )}
+                            {/* Shortlist & Reject Actions */}
+                            <div className="bg-gray-100 p-4 rounded-md">
+                                <h2 className="text-lg font-semibold">Actions</h2>
+                                {/* Shortlist Section */}
+                                <div className="mt-3">
+                                    <label className="block text-sm font-semibold">Shortlist Date:</label>
+                                    <input
+                                        type="date"
+                                        className="border p-2 rounded w-full"
+                                        value={shortlistDate}
+                                        onChange={(e) => setShortlistDate(e.target.value)}
+                                    />
+                                </div>
+                                <div className="mt-2">
+                                    <label className="block text-sm font-semibold">Shortlist Time:</label>
+                                    <input
+                                        type="time"
+                                        className="border p-2 rounded w-full"
+                                        value={shortlistTime}
+                                        onChange={(e) => setShortlistTime(e.target.value)}
+                                    />
+                                </div>
+                                <div className="mt-4">
+                                    <Button onClick={handleShortlist} className="bg-green-500 hover:bg-green-700 text-white w-full">
+                                        Select Candidate
+                                    </Button>
+                                </div>
+                                {/* Reject Section */}
+                                <div className="mt-4">
+                                    <label className="block text-sm font-semibold">Rejection Feedback:</label>
+                                    <textarea
+                                        className="border p-2 rounded w-full"
+                                        value={feedback}
+                                        onChange={(e) => setFeedback(e.target.value)}
+                                        placeholder="Provide a reason for rejection"
+                                    />
+                                </div>
+                                <div className="mt-4">
+                                    <Button onClick={handleReject} className="bg-red-500 hover:bg-red-700 text-white w-full">
+                                        Reject Candidate
+                                    </Button>
+                                </div>
                             </div>
                         </div>
                     )}
-
-                    {/* Shortlist & Reject Actions */}
-                    <div className="mt-6 bg-gray-100 p-4 rounded-md">
-                        <h2 className="text-lg font-semibold">Actions</h2>
-
-                        {/* Shortlist Section */}
-                        <div className="mt-3">
-                            <label className="block text-sm font-semibold">Shortlist Date:</label>
-                            <input
-                                type="date"
-                                className="border p-2 rounded w-full"
-                                value={shortlistDate}
-                                onChange={(e) => setShortlistDate(e.target.value)}
-                            />
-                        </div>
-                        <div className="mt-2">
-                            <label className="block text-sm font-semibold">Shortlist Time:</label>
-                            <input
-                                type="time"
-                                className="border p-2 rounded w-full"
-                                value={shortlistTime}
-                                onChange={(e) => setShortlistTime(e.target.value)}
-                            />
-                        </div>
-                        <div className="mt-4">
-                            <Button onClick={handleShortlist} className="bg-green-500 hover:bg-green-700 text-white w-full">
-                                Select Candidate
-                            </Button>
-                        </div>
-
-                        {/* Reject Section */}
-                        <div className="mt-4">
-                            <label className="block text-sm font-semibold">Rejection Feedback:</label>
-                            <textarea
-                                className="border p-2 rounded w-full"
-                                value={feedback}
-                                onChange={(e) => setFeedback(e.target.value)}
-                                placeholder="Provide a reason for rejection"
-                            />
-                        </div>
-                        <div className="mt-4">
-                            <Button onClick={handleReject} className="bg-red-500 hover:bg-red-700 text-white w-full">
-                                Reject Candidate
-                            </Button>
-                        </div>
-                    </div>
-                </div>
-            )}
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={handleDialogClose} variant="outline">
+                        Close
+                    </Button>
+                </DialogActions>
+            </Dialog>
         </div>
     );
 }

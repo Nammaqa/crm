@@ -1,14 +1,38 @@
 "use client";
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 
 export default function ShortList() {
   const [candidates, setCandidates] = useState([]);
+  const router = useRouter();
 
   useEffect(() => {
     fetch("/api/ACmanager")
-      .then(res => res.json())
-      .then(data => setCandidates(data.filter(c => c.acmanagerStatus === "Selected")));
+      .then((res) => res.json())
+      .then((data) =>
+        setCandidates(data.filter((c) => c.acmanagerStatus === "Selected"))
+      );
   }, []);
+
+  function handleEdit(id) {
+    // Navigate to the CandidateEditForm page for this candidate
+    router.push(`/recruiter/${id}`);
+  }
+
+  function handleReject(id) {
+    if (confirm("Are you sure you want to reject this candidate?")) {
+      fetch(`/api/candidates/${id}/reject`, {
+        method: "PUT",
+      })
+        .then((res) => res.json())
+        .then(() => {
+          setCandidates((prev) => prev.filter((c) => c.id !== id));
+        })
+        .catch((err) => {
+          console.error("Error rejecting candidate:", err);
+        });
+    }
+  }
 
   return (
     <div className="p-8 bg-gray-50 min-h-screen">
@@ -34,12 +58,13 @@ export default function ShortList() {
                 <th className="border px-4 py-2">Location</th>
                 <th className="border px-4 py-2">Added On</th>
                 <th className="border px-4 py-2">Resume</th>
+                <th className="border px-4 py-2">Actions</th>
               </tr>
             </thead>
             <tbody>
               {candidates.length === 0 ? (
                 <tr>
-                  <td colSpan={14} className="text-center py-6 text-gray-400">
+                  <td colSpan={15} className="text-center py-6 text-gray-400">
                     No shortlisted candidates found.
                   </td>
                 </tr>
@@ -59,7 +84,9 @@ export default function ShortList() {
                     <td className="border px-4 py-2">{c.interviewAvailability}</td>
                     <td className="border px-4 py-2">{c.location}</td>
                     <td className="border px-4 py-2">
-                      {c.createdAt ? new Date(c.createdAt).toISOString().split("T")[0] : ""}
+                      {c.createdAt
+                        ? new Date(c.createdAt).toISOString().split("T")[0]
+                        : ""}
                     </td>
                     <td className="border px-4 py-2">
                       {c.resumeLink ? (
@@ -75,6 +102,20 @@ export default function ShortList() {
                       ) : (
                         <span className="text-gray-400 italic">No file</span>
                       )}
+                    </td>
+                    <td className="border px-4 py-2 space-x-2">
+                      <button
+                        onClick={() => handleEdit(c.id)}
+                        className="bg-yellow-400 hover:bg-yellow-500 text-white px-3 py-1 rounded"
+                      >
+                        Edit
+                      </button>
+                      {/* <button
+                        onClick={() => handleReject(c.id)}
+                        className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded"
+                      >
+                        Reject
+                      </button> */}
                     </td>
                   </tr>
                 ))

@@ -1,14 +1,21 @@
 "use client";
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 
 export default function RejectedList() {
   const [candidates, setCandidates] = useState([]);
+  const router = useRouter();
 
   useEffect(() => {
     fetch("/api/ACmanager")
       .then(res => res.json())
       .then(data => setCandidates(data.filter(c => c.acmanagerStatus === "Rejected")));
   }, []);
+
+  function handleEdit(id) {
+    // Navigate to the CandidateEditForm page for this candidate
+    router.push(`/recruiter/${id}`);
+  }
 
   return (
     <div className="p-8 bg-gray-50 min-h-screen">
@@ -34,12 +41,13 @@ export default function RejectedList() {
                 <th className="border px-4 py-2">Location</th>
                 <th className="border px-4 py-2">Added On</th>
                 <th className="border px-4 py-2">Resume</th>
+                <th className="border px-4 py-2">Actions</th>
               </tr>
             </thead>
             <tbody>
               {candidates.length === 0 ? (
                 <tr>
-                  <td colSpan={14} className="text-center py-6 text-gray-400">
+                  <td colSpan={15} className="text-center py-6 text-gray-400">
                     No rejected candidates found.
                   </td>
                 </tr>
@@ -76,6 +84,14 @@ export default function RejectedList() {
                         <span className="text-gray-400 italic">No file</span>
                       )}
                     </td>
+                    <td className="border px-4 py-2 space-x-2">
+                      <button
+                        onClick={() => handleEdit(c.id)}
+                        className="bg-yellow-400 hover:bg-yellow-500 text-white px-3 py-1 rounded"
+                      >
+                        Edit
+                      </button>
+                    </td>
                   </tr>
                 ))
               )}
@@ -84,5 +100,5 @@ export default function RejectedList() {
         </div>
       </div>
     </div>
-    );
+  );
 }
