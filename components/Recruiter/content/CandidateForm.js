@@ -2,19 +2,59 @@
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
+const sourcedFromOptions = [
+  "LinkedIn",
+  "Walk-in",
+  "Email",
+  "Naukri",
+  "Glassdoor",
+  "Foundit",
+  "CutShort",
+  "Indeed",
+  "Shine",
+  "Others"
+];
+
+const employmentTypeOptions = [
+  "Permanent",
+  "Contract",
+  "C2H (Contract to Hire)"
+];
+
+const relocateOptions = [
+  "Yes",
+  "No"
+];
+
 const CandidateForm = () => {
   const [hasOffer, setHasOffer] = useState('No');
   const [formData, setFormData] = useState({});
   const [candidates, setCandidates] = useState([]);
-  const [companyIDs, setCompanyIDs] = useState([]);
+  const [companyIds, setCompanyIds] = useState([]);
+  const [userName, setUserName] = useState(""); // For Updated By
   const router = useRouter();
 
+  // Fetch logged-in user name (same as Overview.js)
   useEffect(() => {
-    fetch('/api/leads/companyids')
-      .then(res => res.json())
-      .then(data => setCompanyIDs(data));
-    fetchCandidates();
+    fetch("/api/users/me")
+      .then((res) => res.json())
+      .then((resJson) => {
+        if (resJson.success && resJson.data) {
+          setUserName(resJson.data.userName);
+          setFormData(prev => ({ ...prev, "Updated By": resJson.data.userName }));
+        }
+      })
+      .catch((err) => console.error("Failed to load user info", err));
   }, []);
+
+  const handleInputChange = (field, value) => {
+    if (field === "Upload Resume") {
+      setFormData({ ...formData, [field]: value.target.files[0] });
+    } else {
+      setFormData({ ...formData, [field]: value });
+      if (field === 'Offers Any') setHasOffer(value);
+    }
+  };
 
   const fetchCandidates = async () => {
     try {
@@ -26,14 +66,20 @@ const CandidateForm = () => {
     }
   };
 
-  const handleInputChange = (field, value) => {
-    if (field === "Upload Resume") {
-      setFormData({ ...formData, [field]: value.target.files[0] });
-    } else {
-      setFormData({ ...formData, [field]: value });
-      if (field === 'Offers Any') setHasOffer(value);
+  // Fetch company IDs for Demand Code dropdown
+  useEffect(() => {
+    async function fetchCompanyIds() {
+      try {
+        const res = await fetch("/api/company-ids");
+        const data = await res.json();
+        setCompanyIds(Array.isArray(data) ? data : []);
+      } catch (err) {
+        setCompanyIds([]);
+      }
     }
-  };
+    fetchCompanyIds();
+    fetchCandidates();
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -89,33 +135,29 @@ const CandidateForm = () => {
     "Prefered Location (City)",
     "Availability for the Interview",
     "Client Name",
-    // "Demand Code", // handled separately below
-    "Interview taken by",
-    // "Comments", 
-    "Status",
-    "Follow Ups", 
+    "Demand Code",
+    // "Interview taken by",
+    // "Status",
+    // "Follow Ups", 
     "Updated By",
     "Offers Any",
-    // "Screening Comment (L2)",
     "Technical Skills",
     "Relavant Experience",
     "Relevant Experience in Primary Skill",
     "Relevant Experience in Secondary Skill",
     "NammaQA update", 
-    // "Client Interview Status",
     "Feedback",
     "Upload Resume"
   ];
 
-  // Status options for the dropbox
   const statusOptions = [
     "Screened",
     "Not Screened",
     "Internal Screening Rejected",
     "Internal Screening Selected",
-    "L1 Selected",
+    "L1 Accepted",
     "L1 Rejected",
-    "L2 Selected",
+    "L2 Accepted",
     "L2 Rejected",
     "Offer Accepted",
     "Didn't Accept Offer"
@@ -130,6 +172,87 @@ const CandidateForm = () => {
           const isFileField = field === "Upload Resume";
           const isDropdownField = field === "Offers Any";
           const isStatusField = field === "Status";
+          const isDemandCodeField = field === "Demand Code";
+
+          // Updated By: show as read-only and auto-filled
+          if (field === "Updated By") {
+            return (
+              <div key={index} style={styles.inputGroup}>
+                <label htmlFor={field} style={styles.label}>{field}</label>
+                <input
+                  type="text"
+                  id={field}
+                  name={field}
+                  style={styles.input}
+                  value={userName}
+                  readOnly
+                />
+              </div>
+            );
+          }
+
+          // Sourced From: dropdown
+          if (field === "Sourced From") {
+            return (
+              <div key={index} style={styles.inputGroup}>
+                <label htmlFor={field} style={styles.label}>{field}</label>
+                <select
+                  id={field}
+                  name={field}
+                  style={styles.input}
+                  onChange={(e) => handleInputChange(field, e.target.value)}
+                  value={formData[field] || ''}
+                >
+                  <option value="">Select Source</option>
+                  {sourcedFromOptions.map(option => (
+                    <option key={option} value={option}>{option}</option>
+                  ))}
+                </select>
+              </div>
+            );
+          }
+
+          // Employment Type: dropdown
+          if (field === "Employment Type") {
+            return (
+              <div key={index} style={styles.inputGroup}>
+                <label htmlFor={field} style={styles.label}>{field}</label>
+                <select
+                  id={field}
+                  name={field}
+                  style={styles.input}
+                  onChange={(e) => handleInputChange(field, e.target.value)}
+                  value={formData[field] || ''}
+                >
+                  <option value="">Select Employment Type</option>
+                  {employmentTypeOptions.map(option => (
+                    <option key={option} value={option}>{option}</option>
+                  ))}
+                </select>
+              </div>
+            );
+          }
+
+          // Ready to Relocate for Other Location: dropdown
+          if (field === "Ready to Relocate for Other Location") {
+            return (
+              <div key={index} style={styles.inputGroup}>
+                <label htmlFor={field} style={styles.label}>{field}</label>
+                <select
+                  id={field}
+                  name={field}
+                  style={styles.input}
+                  onChange={(e) => handleInputChange(field, e.target.value)}
+                  value={formData[field] || ''}
+                >
+                  <option value="">Select Option</option>
+                  {relocateOptions.map(option => (
+                    <option key={option} value={option}>{option}</option>
+                  ))}
+                </select>
+              </div>
+            );
+          }
 
           return (
             <div key={index} style={styles.inputGroup}>
@@ -156,6 +279,22 @@ const CandidateForm = () => {
                   <option value="">Select Status</option>
                   {statusOptions.map((option) => (
                     <option key={option} value={option}>{option}</option>
+                  ))}
+                </select>
+              ) : isDemandCodeField ? (
+                <select
+                  id={field}
+                  name={field}
+                  style={styles.input}
+                  onChange={(e) => handleInputChange(field, e.target.value)}
+                  value={formData[field] || ''}
+                >
+                  <option value="">Select Demand Code</option>
+                  {companyIds.length === 0 && (
+                    <option disabled value="">No Company IDs</option>
+                  )}
+                  {companyIds.map(id => (
+                    <option key={id} value={id}>{id}</option>
                   ))}
                 </select>
               ) : isFileField ? (
@@ -190,23 +329,6 @@ const CandidateForm = () => {
             </div>
           );
         })}
-
-        {/* Demand Code Dropdown */}
-        <div style={styles.inputGroup}>
-          <label htmlFor="Demand Code" style={styles.label}>Demand Code</label>
-          <select
-            id="Demand Code"
-            name="Demand Code"
-            style={styles.input}
-            value={formData["Demand Code"] || ""}
-            onChange={e => handleInputChange("Demand Code", e.target.value)}
-          >
-            <option value="">Select Demand Code</option>
-            {companyIDs.map(id => (
-              <option key={id} value={id}>{id}</option>
-            ))}
-          </select>
-        </div>
 
         {hasOffer === 'Yes' && (
           <div style={styles.inputGroup}>

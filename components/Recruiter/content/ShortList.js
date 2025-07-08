@@ -1,10 +1,23 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { validateACmanager } from "@/actions/validateACmanager";
 
 export default function ShortList() {
   const [candidates, setCandidates] = useState([]);
+  const [userName, setUserName] = useState("");
   const router = useRouter();
+
+  // Fetch logged-in user name
+  useEffect(() => {
+    fetch("/api/users/me")
+      .then((res) => res.json())
+      .then((resJson) => {
+        if (resJson.success && resJson.data) {
+          setUserName(resJson.data.userName);
+        }
+      });
+  }, []);
 
   useEffect(() => {
     fetch("/api/ACmanager")
@@ -14,9 +27,14 @@ export default function ShortList() {
       );
   }, []);
 
-  function handleEdit(id) {
+  async function handleEdit(id) {
     // Navigate to the CandidateEditForm page for this candidate
-    router.push(`/recruiter/${id}`);
+    const isAdmin = await validateACmanager();
+    if (!isAdmin) {
+      router.push(`/recruiter/${id}`);
+      return;
+    }
+    router.push(`/ACmanager/${id}`);
   }
 
   function handleReject(id) {
@@ -106,7 +124,12 @@ export default function ShortList() {
                     <td className="border px-4 py-2 space-x-2">
                       <button
                         onClick={() => handleEdit(c.id)}
-                        className="bg-yellow-400 hover:bg-yellow-500 text-white px-3 py-1 rounded"
+                        className={`px-3 py-1 rounded text-white ${
+                          userName === c.acupdateby
+                            ? "bg-yellow-400 hover:bg-yellow-500"
+                            : "bg-gray-300 cursor-not-allowed"
+                        }`}
+                        disabled={userName !== c.acupdateby}
                       >
                         Edit
                       </button>

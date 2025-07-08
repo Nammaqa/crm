@@ -21,7 +21,20 @@ export default function AcManagerTable() {
     const [feedback, setFeedback] = useState("");
     const [dialogOpen, setDialogOpen] = useState(false);
     const [companyIds, setCompanyIds] = useState([]);
-    const [selectedDemandCode, setSelectedDemandCode] = useState({}); // key: candidateId, value: companyId
+    const [selectedDemandCode, setSelectedDemandCode] = useState({});
+    const [userName, setUserName] = useState("");
+
+    // Fetch logged-in user name
+    useEffect(() => {
+        fetch("/api/users/me")
+            .then((res) => res.json())
+            .then((resJson) => {
+                if (resJson.success && resJson.data) {
+                    setUserName(resJson.data.userName);
+                }
+            })
+            .catch((err) => console.error("Failed to load user info", err));
+    }, []);
 
     // Fetch candidates from API
     useEffect(() => {
@@ -57,7 +70,7 @@ export default function AcManagerTable() {
         setDialogOpen(true);
     };
 
-    // Handle Shortlist (store as "Selected")
+    // Handle Shortlist (store as "Selected" and save userName in acupdateby)
     const handleShortlist = async () => {
         if (!shortlistDate || !shortlistTime) {
             toast.error("Please select date and time.");
@@ -69,7 +82,8 @@ export default function AcManagerTable() {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     acmanagerStatus: "Selected",
-                    demandCode: selectedDemandCode[selectedCandidate.id] || ""
+                    demandCode: selectedDemandCode[selectedCandidate.id] || "",
+                    acupdateby: userName // Save user name in acupdateby
                 }),
             });
             if (res.ok) {
@@ -84,7 +98,7 @@ export default function AcManagerTable() {
         }
     };
 
-    // Handle Reject (store as "Rejected")
+    // Handle Reject (store as "Rejected" and save userName in acupdateby)
     const handleReject = async () => {
         if (!feedback) {
             toast.error("Please provide feedback.");
@@ -94,7 +108,10 @@ export default function AcManagerTable() {
             const res = await fetch(`/api/ACmanager/${selectedCandidate.id}`, {
                 method: "PATCH",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ acmanagerStatus: "Rejected" }),
+                body: JSON.stringify({
+                    acmanagerStatus: "Rejected",
+                    acupdateby: userName // Save user name in acupdateby
+                }),
             });
             if (res.ok) {
                 toast.error("Candidate Rejected.");
@@ -126,7 +143,14 @@ export default function AcManagerTable() {
 
     return (
         <div className="p-6 max-w-6xl mx-auto">
-            <h1 className="text-2xl font-bold mb-6 text-center">A/C Manager</h1>
+            <h1 className="text-2xl font-bold mb-6 text-center">
+                A/C Manager
+                {userName && (
+                    <span className="block text-base font-normal text-gray-600 mt-2">
+                        Welcome, {userName}
+                    </span>
+                )}
+            </h1>
 
             {/* Table Section */}
             <Table className="border rounded-lg">
@@ -138,7 +162,6 @@ export default function AcManagerTable() {
                         <TableHead>Role</TableHead>
                         <TableHead>Experience</TableHead>
                         <TableHead>Status</TableHead>
-                        <TableHead>Demand Code</TableHead>
                         <TableHead>Action</TableHead>
                     </TableRow>
                 </TableHeader>
@@ -152,21 +175,6 @@ export default function AcManagerTable() {
                             <TableCell>{item.relevantExperience || item.experience || "-"}</TableCell>
                             <TableCell className={`font-bold ${item.acmanagerStatus === "Selected" ? "text-green-500" : item.acmanagerStatus === "Rejected" ? "text-red-500" : "text-yellow-500"}`}>
                                 {item.acmanagerStatus || "Pending"}
-                            </TableCell>
-                            <TableCell>
-                                <select
-                                    value={selectedDemandCode[item.id] || ""}
-                                    onChange={e => handleDemandCodeChange(item.id, e.target.value)}
-                                    className="border p-2 rounded w-full"
-                                >
-                                    <option value="">Select Demand Code</option>
-                                    {companyIds.length === 0 && (
-                                        <option disabled value="">No Company IDs</option>
-                                    )}
-                                    {companyIds.map(id => (
-                                        <option key={id} value={id}>{id}</option>
-                                    ))}
-                                </select>
                             </TableCell>
                             <TableCell className="flex gap-2">
                                 <Button onClick={() => handleView(item)} variant="outline" className="text-sm">
@@ -212,10 +220,6 @@ export default function AcManagerTable() {
                                         {selectedCandidate.acmanagerStatus || "Pending"}
                                     </span>
                                 </p>
-                                <p className="col-span-2">
-                                    <strong>Demand Code:</strong>{" "}
-                                    {selectedDemandCode[selectedCandidate.id] || "-"}
-                                </p>
                             </div>
                             {/* Resume Section */}
                             {selectedCandidate.resumeLink && (
@@ -249,6 +253,15 @@ export default function AcManagerTable() {
                                         className="border p-2 rounded w-full"
                                         value={shortlistTime}
                                         onChange={(e) => setShortlistTime(e.target.value)}
+                                    />
+                                </div>
+                                <div className="mt-2">
+                                    <label className="block text-sm font-semibold">A/C Manager Name:</label>
+                                    <input
+                                        type="text"
+                                        className="border p-2 rounded w-full bg-gray-100"
+                                        value={userName}
+                                        readOnly
                                     />
                                 </div>
                                 <div className="mt-4">

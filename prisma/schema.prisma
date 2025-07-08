@@ -76,7 +76,7 @@ model Lead {
   companyID              String?
   technologyOther        String?
   leadType               LeadType
-  companyType            String?            // Product Base, Service Base, Both
+  companyType            String?
   spocs                  Spoc[]
 }
 
@@ -92,6 +92,79 @@ model Spoc {
   updatedAt   DateTime @updatedAt
   leadId      Int
   lead        Lead     @relation(fields: [leadId], references: [id])
+}
+
+model Device {
+  id             String     @id @default(uuid())
+  slNo           String
+  employeeId     String
+  employeeName   String
+  employeeStatus String
+  projectWorking String
+  deviceType     DeviceType
+  modelName      String
+  deviceId       String     @unique
+  deviceStatus   String
+  assignedDate   DateTime
+  processor      String?
+  ram            String?
+  storage        String?
+  osVersion      String?
+  accessories    String?
+  warrantyExpiry DateTime?
+  color          String?
+  config         String?
+  imeiNumber     String?    @unique
+  phoneNumber    String?
+  simCardNumber  String?
+  carrier        String?
+  mdmEnrolled    Boolean?
+  remarks        String?
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+}
+
+model Candidate {
+  id                     Int      @id @default(autoincrement())
+  name                   String
+  contactNumber          String
+  alternateContactNumber String?
+  email                  String
+  sourcedFrom            String?
+  employmentType         String?
+  domainExperience       String?
+  company                String?
+  role                   String?
+  currentCTC             Float?
+  expectedCTC            Float?
+  workingStatus          String?
+  noticePeriod           Int?
+  location               String?
+  relocate               Boolean?
+  preferredLocation      String?
+  interviewAvailability  String?
+  clientName             String?
+  demandCode             String?
+  interviewTakenBy       String?
+  comments               String[]
+  status                 String?
+  followUps              String?
+  updatedBy              String?
+  offersAny              Boolean
+  screeningComment       String?
+  technicalSkills        String
+  relevantExperience     String
+  primarySkillExp        String?
+  secondarySkillExp      String?
+  nammaqaUpdate          String?
+  clientInterviewStatus  String?
+  feedback               String?
+  resumeLink             String?
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+  offerDetails           String?
+  acmanagerStatus        String?
+  acupdateby             String?
 }
 
 enum Role {
@@ -160,90 +233,7 @@ enum Industry {
   other
 }
 
-
-// schema.prisma
-
 enum DeviceType {
   LAPTOP
   MOBILE
-}
-
-model Device {
-  id               String     @id @default(uuid())
-  slNo             String
-  employeeId       String
-  employeeName     String
-  employeeStatus   String
-  projectWorking   String
-  deviceType       DeviceType
-
-  // Common Fields
-  modelName        String
-  deviceId         String      @unique
-  deviceStatus     String      // In Use, Returned, Lost, etc.
-  assignedDate     DateTime
-
-  // Laptop-specific fields
-  processor        String?     // nullable
-  ram              String?
-  storage          String?
-  osVersion        String?
-  accessories      String?     // e.g., Charger, Bag, Dock
-  warrantyExpiry   DateTime?
-
-  // Mobile-specific fields
-  color            String?
-  config           String?     // e.g., 6GB/128GB
-  imeiNumber       String?     @unique
-  phoneNumber      String?
-  simCardNumber    String?
-  carrier          String?
-  mdmEnrolled      Boolean?
-  remarks          String?
-
-  createdAt        DateTime    @default(now())
-  updatedAt        DateTime    @updatedAt
-}
-
-
-model Candidate {
-  id                        Int      @id @default(autoincrement())
-  name                      String
-  contactNumber             String
-  alternateContactNumber    String? 
-  email                     String
-  sourcedFrom               String?
-  employmentType            String?
-  domainExperience          String?
-  company                   String?
-  role                      String?
-  currentCTC                Float?
-  expectedCTC               Float?
-  workingStatus             String?
-  noticePeriod              Int?
-  location                  String?
-  relocate                  Boolean?
-  preferredLocation         String?
-  interviewAvailability     String?
-  clientName                String?
-  demandCode                String?
-  interviewTakenBy          String?
-  comments                  String[]
-  status                    String?
-  followUps                 String?
-  updatedBy                 String?
-  offersAny                 Boolean
-  screeningComment          String?
-  technicalSkills           String
-  relevantExperience        String
-  primarySkillExp           String?
-  secondarySkillExp         String?
-  nammaqaUpdate             String?
-  clientInterviewStatus     String?
-  feedback                  String?
-  resumeLink                String?
-  offerDetails              String?
- acmanagerStatus            String?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
 }

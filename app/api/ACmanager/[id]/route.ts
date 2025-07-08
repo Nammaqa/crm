@@ -4,10 +4,10 @@ const prisma = new PrismaClient();
 
 export async function PATCH(
   req: Request,
-  context: { params?: { id?: string } } = {}
+  context: { params?: { id?: string } }
 ): Promise<Response> {
-  // Defensive: fallback if context or params is missing
-  const id = context?.params?.id ? parseInt(context.params.id, 10) : NaN;
+  // Use context.params directly (no await)
+  const id = context.params?.id ? parseInt(context.params.id, 10) : NaN;
 
   if (isNaN(id)) {
     return new Response(
@@ -26,7 +26,7 @@ export async function PATCH(
     );
   }
 
-  const { acmanagerStatus } = body;
+  const { acmanagerStatus, demandCode, acupdateby } = body;
   if (typeof acmanagerStatus === "undefined") {
     return new Response(
       JSON.stringify({ error: "Missing 'acmanagerStatus' in request body" }),
@@ -37,7 +37,11 @@ export async function PATCH(
   try {
     const updated = await prisma.candidate.update({
       where: { id },
-      data: { acmanagerStatus },
+      data: {
+        acmanagerStatus,
+        demandCode,
+        acupdateby,
+      },
     });
     return new Response(
       JSON.stringify(updated),

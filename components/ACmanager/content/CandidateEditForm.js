@@ -3,6 +3,7 @@
 import { useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { validateACmanager } from '@/actions/validateACmanager';
 
 const CandidateEditForm = () => {
   const router = useRouter();
@@ -136,8 +137,13 @@ const CandidateEditForm = () => {
       "Upload Resume"
   ];
 
-  const handleBack = () => {
-    router.push('/recruiter');  
+const handleBack =async () => {
+    const isAdmin = await validateACmanager();
+     if(!isAdmin) {
+    router.push(`/recruiter`);
+    return
+    }
+    router.push(`/ACmanager`);
   };
 
   return (

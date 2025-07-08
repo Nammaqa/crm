@@ -2,10 +2,36 @@
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
+const sourcedFromOptions = [
+  "LinkedIn",
+  "Walk-in",
+  "Email",
+  "Naukri",
+  "Glassdoor",
+  "Foundit",
+  "CutShort",
+  "Indeed",
+  "Shine",
+  "Others"
+];
+
+const employmentTypeOptions = [
+  "Permanent",
+  "Contract-based",
+  "C2H (Contract to Hire)"
+];
+
+const relocateOptions = [
+  "Yes",
+  "No"
+];
+
 const CandidateForm = () => {
   const [hasOffer, setHasOffer] = useState('No');
   const [formData, setFormData] = useState({});
   const [candidates, setCandidates] = useState([]);
+  const [companyIds, setCompanyIds] = useState([]);
+  const [selectedDemandCode, setSelectedDemandCode] = useState({});
   const router = useRouter();
 
   const handleInputChange = (field, value) => {
@@ -27,7 +53,18 @@ const CandidateForm = () => {
     }
   };
 
+  // Fetch company IDs for Demand Code dropdown
   useEffect(() => {
+    async function fetchCompanyIds() {
+      try {
+        const res = await fetch("/api/company-ids");
+        const data = await res.json();
+        setCompanyIds(Array.isArray(data) ? data : []);
+      } catch (err) {
+        setCompanyIds([]);
+      }
+    }
+    fetchCompanyIds();
     fetchCandidates();
   }, []);
 
@@ -67,40 +104,40 @@ const CandidateForm = () => {
   };
 
   const fields = [
-   "Name",
-     "Contact Number",
-      "Alternate Contact Number", 
-      "Email ID",
-       "Sourced From",
+    "Name",
+    "Contact Number",
+    "Alternate Contact Number", 
+    "Email ID",
+    "Sourced From",
     "Employment Type",
-     "Domain Experience (Primary)",
-      "Current / Previous Company",
-       "Role",
+    "Domain Experience (Primary)",
+    "Current / Previous Company",
+    "Role",
     "Current CTC (In LPA)",
-     "Expected CTC (In LPA)",
-      "Current Working Status",
-       "Notice Period (In Days)",
+    "Expected CTC (In LPA)",
+    "Current Working Status",
+    "Notice Period (In Days)",
     "Current Location (Nearest City)",
-     "Ready to Relocate for Other Location",
-      "Prefered Location (City)",
+    "Ready to Relocate for Other Location",
+    "Prefered Location (City)",
     "Availability for the Interview",
-     "Client Name",
-      "Demand Code",
-       "Interview taken by",
-    // "Comments", 
+    "Client Name",
+    "Demand Code",
+    "Interview taken by",
+    "Comments", 
     "Status",
-     "Follow Ups", 
-     "Updated By",
-      "Offers Any",
-    // "Screening Comment (L2)",
-     "Technical Skills",
-      "Relavant Experience",
+    "Follow Ups", 
+    "Updated By",
+    "Offers Any",
+    "Screening Comment (L2)",
+    "Technical Skills",
+    "Relavant Experience",
     "Relevant Experience in Primary Skill",
-     "Relevant Experience in Secondary Skill",
+    "Relevant Experience in Secondary Skill",
     "NammaQA update", 
     // "Client Interview Status",
-     "Feedback",
-      "Upload Resume"
+    "Feedback",
+    "Upload Resume"
   ];
 
   // Status options for the dropbox
@@ -126,6 +163,70 @@ const CandidateForm = () => {
           const isFileField = field === "Upload Resume";
           const isDropdownField = field === "Offers Any";
           const isStatusField = field === "Status";
+          const isDemandCodeField = field === "Demand Code";
+
+          // Sourced From: dropdown
+          if (field === "Sourced From") {
+            return (
+              <div key={index} style={styles.inputGroup}>
+                <label htmlFor={field} style={styles.label}>{field}</label>
+                <select
+                  id={field}
+                  name={field}
+                  style={styles.input}
+                  onChange={(e) => handleInputChange(field, e.target.value)}
+                  value={formData[field] || ''}
+                >
+                  <option value="">Select Source</option>
+                  {sourcedFromOptions.map(option => (
+                    <option key={option} value={option}>{option}</option>
+                  ))}
+                </select>
+              </div>
+            );
+          }
+
+          // Employment Type: dropdown
+          if (field === "Employment Type") {
+            return (
+              <div key={index} style={styles.inputGroup}>
+                <label htmlFor={field} style={styles.label}>{field}</label>
+                <select
+                  id={field}
+                  name={field}
+                  style={styles.input}
+                  onChange={(e) => handleInputChange(field, e.target.value)}
+                  value={formData[field] || ''}
+                >
+                  <option value="">Select Employment Type</option>
+                  {employmentTypeOptions.map(option => (
+                    <option key={option} value={option}>{option}</option>
+                  ))}
+                </select>
+              </div>
+            );
+          }
+
+          // Ready to Relocate for Other Location: dropdown
+          if (field === "Ready to Relocate for Other Location") {
+            return (
+              <div key={index} style={styles.inputGroup}>
+                <label htmlFor={field} style={styles.label}>{field}</label>
+                <select
+                  id={field}
+                  name={field}
+                  style={styles.input}
+                  onChange={(e) => handleInputChange(field, e.target.value)}
+                  value={formData[field] || ''}
+                >
+                  <option value="">Select Option</option>
+                  {relocateOptions.map(option => (
+                    <option key={option} value={option}>{option}</option>
+                  ))}
+                </select>
+              </div>
+            );
+          }
 
           return (
             <div key={index} style={styles.inputGroup}>
@@ -152,6 +253,22 @@ const CandidateForm = () => {
                   <option value="">Select Status</option>
                   {statusOptions.map((option) => (
                     <option key={option} value={option}>{option}</option>
+                  ))}
+                </select>
+              ) : isDemandCodeField ? (
+                <select
+                  id={field}
+                  name={field}
+                  style={styles.input}
+                  onChange={(e) => handleInputChange(field, e.target.value)}
+                  value={formData[field] || ''}
+                >
+                  <option value="">Select Demand Code</option>
+                  {companyIds.length === 0 && (
+                    <option disabled value="">No Company IDs</option>
+                  )}
+                  {companyIds.map(id => (
+                    <option key={id} value={id}>{id}</option>
                   ))}
                 </select>
               ) : isFileField ? (
