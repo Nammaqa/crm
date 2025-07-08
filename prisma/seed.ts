@@ -83,6 +83,32 @@ async function main() {
     console.log('ℹ️ IT_ADMIN user already exists, skipping creation');
   }
 
+  // Account Manager user
+  const amExists = await prisma.user.findFirst({
+    where: {
+      OR: [
+        { userName: 'Default account manager' },
+        { wbEmailId: 'accountmanager@wizzybox.com' },
+      ],
+    },
+  });
+
+  if (!amExists) {
+    const hashedPassword = await bcrypt.hash('accountmanager123', 12);
+    const am = await prisma.user.create({
+      data: {
+        userName: 'Default account manager',
+        wbEmailId: 'accountmanager@wizzybox.com',
+        password: hashedPassword,
+        phoneNumber: '9999999999',
+        role: Role.ACCOUNT_MANAGER,
+      },
+    });
+    console.log(`✅ Created ACCOUNT_MANAGER user: ${am.userName}`);
+  } else {
+    console.log('ℹ️ ACCOUNT_MANAGER user already exists, skipping creation');
+  }
+
   // Agreements check
   const agreementCount = await prisma.agreement.count();
   if (agreementCount === 0) {
