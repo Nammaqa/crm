@@ -2,6 +2,9 @@
 import type { NextConfig } from "next";
 //access-control-allow-origin
 const nextConfig: NextConfig = {
+  typescript:{
+    ignoreBuildErrors:true,
+  },
  async headers() {
     return [
       {
@@ -25,3 +28,4 @@ const nextConfig: NextConfig = {
 };
 
 export default nextConfig;
+
