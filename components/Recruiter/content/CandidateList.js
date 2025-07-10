@@ -199,7 +199,7 @@ export default function CandidateList() {
                 <td className="border px-4 py-2 whitespace-nowrap">{c.currentCTC}</td>
                 <td className="border px-4 py-2 whitespace-nowrap">{c.expectedCTC}</td>
                 <td className="border px-4 py-2 whitespace-nowrap">{c.noticePeriod}</td>
-                <td className="border px-4 py-2 whitespace-nowrap">{c.screeningComment}</td>
+                <td className="border px-4 py-2 whitespace-nowrap">{c.status}</td>
                 <td className="border px-4 py-2 whitespace-nowrap">{c.updatedBy}</td>
                 <td className="border px-4 py-2 whitespace-nowrap">{c.interviewAvailability}</td>
                 <td className="border px-4 py-2 whitespace-nowrap">{c.location}</td>

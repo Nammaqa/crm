@@ -160,8 +160,8 @@ const sections = [
   { id: "requirement-list", label: "Requirement List", icon: <FaListAlt size={20} />, content: <RequirementList /> },
   { id: "candidate-form", label: "Candidate Form", icon: <FaFileAlt size={20} />, content: <CandidateForm /> },
   { id: "candidate-list", label: "Candidate List", icon: <FaUsers size={20}/>, content: <CandidateList /> },
-  { id: "short-list", label: "Short List", icon: <FaListAlt size={20} />, content: <ShortList /> },
-  { id: "rejected-list", label: "Rejected List", icon: <FaListAlt size={20} />, content: <RejectedList /> }
+  { id: "short-list", label: "ShortListed List", icon: <FaListAlt size={20} />, content: <ShortList /> },
+  { id: "rejected-list", label: "Rejected List", icon: <FaListAlt size={20} />, content: <RejectedList /> },
 ];
 
 export default function Dashboard({ editContent }) {
