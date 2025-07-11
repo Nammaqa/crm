@@ -15,7 +15,7 @@ export default function CandidateList() {
   const [uniqueClients, setUniqueClients] = useState([]);
 
   useEffect(() => {
-    fetch("/api/candidates/filter")
+    fetch("/api/candidates")
       .then((res) => res.json())
       .then((data) => {
         setCandidates(data);
@@ -97,7 +97,7 @@ export default function CandidateList() {
     );
     setCurrentPage(1);
   };
-
+  console.log(currentCandidates);
   return (
     <div className="p-8 bg-gray-50 min-h-screen">
       <h2 className="text-2xl font-bold text-center text-blue-900 mb-6">
@@ -199,7 +199,7 @@ export default function CandidateList() {
                 <td className="border px-4 py-2 whitespace-nowrap">{c.currentCTC}</td>
                 <td className="border px-4 py-2 whitespace-nowrap">{c.expectedCTC}</td>
                 <td className="border px-4 py-2 whitespace-nowrap">{c.noticePeriod}</td>
-                <td className="border px-4 py-2 whitespace-nowrap">{c.screeningComment}</td>
+                <td className="border px-4 py-2 whitespace-nowrap">{c.status}</td>
                 <td className="border px-4 py-2 whitespace-nowrap">{c.updatedBy}</td>
                 <td className="border px-4 py-2 whitespace-nowrap">{c.interviewAvailability}</td>
                 <td className="border px-4 py-2 whitespace-nowrap">{c.location}</td>

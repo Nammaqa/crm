@@ -10,6 +10,8 @@ const CandidateEditForm = () => {
   const { id: candidateId } = useParams(); 
   const [formData, setFormData] = useState({});
   const [hasOffer, setHasOffer] = useState("No");
+  const [companyIds, setCompanyIds] = useState([]);
+  const [status, setStatus] = useState([]);
 
   const mapBackendToFrontend = (data) => ({
     "Name": data.name,
@@ -49,6 +51,19 @@ const CandidateEditForm = () => {
     "Offer Details": data.offerDetails || ""
   });
 
+  const statusOptions = [
+    "Screened",
+    "Not Screened",
+    "Internal Screening Rejected",
+    "Internal Screening Selected",
+    "L1 Accepted",
+    "L1 Rejected",
+    "L2 Accepted",
+    "L2 Rejected",
+    "Offer Accepted",
+    "Didn't Accept Offer"
+  ];
+
   useEffect(() => {
     const fetchCandidate = async () => {
       try {
@@ -62,8 +77,20 @@ const CandidateEditForm = () => {
       }
     };
 
+    const fetchCompanyIds = async () => {
+      try {
+        const res = await fetch("/api/company-ids");
+        const data = await res.json();
+        setCompanyIds(Array.isArray(data) ? data : []);
+      } catch (err) {
+        console.error("Error fetching company IDs:", err);
+        setCompanyIds([]);
+      }
+    };
+
     if (candidateId) {
       fetchCandidate();
+      fetchCompanyIds();
     }
   }, [candidateId]);
 
@@ -90,7 +117,7 @@ const CandidateEditForm = () => {
 
       if (res.ok) {
         alert("✅ Candidate updated successfully!");
-        router.push("/recruiter");
+        router.push("/ACmanager");
       } else {
         alert("❌ Failed to update candidate.");
       }
@@ -99,52 +126,28 @@ const CandidateEditForm = () => {
     }
   };
 
-
   const fields = [
-    "Name",
-     "Contact Number",
-      "Alternate Contact Number", 
-      "Email ID",
-       "Sourced From",
-    "Employment Type",
-     "Domain Experience (Primary)",
-      "Current / Previous Company",
-       "Role",
-    "Current CTC (In LPA)",
-     "Expected CTC (In LPA)",
-      "Current Working Status",
-       "Notice Period (In Days)",
-    "Current Location (Nearest City)",
-     "Ready to Relocate for Other Location",
-      "Prefered Location (City)",
-    "Availability for the Interview",
-     "Client Name",
-      "Demand Code",
-       "Interview taken by",
-    // "Comments", 
-    // "Status",
-     "Follow Ups", 
-     "Updated By",
-      "Offers Any",
-    // "Screening Comment (L2)",
-     "Technical Skills",
-      "Relavant Experience",
-    "Relevant Experience in Primary Skill",
-     "Relevant Experience in Secondary Skill",
-    "NammaQA update", 
-    // "Client Interview Status",
-     "Feedback",
-      "Upload Resume"
+    "Name", "Contact Number", "Alternate Contact Number", "Email ID", "Sourced From", "Employment Type",
+    "Domain Experience (Primary)", "Current / Previous Company", "Role", "Current CTC (In LPA)",
+    "Expected CTC (In LPA)", "Current Working Status", "Notice Period (In Days)",
+    "Current Location (Nearest City)", "Ready to Relocate for Other Location", "Prefered Location (City)",
+    "Availability for the Interview", "Client Name", "Demand Code", "Status", "Interview taken by",
+    "Follow Ups", "Updated By", "Offers Any", "Technical Skills", "Relavant Experience",
+    "Relevant Experience in Primary Skill", "Relevant Experience in Secondary Skill",
+    "NammaQA update", "Feedback", "Upload Resume"
   ];
 
-const handleBack =async () => {
+  const handleBack = async () => {
     const isAdmin = await validateACmanager();
-     if(!isAdmin) {
-    router.push(`/recruiter`);
-    return
+
+    if (isAdmin) {
+      router.push("/ACmanager");
+    } else {
+      router.push("/recruiter");
     }
-    router.push(`/ACmanager`);
   };
+
+
 
   return (
     <div style={styles.container}>
@@ -154,7 +157,9 @@ const handleBack =async () => {
           const isTextArea = field.toLowerCase().includes("skill");
           const isDropdown = field === "Offers Any";
           const isFile = field === "Upload Resume";
-
+          const isDemandCodeField = field === "Demand Code";
+          const isStatusField = field === "Status";
+          console.log(formData);
           return (
             <div key={index} style={styles.inputGroup}>
               <label style={styles.label}>{field}</label>
@@ -175,7 +180,6 @@ const handleBack =async () => {
                     onChange={(e) => handleInputChange(field, e.target.files?.[0])}
                     style={styles.input}
                   />
-                  {/* Show existing resume link if present */}
                   {formData["Upload Resume"] && typeof formData["Upload Resume"] === "string" && (
                     <div style={{ marginTop: 8 }}>
                       <a
@@ -189,6 +193,34 @@ const handleBack =async () => {
                     </div>
                   )}
                 </div>
+              ) : isDemandCodeField ? (
+                <select
+                  value={formData[field] || ""}
+                  onChange={(e) => handleInputChange(field, e.target.value)}
+                  style={styles.input}
+                >
+                  <option value="">Select Demand Code</option>
+                  {companyIds.length === 0 && (
+                    <option disabled value="">No Company IDs</option>
+                  )}
+                  {companyIds.map((id) => (
+                    <option key={id} value={id}>{id}</option>
+                  ))}
+                </select>
+              )  : isStatusField ? (
+                <select
+                  value={formData[field] || ""}
+                  onChange={(e) => handleInputChange(field, e.target.value)}
+                  style={styles.input}
+                >
+                  <option value="">Select Status</option>
+                  {statusOptions.length === 0 && (
+                    <option disabled value="">No Status</option>
+                  )}
+                  {statusOptions.map((id) => (
+                    <option key={id} value={id}>{id}</option>
+                  ))}
+                </select>
               ) : isTextArea ? (
                 <textarea
                   value={formData[field] || ""}

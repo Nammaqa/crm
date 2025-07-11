@@ -7,8 +7,8 @@ import Image from "next/image";
 import Overview from "@components/ACmanager/content/Overview";
 import RequirementList from "@components/Admin/Content/RequirementList";
 import CandidateForm from "@components/ACmanager/content/CandidateForm";
-import CandidateList from "@components/Recruiter/content/CandidateList";
-import ShortList from "@components/Recruiter/content/ShortList";
+import CandidateList from "@components/ACmanager/content/CandidateList";
+import ShortList from "@components/ACmanager/content/ShortList";
 import RejectedList from "@components/Recruiter/content/RejectedList";
 import Acmanager from "@components/ACmanager/content/Acmanager"; // <-- Added
 
