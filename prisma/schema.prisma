@@ -237,3 +237,97 @@ enum DeviceType {
   LAPTOP
   MOBILE
 }
+
+enum CustomerType {
+  BUSINESS
+  INDIVIDUAL
+}
+
+enum PaymentTerms {
+  NET_15
+  NET_30
+  NET_45
+  NET_60
+  DUE_ON_RECEIPT
+  DUE_END_OF_MONTH
+  DUE_END_OF_NEXT_MONTH
+}
+
+model Customer {
+  id                Int            @id @default(autoincrement())
+  customerType      CustomerType
+  primaryContact    String
+  companyName       String?
+  displayName       String
+  currency          String
+  emailAddress      String
+  phoneNumberWork   String?
+  phoneNumberMobile String?
+  pan               String?
+  paymentTerms      PaymentTerms
+  documents         String[]       
+  billingAttention  String?
+  billingCountry    String
+  billingAddress    String      
+  billingCity       String
+  billingState      String
+  billingPinCode    String
+  billingPhone      String?
+  shippingAttention String?
+  shippingCountry   String
+  shippingAddress   String[]       
+  shippingCity      String
+  shippingState     String
+  shippingPinCode   String
+  shippingPhone     String?
+  remarks           String?
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+  ContactPerson ContactPerson[]
+
+  Invoice Invoice[]
+}
+
+model ContactPerson {
+  id             Int      @id @default(autoincrement())
+  customerId     Int
+  customer       Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  salutation     String?
+  firstName      String
+  lastName       String
+  emailAddress   String
+  workPhone      String?
+  mobile         String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model Invoice {
+  id                Int           @id @default(autoincrement())
+  customerId        Int
+  customer          Customer      @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  invoiceCode       String        @unique 
+  invoiceDate       DateTime
+  terms             PaymentTerms
+  dueDate           DateTime
+  customerNotes     String?
+  total             Float
+  discountPercentage Float?
+  GstPercentage      Float?
+  isDraft           Boolean       @default(true)
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  Item Item[]
+}
+
+model Item {
+  id         Int      @id @default(autoincrement())
+  invoiceId  Int
+  invoice    Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  itemDetails String
+  quantity   Int
+  rate       Float
+  amount     Float
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
