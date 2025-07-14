@@ -234,7 +234,15 @@ const CandidateEditForm = () => {
                   value={formData[field] || ""}
                   placeholder={`Enter ${field}`}
                   onChange={(e) => handleInputChange(field, e.target.value)}
-                  style={styles.input}
+                  disabled={field === "Updated By"}
+                  style={{
+                    ...styles.input,
+                    ...(field === "Updated By" && {
+                      backgroundColor: "#eee",
+                      color: "#666",
+                      cursor: "not-allowed"
+                    })
+                  }}
                 />
               )}
             </div>
