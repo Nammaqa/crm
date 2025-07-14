@@ -29,6 +29,7 @@ const relocateOptions = [
 const CandidateForm = () => {
   const [hasOffer, setHasOffer] = useState('No');
   const [formData, setFormData] = useState({});
+  const [formErrors, setFormErrors] = useState({});
   const [candidates, setCandidates] = useState([]);
   const [companyIds, setCompanyIds] = useState([]);
   const [userName, setUserName] = useState(""); // For Updated By
@@ -54,6 +55,58 @@ const CandidateForm = () => {
       setFormData({ ...formData, [field]: value });
       if (field === 'Offers Any') setHasOffer(value);
     }
+    setFormErrors(prev => ({ ...prev, [field]: null })); // Clear error on change
+  };
+
+  // Validation function for all fields
+  const validateForm = () => {
+    const errors = {};
+
+    // Phone number validation
+    const phonePattern = /^[6-9]\d{9}$/;
+    // Email validation
+    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    // Required fields based on Prisma schema (non-nullable)
+    if (!formData["Name"] || !formData["Name"].trim())
+      errors["Name"] = "Name is required";
+
+    if (!formData["Contact Number"] || !formData["Contact Number"].trim())
+      errors["Contact Number"] = "Contact Number is required";
+    else if (!/^\d+$/.test(formData["Contact Number"]))
+      errors["Contact Number"] = "Contact Number must contain only numbers";
+    else if (!phonePattern.test(formData["Contact Number"]))
+      errors["Contact Number"] = "Contact Number must start with 6-9 and be 10 digits";
+
+    if (formData["Alternate Contact Number"] && formData["Alternate Contact Number"].trim()) {
+      if (!/^\d+$/.test(formData["Alternate Contact Number"]))
+        errors["Alternate Contact Number"] = "Alternate Contact Number must contain only numbers";
+      else if (!phonePattern.test(formData["Alternate Contact Number"]))
+        errors["Alternate Contact Number"] = "Alternate Contact Number must start with 6-9 and be 10 digits";
+    }
+
+    if (!formData["Email ID"] || !formData["Email ID"].trim())
+      errors["Email ID"] = "Email ID is required";
+    else if (!emailPattern.test(formData["Email ID"]))
+      errors["Email ID"] = "Enter a valid email address (must contain @ and .)";
+
+    if (!formData["Technical Skills"] || !formData["Technical Skills"].trim())
+      errors["Technical Skills"] = "Technical Skills are required";
+
+    if (!formData["Relavant Experience"] || !formData["Relavant Experience"].trim())
+      errors["Relavant Experience"] = "Relevant Experience is required";
+
+    if (!formData["Upload Resume"])
+      errors["Upload Resume"] = "Resume is required";
+
+    // You can add more required field checks here as per your business logic
+
+    // Example: If Offers Any is Yes, Offer Details is required
+    if (formData["Offers Any"] === "Yes" && (!formData["Offer Details"] || !formData["Offer Details"].trim())) {
+      errors["Offer Details"] = "Offer Details are required when Offers Any is Yes";
+    }
+
+    return errors;
   };
 
   const fetchCandidates = async () => {
@@ -83,6 +136,9 @@ const CandidateForm = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    const errors = validateForm();
+    setFormErrors(errors);
+    if (Object.keys(errors).length > 0) return;
 
     try {
       const form = new FormData();
@@ -136,9 +192,6 @@ const CandidateForm = () => {
     "Availability for the Interview",
     "Client Name",
     "Demand Code",
-    // "Interview taken by",
-    // "Status",
-    // "Follow Ups", 
     "Updated By",
     "Offers Any",
     "Technical Skills",
@@ -148,6 +201,9 @@ const CandidateForm = () => {
     "NammaQA update", 
     "Feedback",
     "Upload Resume"
+    // "Interview taken by",
+    // "Status",
+    // "Follow Ups", 
   ];
 
   const statusOptions = [
@@ -163,6 +219,12 @@ const CandidateForm = () => {
     "Didn't Accept Offer"
   ];
 
+  const renderError = (field) => {
+    return formErrors[field] && (
+      <span style={styles.error}>{formErrors[field]}</span>
+    );
+  };
+
   return (
     <div style={styles.container}>
       <h2 style={styles.heading}>Candidate Information Form</h2>
@@ -170,6 +232,7 @@ const CandidateForm = () => {
         {fields.map((field, index) => {
           const isTextAreaField = field.toLowerCase().includes('skill');
           const isFileField = field === "Upload Resume";
+          const isNumberField = field === "Contact Number" || field === "Alternate Contact Number" || field === "Current CTC (In LPA)" || field === "Expected CTC (In LPA)" || field === "Notice Period (In Days)";
           const isDropdownField = field === "Offers Any";
           const isStatusField = field === "Status";
           const isDemandCodeField = field === "Demand Code";
@@ -183,10 +246,12 @@ const CandidateForm = () => {
                   type="text"
                   id={field}
                   name={field}
-                  style={styles.input}
+                  style={{ ...styles.input, backgroundColor: '#eee', color: '#888', cursor: 'not-allowed' }}
                   value={userName}
                   readOnly
+                  tabIndex={-1}
                 />
+                {renderError(field)}
               </div>
             );
           }
@@ -208,6 +273,7 @@ const CandidateForm = () => {
                     <option key={option} value={option}>{option}</option>
                   ))}
                 </select>
+                {renderError(field)}
               </div>
             );
           }
@@ -229,6 +295,7 @@ const CandidateForm = () => {
                     <option key={option} value={option}>{option}</option>
                   ))}
                 </select>
+                {renderError(field)}
               </div>
             );
           }
@@ -250,6 +317,7 @@ const CandidateForm = () => {
                     <option key={option} value={option}>{option}</option>
                   ))}
                 </select>
+                {renderError(field)}
               </div>
             );
           }
@@ -315,17 +383,28 @@ const CandidateForm = () => {
                   value={formData[field] || ''}
                   onChange={(e) => handleInputChange(field, e.target.value)}
                 />
+              ) : isNumberField ? (
+                <input
+                  type="number"
+                  id={field}
+                  name={field}
+                  style={styles.input}
+                  placeholder={`Enter ${field}`}
+                  value={formData[field] || ''}
+                  onChange={(e) => handleInputChange(field, e.target.value)}
+                />
               ) : (
                 <input
                   type="text"
                   id={field}
                   name={field}
-                  placeholder={`Enter ${field}`}
                   style={styles.input}
+                  placeholder={`Enter ${field}`}
                   value={formData[field] || ''}
                   onChange={(e) => handleInputChange(field, e.target.value)}
                 />
               )}
+              {renderError(field)}
             </div>
           );
         })}
@@ -342,6 +421,9 @@ const CandidateForm = () => {
               value={formData['Offer Details'] || ''}
               onChange={(e) => handleInputChange('Offer Details', e.target.value)}
             />
+            {formErrors["Offer Details"] && (
+              <span style={styles.error}>{formErrors["Offer Details"]}</span>
+            )}
           </div>
         )}
 
@@ -400,8 +482,13 @@ const styles = {
     backgroundColor: '#003366',
     color: '#fff',
     border: 'none',
-    borderRadius: '6px',
+    borderRadius: '6px',    
     cursor: 'pointer'
+  },
+  error: {
+    color: 'red',
+    fontSize: '13px',
+    marginTop: '4px'
   }
 };
 

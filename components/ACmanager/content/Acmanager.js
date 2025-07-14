@@ -144,7 +144,7 @@ export default function AcManagerTable() {
     return (
         <div className="p-6 max-w-6xl mx-auto">
             <h1 className="text-2xl font-bold mb-6 text-center">
-                A/C Manager
+                  Pending List
                 {userName && (
                     <span className="block text-base font-normal text-gray-600 mt-2">
                         Welcome, {userName}

@@ -129,12 +129,12 @@ export default function CandidateList() {
             <option value={20}>50</option>
             <option value={100}>100</option>
           </select>
-          <button
+          {/* <button
             onClick={downloadCSV}
             className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
           >
             Export CSV
-          </button>
+          </button> */}
         </div>
       </div>
 
@@ -220,7 +220,7 @@ export default function CandidateList() {
                   )}
                 </td>
                 <td className="border px-4 py-2 whitespace-nowrap flex gap-2">
-                  <Link href={`/recruiter/${c.id}`}>
+                  <Link href={`/ACmanager/${c.id}`}>
                     <button className="bg-blue-600 text-white px-2 py-1 rounded hover:bg-blue-700">
                       <PencilIcon className="w-4 h-4" />
                     </button>

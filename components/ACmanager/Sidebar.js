@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { FaBars, FaTimes } from "react-icons/fa";
 import Image from "next/image";
 
@@ -8,10 +8,10 @@ import Overview from "@components/ACmanager/content/Overview";
 import RequirementList from "@components/Admin/Content/RequirementList";
 import CandidateForm from "@components/ACmanager/content/CandidateForm";
 import CandidateList from "@components/ACmanager/content/CandidateList";
-import ShortList from "@components/ACmanager/content/ShortList";
+import ShortList from "@components/Recruiter/content/ShortList";
 import RejectedList from "@components/Recruiter/content/RejectedList";
 import Acmanager from "@components/ACmanager/content/Acmanager"; // <-- Added
-
+// import Link from 'next/link'
 // Import icons
 import {
   FaChartPie,
@@ -19,8 +19,10 @@ import {
   FaUsers,
   FaListAlt,
   FaFileAlt,
+  FaLongArrowAltLeft
 } from "react-icons/fa";
 import CandidateEditForm from "./content/CandidateEditForm";
+import { useRouter, useSearchParams } from "next/navigation";
 
 // Sidebar sections with dynamic content
 const sections = [
@@ -28,21 +30,33 @@ const sections = [
   { id: "requirement-list", label: "Requirement List", icon: <FaListAlt size={20} />, content: <RequirementList /> },
   { id: "acmanager", label: "Pending List", icon: <FaUsers size={20} />, content: <Acmanager /> },
   { id: "candidate-form", label: "Candidate Form", icon: <FaFileAlt size={20} />, content: <CandidateForm /> },
-  { id: "candidate-list", label: "Candidate List", icon: <FaUsers size={20}/>, content: <CandidateList /> },
+  { id: "candidate-list", label: "Candidate List", icon: <FaUsers size={20} />, content: <CandidateList /> },
   { id: "short-list", label: "Shortlisted", icon: <FaListAlt size={20} />, content: <ShortList /> },
   { id: "rejected-list", label: "Rejected List", icon: <FaListAlt size={20} />, content: <RejectedList /> },
-   // <-- Added
+  // <-- Added
 ];
 
 export default function Dashboard({ editContent }) {
   const [selectedSection, setSelectedSection] = useState("overview");
   const [open, setOpen] = useState(true);
+  const searchParams = useSearchParams();
+  const replaceValue = searchParams.get('replace');
+  // const [editContentState, setEditContentState] = useState(editContent);
 
   const handleLogout = () => {
     localStorage.removeItem("token");
     window.location.href = "/login";
   };
-
+  const router = useRouter()
+  // useEffect(() => {
+  //   setEditContentState(null);
+  // }, [selectedSection]);
+  useEffect(() => {
+    if (replaceValue) {
+      setSelectedSection(replaceValue);
+    }
+  }, [])
+  
   return (
     <div className="flex h-screen w-full">
       {/* Sidebar (Left Side) */}
@@ -71,12 +85,26 @@ export default function Dashboard({ editContent }) {
 
         {/* Sidebar Menu Items */}
         <ul className="flex flex-col space-y-2">
-          {sections.map((section) => (
+          {editContent ? <li
+            key={1}
+            className={`flex items-center p-2 rounded-md cursor-pointer text-sm transition-all hover:bg-gray-700 bg-gray-700
+                }`}
+            onClick={() => { router.replace('/ACmanager/?replace=candidate-list') }}
+            tabIndex={0}
+          >
+            <div className="w-8 text-center"><FaLongArrowAltLeft size={20} /></div>
+            <span
+              className={`transition-all duration-300 ${!open ? "opacity-0 w-0" : "opacity-100 w-auto"
+                }`}
+            >
+              BACK
+            </span>
+          </li> : sections.map((section) => (
             <li
               key={section.id}
               className={`flex items-center p-2 rounded-md cursor-pointer text-sm transition-all hover:bg-gray-700 ${selectedSection === section.id ? "bg-gray-700" : ""
                 }`}
-              onClick={() => setSelectedSection(section.id)}
+              onClick={() => { setSelectedSection(section.id) }}
               tabIndex={0}
             >
               <div className="w-8 text-center">{section.icon}</div>
@@ -120,5 +148,5 @@ export default function Dashboard({ editContent }) {
         )}
       </main>
     </div>
- );
+  );
 }
