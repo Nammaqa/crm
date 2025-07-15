@@ -255,31 +255,35 @@ enum PaymentTerms {
 
 model Customer {
   id                Int            @id @default(autoincrement())
-  customerType      CustomerType
+  customerType      CustomerType?
   primaryContact    String
   companyName       String?
   displayName       String
-  currency          String
+  currency          String?
   emailAddress      String
   phoneNumberWork   String?
   phoneNumberMobile String?
   pan               String?
   paymentTerms      PaymentTerms
-  documents         String[]       
+  documents         String[] 
+  department      String?
+  designation      String?
+  website         String?
   billingAttention  String?
-  billingCountry    String
+  billingCountry    String? @default("India")
   billingAddress    String      
   billingCity       String
   billingState      String
   billingPinCode    String
   billingPhone      String?
-  shippingAttention String?
-  shippingCountry   String
-  shippingAddress   String[]       
-  shippingCity      String
-  shippingState     String
-  shippingPinCode   String
-  shippingPhone     String?
+  billingFax        String?
+  // shippingAttention String?
+  // shippingCountry   String
+  // shippingAddress   String[]       
+  // shippingCity      String
+  // shippingState     String
+  // shippingPinCode   String
+  // shippingPhone     String?
   remarks           String?
   createdAt         DateTime       @default(now())
   updatedAt         DateTime       @updatedAt
