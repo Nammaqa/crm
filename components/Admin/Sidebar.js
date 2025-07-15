@@ -19,6 +19,9 @@ import JobList from "@components/Admin/Content/JobList";
 import Adduser from "@components/Admin/Content/AddUser";
 import AgreementList from "@components/Admin/Content/AgreementList";
 import RequirementList from "@components/Admin/Content/RequirementList";
+import Customerlist from "@components/Admin/Content/Customerlist"; // import
+// import Customerlist from "@components/Admin/Content/Customerlist";
+
 
 // Import icons
 import {
@@ -37,6 +40,7 @@ import {
   FaSignOutAlt,
   FaListAlt,
   FaUser,
+  FaAddressBook
 } from "react-icons/fa";
 
 // Sidebar sections with dynamic content
@@ -54,7 +58,8 @@ const sections = [
   { id: "po", label: "Purchase Order", icon: <FaShoppingCart size={20} />, content: <Po /> },
   { id: "ac-manager", label: "A/C Manager", icon: <FaBuilding size={20} />, content: <AcManager /> },
   { id: "marketing", label: "Marketing", icon: <FaBullhorn size={20} />, content: <Marketing /> },
-  { id: "invoice", label: "Invoice", icon: <FaFileInvoice size={20} />, content: <Invoice /> },
+  { id: "invoice", label: "Customers", icon: <FaFileInvoice size={20} />, content: <Invoice /> },
+  { id: "customer-list", label: "Customer List", icon: <FaAddressBook size={20} />, content: <Customerlist /> },
 ];
 
 export default function Dashboard() {
