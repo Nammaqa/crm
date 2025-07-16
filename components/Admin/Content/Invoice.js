@@ -1,14 +1,13 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
+import { FaPlus, FaTrash, FaEdit, FaCheck, FaTimes } from "react-icons/fa";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { FaPlus, FaTrash, FaEdit, FaCheck, FaTimes } from "react-icons/fa";
 
-// --- Second Container Tabs ---
+// Tab and dropdown options
 const TABS = [
   { key: "otherDetails", label: "Other Details" },
   { key: "address", label: "Address" },
   { key: "contactPersons", label: "Contact Persons" },
-  // { key: "customFields", label: "Custom Fields" },
   { key: "remarks", label: "Remarks" },
 ];
 
@@ -39,52 +38,52 @@ const salutationOptions = [
   { value: "Dr.", label: "Dr." },
 ];
 
-// --- Address Validation ---
+const currencyOptions = [
+  { value: "INR", label: "INR (₹)" },
+  { value: "USD", label: "USD ($)" },
+  { value: "EUR", label: "EUR (€)" },
+];
+
+const suffixOptions = [
+  { value: "Mr.", label: "Mr." },
+  { value: "Mrs.", label: "Mrs." },
+  { value: "Ms.", label: "Ms." },
+  { value: "Miss", label: "Miss" },
+  { value: "Dr.", label: "Dr." },
+];
+
+const paymentTermsOptions = [
+  { value: "NET_15", label: "Net 15" },
+  { value: "NET_30", label: "Net 30" },
+  { value: "NET_45", label: "Net 45" },
+  { value: "NET_60", label: "Net 60" },
+  { value: "DUE_ON_RECEIPT", label: "Due on Receipt" },
+  { value: "DUE_END_OF_MONTH", label: "Due End of Month" },
+  { value: "DUE_END_OF_NEXT_MONTH", label: "Due End of Next Month" },
+];
+
+// Validation functions
 function validateAddressFields(address) {
   const errors = {};
-  if (!address.attention || address.attention.trim() === "") {
-    errors.attention = "Attention is required";
-  }
-  if (!address.country || address.country.trim() === "") {
-    errors.country = "Country/Region is required";
-  }
-  if (!address.address || address.address.trim() === "") {
-    errors.address = "Address is required";
-  }
-  if (!address.city || address.city.trim() === "") {
-    errors.city = "City is required";
-  }
-  if (!address.state || address.state.trim() === "") {
-    errors.state = "State is required";
-  }
-  if (!address.pinCode || !/^\d{6}$/.test(address.pinCode)) {
-    errors.pinCode = "Pin Code must be 6 digits";
-  }
-  if (!address.phone || !/^[6-9]\d{9}$/.test(address.phone)) {
-    errors.phone = "Phone must be 10 digits and start with 6, 7, 8, or 9";
-  }
-  if (address.faxNumber && !/^\d{6,15}$/.test(address.faxNumber)) {
-    errors.faxNumber = "Fax Number must be 6-15 digits";
-  }
+  if (!address.attention || address.attention.trim() === "") errors.attention = "Attention is required";
+  if (!address.country || address.country.trim() === "") errors.country = "Country/Region is required";
+  if (!address.address || address.address.trim() === "") errors.address = "Address is required";
+  if (!address.city || address.city.trim() === "") errors.city = "City is required";
+  if (!address.state || address.state.trim() === "") errors.state = "State is required";
+  if (!address.pinCode || !/^\d{6}$/.test(address.pinCode)) errors.pinCode = "Pin Code must be 6 digits";
+  if (!address.phone || !/^[6-9]\d{9}$/.test(address.phone)) errors.phone = "Phone must be 10 digits and start with 6, 7, 8, or 9";
+  if (address.faxNumber && !/^\d{6,15}$/.test(address.faxNumber)) errors.faxNumber = "Fax Number must be 6-15 digits";
   return errors;
 }
 
-// --- Customer Validation ---
 function validateCustomerFields(customer) {
   const errors = {};
-  if (!customer.primaryName || customer.primaryName.trim() === "") {
-    errors.primaryName = "Primary Name is required";
-  }
-  if (!customer.email || !customer.email.includes("@")) {
-    errors.email = "Email must contain '@'";
-  }
-  if (!customer.phone || !/^[6-9]\d{9}$/.test(customer.phone)) {
-    errors.phone = "Phone must be 10 digits and start with 6, 7, 8, or 9";
-  }
+  if (!customer.primaryName || customer.primaryName.trim() === "") errors.primaryName = "Primary Name is required";
+  if (!customer.email || !customer.email.includes("@")) errors.email = "Email must contain '@'";
+  if (!customer.phone || !/^[6-9]\d{9}$/.test(customer.phone)) errors.phone = "Phone must be 10 digits and start with 6, 7, 8, or 9";
   return errors;
 }
 
-// --- Contact Person Validation ---
 function validateContactPerson(person) {
   const errors = {};
   if (!person.salutation) errors.salutation = "Salutation required";
@@ -96,7 +95,130 @@ function validateContactPerson(person) {
   return errors;
 }
 
-// --- Second Container Component ---
+// Customer Form
+function CustomerForm({ customer, setCustomer, customerErrors, setCustomerErrors }) {
+  const handleCustomerChange = (e) => {
+    const { name, value } = e.target;
+    setCustomer((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+
+    if (name === "email") {
+      setCustomerErrors((prev) => ({
+        ...prev,
+        email: !value.includes("@") ? "Email must contain '@'" : "",
+      }));
+    }
+    if (name === "phone") {
+      setCustomerErrors((prev) => ({
+        ...prev,
+        phone: !/^[6-9]\d{9}$/.test(value) ? "Phone must be 10 digits and start with 6, 7, 8, or 9" : "",
+      }));
+    }
+  };
+
+  return (
+    <div className="bg-white rounded-xl shadow-lg px-8 py-8 mb-8">
+      <div className="mb-6">
+        <h2 className="text-2xl font-bold text-gray-800 mb-2">New Customer</h2>
+      </div>
+      <form className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="md:col-span-2">
+          <label className="block text-sm font-medium text-gray-700 mb-1">Primary Contact</label>
+          <div className="flex gap-2">
+            <select
+              name="primarySuffix"
+              value={customer.primarySuffix}
+              onChange={handleCustomerChange}
+              className="p-2 border rounded"
+              style={{ minWidth: "80px" }}
+            >
+              {suffixOptions.map((opt) => (
+                <option key={opt.value} value={opt.value}>{opt.label}</option>
+              ))}
+            </select>
+            <Input
+              name="primaryName"
+              value={customer.primaryName}
+              onChange={handleCustomerChange}
+              placeholder="Enter Name"
+              className="p-2 border rounded w-full"
+            />
+          </div>
+          {customerErrors.primaryName && (
+            <div className="text-xs text-red-600 mt-1">{customerErrors.primaryName}</div>
+          )}
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Company</label>
+          <Input
+            name="company"
+            value={customer.company}
+            onChange={handleCustomerChange}
+            placeholder="Company Name"
+            className="p-2 border rounded w-full"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Display Name</label>
+          <Input
+            name="displayName"
+            value={customer.displayName}
+            onChange={handleCustomerChange}
+            placeholder="Display Name"
+            className="p-2 border rounded w-full"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Currency</label>
+          <select
+            name="currency"
+            value={customer.currency}
+            onChange={handleCustomerChange}
+            className="p-2 border rounded w-full"
+          >
+            {currencyOptions.map((opt) => (
+              <option key={opt.value} value={opt.value}>{opt.label}</option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Email ID</label>
+          <Input
+            name="email"
+            value={customer.email}
+            onChange={handleCustomerChange}
+            placeholder="Email"
+            className={`p-2 border rounded w-full ${customerErrors.email ? "border-red-500" : ""}`}
+            type="email"
+          />
+          {customerErrors.email && (
+            <div className="text-xs text-red-600 mt-1">{customerErrors.email}</div>
+          )}
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
+          <Input
+            name="phone"
+            value={customer.phone}
+            onChange={handleCustomerChange}
+            placeholder="10 digit phone number"
+            className={`p-2 border rounded w-full ${customerErrors.phone ? "border-red-500" : ""}`}
+            type="tel"
+            maxLength={10}
+            pattern="[6-9][0-9]{9}"
+          />
+          {customerErrors.phone && (
+            <div className="text-xs text-red-600 mt-1">{customerErrors.phone}</div>
+          )}
+        </div>
+      </form>
+    </div>
+  );
+}
+
+// Other Details, Address, Contact Persons Tabs
 function InvoiceOtherDetails({
   otherDetails = {},
   setOtherDetails,
@@ -104,10 +226,10 @@ function InvoiceOtherDetails({
   setAddressErrors,
   contactPersons,
   setContactPersons,
+  documentInputRef,
 }) {
   const [activeTab, setActiveTab] = useState("otherDetails");
 
-  // For adding/editing contact person
   const [newContact, setNewContact] = useState({
     salutation: "",
     firstName: "",
@@ -117,6 +239,7 @@ function InvoiceOtherDetails({
     workPhone: "",
     mobile: "",
   });
+
   const [newContactErrors, setNewContactErrors] = useState({});
   const [editIndex, setEditIndex] = useState(null);
 
@@ -133,7 +256,6 @@ function InvoiceOtherDetails({
         ...prev,
         [name]: value,
       }));
-      // Live validation for address fields
       if (
         [
           "attention",
@@ -154,19 +276,16 @@ function InvoiceOtherDetails({
     }
   };
 
-  // Validate all address fields on blur or submit
   const handleAddressBlur = () => {
     setAddressErrors(validateAddressFields(otherDetails));
   };
 
-  // --- Contact Persons Tab Handlers ---
   const handleNewContactChange = (e) => {
     const { name, value } = e.target;
     setNewContact((prev) => ({
       ...prev,
       [name]: value,
     }));
-    // Live validation
     setNewContactErrors((prev) => ({
       ...prev,
       ...validateContactPerson({ ...newContact, [name]: value }),
@@ -180,13 +299,11 @@ function InvoiceOtherDetails({
     if (Object.keys(errors).length > 0) return;
 
     if (editIndex !== null) {
-      // Edit mode
       setContactPersons((prev) =>
         prev.map((person, idx) => (idx === editIndex ? newContact : person))
       );
       setEditIndex(null);
     } else {
-      // Add mode
       setContactPersons((prev) => [...prev, newContact]);
     }
     setNewContact({
@@ -203,7 +320,6 @@ function InvoiceOtherDetails({
 
   const handleRemoveContactPerson = (idx) => {
     setContactPersons((prev) => prev.filter((_, i) => i !== idx));
-    // If deleting the row being edited, reset form
     if (editIndex === idx) {
       setEditIndex(null);
       setNewContact({
@@ -244,7 +360,6 @@ function InvoiceOtherDetails({
       <div className="mb-6">
         <h2 className="text-2xl font-bold text-gray-800 mb-2">Other Information</h2>
       </div>
-      {/* Tab Navigation */}
       <div className="flex border-b mb-6">
         {TABS.map((tab) => (
           <button
@@ -260,19 +375,88 @@ function InvoiceOtherDetails({
           </button>
         ))}
       </div>
-
-      {/* Tab Content */}
       <div className="mt-4">
-        {/* ...other tab content unchanged... */}
+        {activeTab === "otherDetails" && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">PAN Number</label>
+              <Input
+                name="panNumber"
+                value={otherDetails.panNumber || ""}
+                onChange={handleChange}
+                placeholder="Enter PAN Number"
+                className="p-2 border rounded w-full"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Payment Terms</label>
+              <select
+                name="paymentTerms"
+                value={otherDetails.paymentTerms || "NET_30"}
+                onChange={handleChange}
+                className="p-2 border rounded w-full"
+              >
+                {paymentTermsOptions.map((opt) => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Document</label>
+              <input
+                type="file"
+                name="document"
+                accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                onChange={handleChange}
+                className="p-2 border rounded w-full"
+                ref={documentInputRef}
+              />
+              {otherDetails.documentName && (
+                <div className="text-xs text-gray-600 mt-1">
+                  Uploaded: {otherDetails.documentName}
+                </div>
+              )}
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Department</label>
+              <Input
+                name="department"
+                value={otherDetails.department || ""}
+                onChange={handleChange}
+                placeholder="Enter Department"
+                className="p-2 border rounded w-full"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Designation</label>
+              <Input
+                name="designation"
+                value={otherDetails.designation || ""}
+                onChange={handleChange}
+                placeholder="Enter Designation"
+                className="p-2 border rounded w-full"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Website</label>
+              <Input
+                name="website"
+                value={otherDetails.website || ""}
+                onChange={handleChange}
+                placeholder="Enter Website"
+                className="p-2 border rounded w-full"
+              />
+            </div>
+          </div>
+        )}
 
         {activeTab === "contactPersons" && (
           <div>
-            {/* Add/Edit Contact Person Form */}
+            {/* Contact person form and table */}
             <form
               className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end mb-4 bg-gray-50 p-4 rounded"
               onSubmit={handleAddOrEditContactPerson}
             >
-              {/* Salutation */}
               <div>
                 <label className="block text-xs font-medium text-gray-700 mb-1">Salutation</label>
                 <select
@@ -289,7 +473,6 @@ function InvoiceOtherDetails({
                   <div className="text-xs text-red-600">{newContactErrors.salutation}</div>
                 )}
               </div>
-              {/* First Name */}
               <div>
                 <label className="block text-xs font-medium text-gray-700 mb-1">First Name</label>
                 <Input
@@ -303,7 +486,6 @@ function InvoiceOtherDetails({
                   <div className="text-xs text-red-600">{newContactErrors.firstName}</div>
                 )}
               </div>
-              {/* Last Name */}
               <div>
                 <label className="block text-xs font-medium text-gray-700 mb-1">Last Name</label>
                 <Input
@@ -317,7 +499,6 @@ function InvoiceOtherDetails({
                   <div className="text-xs text-red-600">{newContactErrors.lastName}</div>
                 )}
               </div>
-              {/* Email */}
               <div>
                 <label className="block text-xs font-medium text-gray-700 mb-1">Email</label>
                 <Input
@@ -332,7 +513,6 @@ function InvoiceOtherDetails({
                   <div className="text-xs text-red-600">{newContactErrors.email}</div>
                 )}
               </div>
-              {/* Address */}
               <div>
                 <label className="block text-xs font-medium text-gray-700 mb-1">Address</label>
                 <Input
@@ -343,7 +523,6 @@ function InvoiceOtherDetails({
                   className="p-2 border rounded w-full"
                 />
               </div>
-              {/* Work Phone */}
               <div>
                 <label className="block text-xs font-medium text-gray-700 mb-1">Work Phone</label>
                 <Input
@@ -359,7 +538,6 @@ function InvoiceOtherDetails({
                   <div className="text-xs text-red-600">{newContactErrors.workPhone}</div>
                 )}
               </div>
-              {/* Mobile */}
               <div>
                 <label className="block text-xs font-medium text-gray-700 mb-1">Mobile</label>
                 <Input
@@ -375,7 +553,6 @@ function InvoiceOtherDetails({
                   <div className="text-xs text-red-600">{newContactErrors.mobile}</div>
                 )}
               </div>
-              {/* Action Buttons */}
               <div className="md:col-span-2 flex gap-2 justify-end mt-2">
                 <button
                   type="submit"
@@ -399,8 +576,6 @@ function InvoiceOtherDetails({
                 )}
               </div>
             </form>
-
-            {/* Contact Persons Table */}
             <div className="overflow-x-auto">
               <table className="min-w-full table-auto border">
                 <thead>
@@ -459,88 +634,12 @@ function InvoiceOtherDetails({
           </div>
         )}
 
-        {/* ...other tab content unchanged... */}
-        {activeTab === "otherDetails" && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* PAN Number */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">PAN Number</label>
-              <Input
-                name="panNumber"
-                value={otherDetails.panNumber || ""}
-                onChange={handleChange}
-                placeholder="Enter PAN Number"
-                className="p-2 border rounded w-full"
-              />
-            </div>
-            {/* Payment Terms */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Payment Terms</label>
-              <Input
-                name="paymentTerms"
-                value={otherDetails.paymentTerms || ""}
-                onChange={handleChange}
-                placeholder="Enter Payment Terms"
-                className="p-2 border rounded w-full"
-              />
-            </div>
-            {/* Document Upload */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Document</label>
-              <input
-                type="file"
-                name="document"
-                accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
-                onChange={handleChange}
-                className="p-2 border rounded w-full"
-              />
-              {otherDetails.documentName && (
-                <div className="text-xs text-gray-600 mt-1">
-                  Uploaded: {otherDetails.documentName}
-                </div>
-              )}
-            </div>
-            {/* Department */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Department</label>
-              <Input
-                name="department"
-                value={otherDetails.department || ""}
-                onChange={handleChange}
-                placeholder="Enter Department"
-                className="p-2 border rounded w-full"
-              />
-            </div>
-            {/* Designation */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Designation</label>
-              <Input
-                name="designation"
-                value={otherDetails.designation || ""}
-                onChange={handleChange}
-                placeholder="Enter Designation"
-                className="p-2 border rounded w-full"
-              />
-            </div>
-            {/* Website */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Website</label>
-              <Input
-                name="website"
-                value={otherDetails.website || ""}
-                onChange={handleChange}
-                placeholder="Enter Website"
-                className="p-2 border rounded w-full"
-              />
-            </div>
-          </div>
-        )}
-
         {activeTab === "address" && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6" onBlur={handleAddressBlur}>
-            {/* Attention */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Attention<span className="text-red-500">*</span></label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Attention<span className="text-red-500">*</span>
+              </label>
               <Input
                 name="attention"
                 value={otherDetails.attention || ""}
@@ -552,9 +651,10 @@ function InvoiceOtherDetails({
                 <div className="text-xs text-red-600 mt-1">{addressErrors.attention}</div>
               )}
             </div>
-            {/* Country/Region */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Country/Region<span className="text-red-500">*</span></label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Country/Region<span className="text-red-500">*</span>
+              </label>
               <select
                 name="country"
                 value={otherDetails.country || ""}
@@ -569,9 +669,10 @@ function InvoiceOtherDetails({
                 <div className="text-xs text-red-600 mt-1">{addressErrors.country}</div>
               )}
             </div>
-            {/* Address */}
             <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Address<span className="text-red-500">*</span></label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Address<span className="text-red-500">*</span>
+              </label>
               <Textarea
                 name="address"
                 value={otherDetails.address || ""}
@@ -583,9 +684,10 @@ function InvoiceOtherDetails({
                 <div className="text-xs text-red-600 mt-1">{addressErrors.address}</div>
               )}
             </div>
-            {/* City */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">City<span className="text-red-500">*</span></label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                City<span className="text-red-500">*</span>
+              </label>
               <Input
                 name="city"
                 value={otherDetails.city || ""}
@@ -597,9 +699,10 @@ function InvoiceOtherDetails({
                 <div className="text-xs text-red-600 mt-1">{addressErrors.city}</div>
               )}
             </div>
-            {/* State */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">State<span className="text-red-500">*</span></label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                State<span className="text-red-500">*</span>
+              </label>
               <select
                 name="state"
                 value={otherDetails.state || ""}
@@ -614,9 +717,10 @@ function InvoiceOtherDetails({
                 <div className="text-xs text-red-600 mt-1">{addressErrors.state}</div>
               )}
             </div>
-            {/* Pin Code */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Pin Code<span className="text-red-500">*</span></label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Pin Code<span className="text-red-500">*</span>
+              </label>
               <Input
                 name="pinCode"
                 value={otherDetails.pinCode || ""}
@@ -630,9 +734,10 @@ function InvoiceOtherDetails({
                 <div className="text-xs text-red-600 mt-1">{addressErrors.pinCode}</div>
               )}
             </div>
-            {/* Phone */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Phone<span className="text-red-500">*</span></label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Phone<span className="text-red-500">*</span>
+              </label>
               <Input
                 name="phone"
                 value={otherDetails.phone || ""}
@@ -646,7 +751,6 @@ function InvoiceOtherDetails({
                 <div className="text-xs text-red-600 mt-1">{addressErrors.phone}</div>
               )}
             </div>
-            {/* Fax Number */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Fax Number</label>
               <Input
@@ -661,31 +765,6 @@ function InvoiceOtherDetails({
               {addressErrors.faxNumber && (
                 <div className="text-xs text-red-600 mt-1">{addressErrors.faxNumber}</div>
               )}
-            </div>
-          </div>
-        )}
-
-        {activeTab === "customFields" && (
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Custom Field 1</label>
-              <Input
-                name="customField1"
-                value={otherDetails.customField1 || ""}
-                onChange={handleChange}
-                placeholder="Enter Custom Field 1"
-                className="p-2 border rounded w-full"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Custom Field 2</label>
-              <Input
-                name="customField2"
-                value={otherDetails.customField2 || ""}
-                onChange={handleChange}
-                placeholder="Enter Custom Field 2"
-                className="p-2 border rounded w-full"
-              />
             </div>
           </div>
         )}
@@ -707,167 +786,7 @@ function InvoiceOtherDetails({
   );
 }
 
-// --- Customer Form (First Container) ---
-const currencyOptions = [
-  { value: "INR", label: "INR (₹)" },
-  { value: "USD", label: "USD ($)" },
-  { value: "EUR", label: "EUR (€)" },
-];
-
-const suffixOptions = [
-  { value: "Mr.", label: "Mr." },
-  { value: "Mrs.", label: "Mrs." },
-  { value: "Ms.", label: "Ms." },
-  { value: "Miss", label: "Miss" },
-  { value: "Dr.", label: "Dr." },
-];
-
-function CustomerForm({ customer, setCustomer, customerErrors, setCustomerErrors }) {
-  // Validation functions
-  const validateEmail = (email) => {
-    if (!email.includes("@")) return "Email must contain '@'";
-    return "";
-  };
-
-  const validatePhone = (phone) => {
-    if (!/^[6-9]\d{9}$/.test(phone)) {
-      return "Phone must be 10 digits and start with 6, 7, 8, or 9";
-    }
-    return "";
-  };
-
-  const handleCustomerChange = (e) => {
-    const { name, value } = e.target;
-    setCustomer((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-
-    // Live validation
-    if (name === "email") {
-      setCustomerErrors((prev) => ({
-        ...prev,
-        email: validateEmail(value),
-      }));
-    }
-    if (name === "phone") {
-      setCustomerErrors((prev) => ({
-        ...prev,
-        phone: validatePhone(value),
-      }));
-    }
-  };
-
-  return (
-    <div className="bg-white rounded-xl shadow-lg px-8 py-8 mb-8">
-      <div className="mb-6">
-        <h2 className="text-2xl font-bold text-gray-800 mb-2">New Customer</h2>
-      </div>
-      <form className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Primary Contact with Suffix */}
-        <div className="md:col-span-2">
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Primary Contact
-          </label>
-          <div className="flex gap-2">
-            <select
-              name="primarySuffix"
-              value={customer.primarySuffix}
-              onChange={handleCustomerChange}
-              className="p-2 border rounded"
-              style={{ minWidth: "80px" }}
-            >
-              {suffixOptions.map((opt) => (
-                <option key={opt.value} value={opt.value}>
-                  {opt.label}
-                </option>
-              ))}
-            </select>
-            <Input
-              name="primaryName"
-              value={customer.primaryName}
-              onChange={handleCustomerChange}
-              placeholder="Enter Name"
-              className="p-2 border rounded w-full"
-            />
-          </div>
-        </div>
-        {/* Company */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Company</label>
-          <Input
-            name="company"
-            value={customer.company}
-            onChange={handleCustomerChange}
-            placeholder="Company Name"
-            className="p-2 border rounded w-full"
-          />
-        </div>
-        {/* Display Name */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Display Name</label>
-          <Input
-            name="displayName"
-            value={customer.displayName}
-            onChange={handleCustomerChange}
-            placeholder="Display Name"
-            className="p-2 border rounded w-full"
-          />
-        </div>
-        {/* Currency */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Currency</label>
-          <select
-            name="currency"
-            value={customer.currency}
-            onChange={handleCustomerChange}
-            className="p-2 border rounded w-full"
-          >
-            {currencyOptions.map((opt) => (
-              <option key={opt.value} value={opt.value}>{opt.label}</option>
-            ))}
-          </select>
-        </div>
-        {/* Email */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Email ID</label>
-          <Input
-            name="email"
-            value={customer.email}
-            onChange={handleCustomerChange}
-            placeholder="Email"
-            className={`p-2 border rounded w-full ${customerErrors.email ? "border-red-500" : ""}`}
-            type="email"
-          />
-          {customerErrors.email && (
-            <div className="text-xs text-red-600 mt-1">{customerErrors.email}</div>
-          )}
-        </div>
-        {/* Phone */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
-          <Input
-            name="phone"
-            value={customer.phone}
-            onChange={handleCustomerChange}
-            placeholder="10 digit phone number"
-            className={`p-2 border rounded w-full ${customerErrors.phone ? "border-red-500" : ""}`}
-            type="tel"
-            maxLength={10}
-            pattern="[6-9][0-9]{9}"
-          />
-          {customerErrors.phone && (
-            <div className="text-xs text-red-600 mt-1">{customerErrors.phone}</div>
-          )}
-        </div>
-      </form>
-    </div>
-  );
-}
-
-// --- Main Invoice Form Component ---
 export default function InvoiceForm() {
-  // Customer State
   const [customer, setCustomer] = useState({
     company: "",
     displayName: "",
@@ -879,47 +798,28 @@ export default function InvoiceForm() {
   });
 
   const [customerErrors, setCustomerErrors] = useState({
+    primaryName: "",
     email: "",
     phone: "",
   });
 
-  // Invoice Data State (rest of your invoice state)
   const [invoiceData, setInvoiceData] = useState({});
-
-  // --- Second Container State ---
   const [otherDetails, setOtherDetails] = useState({});
   const [addressErrors, setAddressErrors] = useState({});
-
-  // --- Contact Persons State ---
   const [contactPersons, setContactPersons] = useState([]);
+  const documentInputRef = useRef(null);
 
-  // Unified handleChange for invoiceData (if needed)
-  const handleInvoiceChange = (e) => {
-    const { name, value } = e.target;
-    setInvoiceData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-  };
-
-  // Check if all required fields are filled and valid
   const isFormValid = () => {
-    // Validate customer
     const customerValidation = validateCustomerFields(customer);
-    // Validate address
     const addressValidation = validateAddressFields(otherDetails);
-
-    // All required fields must be filled and no errors
     return (
       Object.keys(customerValidation).length === 0 &&
       Object.keys(addressValidation).length === 0
     );
   };
 
-  // Unified submit handler for all data
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Validate before submit
     const customerValidation = validateCustomerFields(customer);
     const addressValidation = validateAddressFields(otherDetails);
 
@@ -933,15 +833,35 @@ export default function InvoiceForm() {
       alert("Please fill all required fields correctly before submitting.");
       return;
     }
-    // Continue with invoice submit
-    console.log("📝 Submitted Invoice:", { customer, invoiceData, otherDetails, contactPersons });
-    alert("Invoice saved successfully!");
-    // Optionally reset all forms here
+
+    try {
+      const formData = new FormData();
+      formData.append("customer", JSON.stringify(customer));
+      formData.append("otherDetails", JSON.stringify(otherDetails));
+      formData.append("contactPersons", JSON.stringify(contactPersons));
+      formData.append("invoiceData", JSON.stringify(invoiceData));
+      if (otherDetails.document) {
+        formData.append("document", otherDetails.document);
+      }
+
+      const res = await fetch("/api/customer", {
+        method: "POST",
+        body: formData,
+      });
+      const data = await res.json();
+      if (data.success) {
+        alert("Invoice saved successfully!");
+        handleCancel();
+      } else {
+        alert("Error: " + data.error);
+      }
+    } catch (error) {
+      alert("Failed to save invoice.");
+      console.error(error);
+    }
   };
 
-  // Unified cancel handler for all data
-  const handleCancel = (e) => {
-    e.preventDefault();
+  const handleCancel = () => {
     setCustomer({
       company: "",
       displayName: "",
@@ -951,28 +871,24 @@ export default function InvoiceForm() {
       email: "",
       phone: "",
     });
-    setCustomerErrors({ email: "", phone: "" });
+    setCustomerErrors({ primaryName: "", email: "", phone: "" });
     setOtherDetails({});
     setInvoiceData({});
     setAddressErrors({});
     setContactPersons([]);
+    if (documentInputRef.current) documentInputRef.current.value = '';
   };
 
-  const handlePrint = () => {
-    window.print();
-  };
+  const handlePrint = () => window.print();
 
   return (
     <div className="max-w-6xl mx-auto p-6 bg-[#F7F8FA] min-h-screen">
-      {/* --- First Container: Customer Form --- */}
       <CustomerForm
         customer={customer}
         setCustomer={setCustomer}
         customerErrors={customerErrors}
         setCustomerErrors={setCustomerErrors}
       />
-
-      {/* --- Second Container: Other Details, Address, etc. --- */}
       <InvoiceOtherDetails
         otherDetails={otherDetails}
         setOtherDetails={setOtherDetails}
@@ -980,9 +896,8 @@ export default function InvoiceForm() {
         setAddressErrors={setAddressErrors}
         contactPersons={contactPersons}
         setContactPersons={setContactPersons}
+        documentInputRef={documentInputRef}
       />
-
-      {/* --- Unified Add and Cancel buttons at the bottom --- */}
       <div className="flex gap-2 justify-end mt-6 p-4">
         <button
           className={`px-4 py-2 text-white text-sm rounded hover:bg-blue-600 ${
@@ -1001,7 +916,11 @@ export default function InvoiceForm() {
         >
           Cancel
         </button>
-        <button onClick={handlePrint} className="px-4 py-2 bg-gray-600 text-white text-sm rounded hover:bg-gray-700 ml-2" type="button">
+        <button
+          onClick={handlePrint}
+          className="px-4 py-2 bg-gray-600 text-white text-sm rounded hover:bg-gray-700 ml-2"
+          type="button"
+        >
           Print Invoice
         </button>
       </div>
