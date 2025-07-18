@@ -56,6 +56,30 @@ async function main() {
   } else {
     console.log('ℹ️ Superadmin user already exists, skipping creation');
   }
+  // Invoice Admin
+  const invoiceadminexists = await prisma.user.findFirst({
+    where: {
+      OR: [
+        { userName: 'invoice' },
+        { wbEmailId: 'invoice@wizzybox.com' },
+      ],
+    }
+  })
+  if (!invoiceadminexists) {
+    const hashedPassword = await bcrypt.hash('invoice123', 12);
+    const invoiceadmin = await prisma.user.create({
+      data: {
+        userName: 'invoice',
+        wbEmailId: 'invoice@wizzybox.com',
+        password: hashedPassword,
+        phoneNumber: '9876543210',
+        role: Role.INVOICE,
+      },
+    });
+    console.log('Invoice admin created ', invoiceadmin)
+  }else{
+    console.log('Invoice admin already exists')
+  }
 
   // IT Admin user
   const itadminExists = await prisma.user.findFirst({

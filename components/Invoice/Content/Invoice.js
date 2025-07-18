@@ -1,6 +1,6 @@
 "use client"
-import React, { useState, useRef, useEffect } from "react";
-import { FaPlus, FaTrash, FaEdit, FaCheck, FaTimes, FaSearch } from "react-icons/fa";
+import React, { useState, useRef } from "react";
+import { FaPlus, FaTrash, FaEdit, FaCheck, FaTimes } from "react-icons/fa";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 
@@ -96,68 +96,8 @@ function validateContactPerson(person) {
   return errors;
 }
 
-// GST Modal Component
-function GSTModal({ open, onClose, gstDetails, onPrefill }) {
-  if (!open) return null;
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
-      <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-lg relative">
-        <button
-          className="absolute top-2 right-2 text-gray-500 hover:text-gray-700"
-          onClick={onClose}
-        >
-          <FaTimes />
-        </button>
-        <h2 className="text-xl font-bold mb-4">GST Details</h2>
-        {gstDetails ? (
-          <div className="space-y-2">
-            <div><span className="font-semibold">GSTIN:</span> {gstDetails.gstin}</div>
-            <div><span className="font-semibold">Legal Name:</span> {gstDetails.legalName}</div>
-            <div><span className="font-semibold">Trade Name:</span> {gstDetails.tradeName}</div>
-            <div><span className="font-semibold">Address:</span> {gstDetails.address}</div>
-            <div><span className="font-semibold">State:</span> {gstDetails.state}</div>
-            <div><span className="font-semibold">Pin Code:</span> {gstDetails.pinCode}</div>
-            <div><span className="font-semibold">Status:</span> {gstDetails.status}</div>
-          </div>
-        ) : (
-          <div className="text-red-600">GST details not found or invalid GSTIN.</div>
-        )}
-        <div className="flex justify-end gap-2 mt-6">
-          <button
-            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-            onClick={() => onPrefill(gstDetails)}
-            disabled={!gstDetails}
-          >
-            Prefill Details
-          </button>
-          <button
-            className="px-4 py-2 bg-gray-400 text-white rounded hover:bg-gray-500"
-            onClick={onClose}
-          >
-            Cancel
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 // Customer Form
-function CustomerForm({ customer, setCustomer, customerErrors, setCustomerErrors, gstNumber, setGstNumber, onGstCheck }) {
-  // Compute display name options from Primary Contact and Company
-  const displayNameOptions = [
-    customer.primaryName?.trim() ? customer.primaryName : null,
-    customer.company?.trim() ? customer.company : null,
-  ].filter(Boolean);
-
-  // If displayName is not in options, add it (for backward compatibility)
-  if (
-    customer.displayName &&
-    !displayNameOptions.includes(customer.displayName)
-  ) {
-    displayNameOptions.push(customer.displayName);
-  }
-
+function CustomerForm({ customer, setCustomer, customerErrors, setCustomerErrors }) {
   const handleCustomerChange = (e) => {
     const { name, value } = e.target;
     setCustomer((prev) => ({
@@ -177,42 +117,12 @@ function CustomerForm({ customer, setCustomer, customerErrors, setCustomerErrors
         phone: !/^[6-9]\d{9}$/.test(value) ? "Phone must be 10 digits and start with 6, 7, 8, or 9" : "",
       }));
     }
-    // If Primary Contact or Company changes, and displayName is empty or matches the old value, update displayName
-    if ((name === "primaryName" || name === "company") && (!customer.displayName || customer.displayName === prev.primaryName || customer.displayName === prev.company)) {
-      setCustomer((prev) => ({
-        ...prev,
-        displayName: value,
-      }));
-    }
   };
 
   return (
     <div className="bg-white rounded-xl shadow-lg px-8 py-8 mb-8">
       <div className="mb-6">
         <h2 className="text-2xl font-bold text-gray-800 mb-2">New Customer</h2>
-      </div>
-      {/* GST Field at the top */}
-      <div className="mb-6 flex items-end gap-2">
-        <div className="flex-1">
-          <label className="block text-sm font-medium text-gray-700 mb-1">GST Number</label>
-          <Input
-            name="gstNumber"
-            value={gstNumber}
-            onChange={e => setGstNumber(e.target.value.toUpperCase())}
-            placeholder="Enter GST Number"
-            className="p-2 border rounded w-full"
-            maxLength={15}
-          />
-        </div>
-        <button
-          type="button"
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-          onClick={onGstCheck}
-          disabled={!gstNumber || gstNumber.length !== 15}
-          title="Check GST Details"
-        >
-          <FaSearch /> Check
-        </button>
       </div>
       <form className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="md:col-span-2">
@@ -253,17 +163,13 @@ function CustomerForm({ customer, setCustomer, customerErrors, setCustomerErrors
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Display Name</label>
-          <select
+          <Input
             name="displayName"
             value={customer.displayName}
             onChange={handleCustomerChange}
+            placeholder="Display Name"
             className="p-2 border rounded w-full"
-          >
-            <option value="">Select Display Name</option>
-            {displayNameOptions.map((opt) => (
-              <option key={opt} value={opt}>{opt}</option>
-            ))}
-          </select>
+          />
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Currency</label>
@@ -313,8 +219,7 @@ function CustomerForm({ customer, setCustomer, customerErrors, setCustomerErrors
   );
 }
 
-// ... rest of the code remains unchanged (InvoiceOtherDetails, AddCustomerForm, etc.)
-
+// Other Details, Address, Contact Persons Tabs
 function InvoiceOtherDetails({
   otherDetails = {},
   setOtherDetails,
@@ -474,7 +379,6 @@ function InvoiceOtherDetails({
       <div className="mt-4">
         {activeTab === "otherDetails" && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* GST Number field removed from here, now at the top */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">PAN Number</label>
               <Input
@@ -883,7 +787,7 @@ function InvoiceOtherDetails({
   );
 }
 
-export default function AddCustomerForm() {
+export default function InvoiceForm() {
   const [customer, setCustomer] = useState({
     company: "",
     displayName: "",
@@ -905,72 +809,6 @@ export default function AddCustomerForm() {
   const [addressErrors, setAddressErrors] = useState({});
   const [contactPersons, setContactPersons] = useState([]);
   const documentInputRef = useRef(null);
-
-  // GST Modal State
-  const [gstNumber, setGstNumber] = useState("");
-  const [gstModalOpen, setGstModalOpen] = useState(false);
-  const [gstDetails, setGstDetails] = useState(null);
-
-  // Simulate GST fetch (replace with real API if available)
-  const fetchGstDetails = async (gstin) => {
-    // Simulate API delay
-    await new Promise((res) => setTimeout(res, 700));
-    // Mocked GST details (replace with real API response)
-    if (gstin === "29ABCDE1234F2Z5") {
-      return {
-        gstin: "29ABCDE1234F2Z5",
-        legalName: "ABC Pvt Ltd",
-        tradeName: "ABC Trading",
-        address: "123, MG Road, Bengaluru, Karnataka",
-        state: "Karnataka",
-        pinCode: "560001",
-        status: "Active",
-      };
-    }
-    // For demo, any 15-char GSTIN returns a generic mock
-    if (gstin.length === 15) {
-      return {
-        gstin,
-        legalName: "Demo Company Pvt Ltd",
-        tradeName: "Demo Trade",
-        address: "456, Demo Street, Mumbai, Maharashtra",
-        state: "Maharashtra",
-        pinCode: "400001",
-        status: "Active",
-      };
-    }
-    return null;
-  };
-
-  const handleGstCheck = async () => {
-    if (!gstNumber || gstNumber.length !== 15) {
-      alert("Please enter a valid 15-character GST Number.");
-      return;
-    }
-    setGstDetails(null);
-    setGstModalOpen(true);
-    const details = await fetchGstDetails(gstNumber);
-    setGstDetails(details);
-  };
-
-  const handleGstPrefill = (details) => {
-    if (!details) return;
-    // Prefill logic: update customer and otherDetails/address fields
-    setCustomer((prev) => ({
-      ...prev,
-      company: details.legalName || prev.company,
-      displayName: details.tradeName || prev.displayName,
-    }));
-    setOtherDetails((prev) => ({
-      ...prev,
-      gstNumber: details.gstin,
-      address: details.address || prev.address,
-      state: details.state || prev.state,
-      pinCode: details.pinCode || prev.pinCode,
-    }));
-    setGstNumber(details.gstin); // Also update the GST field at the top
-    setGstModalOpen(false);
-  };
 
   const isFormValid = () => {
     const customerValidation = validateCustomerFields(customer);
@@ -1039,8 +877,6 @@ export default function AddCustomerForm() {
     setInvoiceData({});
     setAddressErrors({});
     setContactPersons([]);
-    setGstNumber("");
-    setGstDetails(null);
     if (documentInputRef.current) documentInputRef.current.value = '';
   };
 
@@ -1053,9 +889,6 @@ export default function AddCustomerForm() {
         setCustomer={setCustomer}
         customerErrors={customerErrors}
         setCustomerErrors={setCustomerErrors}
-        gstNumber={gstNumber}
-        setGstNumber={setGstNumber}
-        onGstCheck={handleGstCheck}
       />
       <InvoiceOtherDetails
         otherDetails={otherDetails}
@@ -1092,12 +925,6 @@ export default function AddCustomerForm() {
           Print Invoice
         </button>
       </div>
-      <GSTModal
-        open={gstModalOpen}
-        onClose={() => setGstModalOpen(false)}
-        gstDetails={gstDetails}
-        onPrefill={handleGstPrefill}
-      />
     </div>
   );
 }
