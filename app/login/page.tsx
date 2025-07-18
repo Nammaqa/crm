@@ -38,45 +38,48 @@ function Page() {
 
         try {
             const res = await fetch("/api/auth/login", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload),
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload),
             });
 
             const data = await res.json();
 
             if (res.ok && data.user) {
-            toast.success("Login successful!");
+                toast.success("Login successful!");
 
-            const role = data.user.role; // 👈 get the role from sanitized user object
-
-            // ✅ Redirect based on role
-            if (role === "ADMIN") {
-                window.location.href = "/admin";
-            } else if (role === "SALES") {
-                window.location.href = "/bdsales";
-            }else if (role === "RECRUITER") {
-                window.location.href = "/recruiter";
-            } else if (role === "SUPERADMIN") {
-                window.location.href = "/superAdmin";
-            }else if (role === "ACCOUNT_MANAGER") {
-                window.location.href = "/ACmanager";
-            }
-            else if (role === "IT_ADMIN") {
-                window.location.href = "/itadmin";
-            }
-               else {
-                window.location.href = "/dashboard"; // fallback
-            }
+                const role = data.user.role; // 👈 get the role from sanitized user object
+                // console.log("Data user ", data)
+                // ✅ Redirect based on role
+                if (role === "ADMIN") {
+                    window.location.href = "/admin";
+                } else if (role === "SALES") {
+                    window.location.href = "/bdsales";
+                } else if (role === "RECRUITER") {
+                    window.location.href = "/recruiter";
+                } else if (role === "SUPERADMIN") {
+                    window.location.href = "/superAdmin";
+                } else if (role === "ACCOUNT_MANAGER") {
+                    window.location.href = "/ACmanager";
+                }
+                else if (role === "IT_ADMIN") {
+                    window.location.href = "/itadmin";
+                }
+                else if (role === "INVOICE") {
+                    window.location.href = "/customer-list";
+                }
+                else {
+                    window.location.href = "/dashboard"; // fallback
+                }
 
             } else {
-            toast.error(data.message || "Login failed.");
+                toast.error(data.message || "Login failed.");
             }
         } catch (err) {
             toast.error("Something went wrong. Try again.");
             console.error("Login error:", err);
         }
-        };
+    };
 
 
     return (

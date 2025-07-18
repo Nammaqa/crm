@@ -173,6 +173,7 @@ enum Role {
   SALES
   ACCOUNT_MANAGER
   SUPERADMIN
+  INVOICE
   IT_ADMIN
 }
 
@@ -277,6 +278,7 @@ model Customer {
   billingPinCode    String
   billingPhone      String?
   billingFax        String?
+  gstNumber         String?
   // shippingAttention String?
   // shippingCountry   String
   // shippingAddress   String[]       

@@ -2,74 +2,41 @@
 import { useState } from "react";
 import { FaBars, FaTimes } from "react-icons/fa";
 import Image from "next/image";
-
-// Import section components
 import Overview from "@components/Admin/Content/Overview";
-import BdSales from "@components/Admin/Content/BdSales";
-import Recruitment from "@components/Admin/Content/Recruitment";
-import Msa from "@components/Admin/Content/Msa";
-import Nda from "@components/Admin/Content/Nda";
-import Sow from "@components/Admin/Content/Sow";
-import Po from "@components/Admin/Content/Po";
-import AcManager from "@components/Admin/Content/AcManager";
-import Marketing from "@components/Admin/Content/Marketing";
-import ItTeam from "@components/Admin/Content/ItTeam";
-import Invoice from "@components/Admin/Content/Invoice";
-import JobList from "@components/Admin/Content/JobList";
-import Adduser from "@components/Admin/Content/AddUser";
-import AgreementList from "@components/Admin/Content/AgreementList";
-import RequirementList from "@components/Admin/Content/RequirementList";
 import Customerlist from "@components/Admin/Content/Customerlist"; // import
 import NewInvoice from "@components/Admin/Content/NewInvoice"; // <-- Add this import
-
-// import Customerlist from "@components/Admin/Content/Customerlist";
-
-
-// Import icons
 import {
   FaChartPie,
-  FaHandshake,
-  FaUsers,
-  FaFileContract,
-  FaClipboardList,
-  FaShoppingCart,
-  FaBuilding,
-  FaBullhorn,
-  FaLaptopCode,
   FaFileInvoice,
-  FaBriefcase,
-  FaFileAlt,
   FaSignOutAlt,
-  FaListAlt,
-  FaUser,
   FaAddressBook
 } from "react-icons/fa";
-import InvoiceForm from "@components/Admin/Content/Invoice";
+import AddCustomerForm from "@components/Admin/Content/Invoice";
 
 // Sidebar sections with dynamic content
 const sections = [
   { id: "overview", label: "Overview", icon: <FaChartPie size={20} />, content: <Overview /> },
-  { id: "add-user", label: "Add User", icon: <FaUser size={20} />, content: <Adduser /> },
-  { id: "bd-sales", label: "BD/Sales", icon: <FaHandshake size={20} />, content: <BdSales /> },
-  { id: "agreement-list", label: "Agreement List", icon: <FaFileAlt size={20} />, content: <AgreementList /> },
-  { id: "requirement-list", label: "Requirement List", icon: <FaListAlt size={20} />, content: <RequirementList /> },
-  { id: "recruitment", label: "Requirement", icon: <FaUsers size={20} />, content: <Recruitment /> },
-  { id: "joblist", label: "Job list", icon: <FaBriefcase size={20} />, content: <JobList /> },
-  { id: "msa", label: "MSA", icon: <FaFileContract size={20} />, content: <Msa /> },
-  { id: "nda", label: "NDA", icon: <FaFileContract size={20} />, content: <Nda /> },
-  { id: "sow", label: "Statement of Work", icon: <FaClipboardList size={20} />, content: <Sow /> },
-  { id: "po", label: "Purchase Order", icon: <FaShoppingCart size={20} />, content: <Po /> },
-  { id: "ac-manager", label: "A/C Manager", icon: <FaBuilding size={20} />, content: <AcManager /> },
-  { id: "marketing", label: "Marketing", icon: <FaBullhorn size={20} />, content: <Marketing /> },
+//   { id: "add-user", label: "Add User", icon: <FaUser size={20} />, content: <Adduser /> },
+//   { id: "bd-sales", label: "BD/Sales", icon: <FaHandshake size={20} />, content: <BdSales /> },
+//   { id: "agreement-list", label: "Agreement List", icon: <FaFileAlt size={20} />, content: <AgreementList /> },
+//   { id: "requirement-list", label: "Requirement List", icon: <FaListAlt size={20} />, content: <RequirementList /> },
+//   { id: "recruitment", label: "Requirement", icon: <FaUsers size={20} />, content: <Recruitment /> },
+//   { id: "joblist", label: "Job list", icon: <FaBriefcase size={20} />, content: <JobList /> },
+//   { id: "msa", label: "MSA", icon: <FaFileContract size={20} />, content: <Msa /> },
+//   { id: "nda", label: "NDA", icon: <FaFileContract size={20} />, content: <Nda /> },
+//   { id: "sow", label: "Statement of Work", icon: <FaClipboardList size={20} />, content: <Sow /> },
+//   { id: "po", label: "Purchase Order", icon: <FaShoppingCart size={20} />, content: <Po /> },
+//   { id: "ac-manager", label: "A/C Manager", icon: <FaBuilding size={20} />, content: <AcManager /> },
+//   { id: "marketing", label: "Marketing", icon: <FaBullhorn size={20} />, content: <Marketing /> },
   // { id: "invoice", label: "Customers", icon: <FaFileInvoice size={20} />, content: <Invoice /> },
   { id: "customer-list", label: "Customer List", icon: <FaAddressBook size={20} />, content: <Customerlist /> },
-  { id: "customer", label: "Customer", icon: <FaAddressBook size={20} />, content: <InvoiceForm /> },
+  { id: "customer", label: "Add Customer", icon: <FaAddressBook size={20} />, content: <AddCustomerForm /> },
   { id: "new-invoice", label: "Invoice", icon: <FaFileInvoice size={20} />, content: <NewInvoice /> }, // <-- Add this line
 
 ];
 
-export default function Dashboard({ url }) {
-  const [selectedSection, setSelectedSection] = useState(url || "overview");
+export default function InvoiceSidebar({ url }) {
+  const [selectedSection, setSelectedSection] = useState("overview");
   const [open, setOpen] = useState(true);
 
   const handleLogout = () => {

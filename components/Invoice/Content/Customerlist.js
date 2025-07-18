@@ -224,13 +224,13 @@ export default function Customerlist() {
             <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#2563eb]" />
           </div>
           {/* Add Button */}
-          <a href="/add-customer"
+          <Link href="/customer"
                className="flex items-center gap-2 bg-[#2563eb] text-white px-5 py-2 rounded-lg font-semibold shadow hover:bg-[#1e40af] transition"
               //  onClick={() => router.push("/customer")}
 >
             <FaPlus />
             Add Customer
-          </a>
+          </Link>
         </div>
       </div>
 
