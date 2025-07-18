@@ -31,11 +31,15 @@ const InvoiceForm = () => {
   const today = formatDate(new Date());
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
 
+  // Customer dropdown state
+  const [customers, setCustomers] = useState([]);
+  const [customerLoading, setCustomerLoading] = useState(true);
+
   const [items, setItems] = useState([
     { id: Date.now(), name: '', description: '', quantity: 1, rate: 0 }
   ]);
   const [formData, setFormData] = useState({
-    customerName: '',
+    customerId: '', // Will store the selected customer id
     invoiceNumber: '',
     invoiceDate: today,
     dueDate: '',
@@ -48,6 +52,26 @@ const InvoiceForm = () => {
     termsAndConditions: '',
     files: [],
   });
+
+  // Fetch customers from API on mount
+  useEffect(() => {
+    async function fetchCustomers() {
+      setCustomerLoading(true);
+      try {
+        const res = await fetch("/api/customer");
+        const data = await res.json();
+        if (data.success) {
+          setCustomers(data.data);
+        } else {
+          setCustomers([]);
+        }
+      } catch (err) {
+        setCustomers([]);
+      }
+      setCustomerLoading(false);
+    }
+    fetchCustomers();
+  }, []);
 
   useEffect(() => {
     let dueDate = formData.dueDate;
@@ -132,14 +156,20 @@ const InvoiceForm = () => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    // Find selected customer for display
+    const selectedCustomer = customers.find(c => c.id === Number(formData.customerId));
     const invoiceData = {
       ...formData,
+      customerName: selectedCustomer
+        ? (selectedCustomer.displayName || selectedCustomer.companyName || selectedCustomer.emailAddress)
+        : '',
       items,
       subtotal: calculateSubtotal(),
       tax: calculateTax(),
       total: calculateTotal(),
     };
     console.log('Submitting Invoice:', invoiceData);
+    // TODO: Replace with actual API call
   };
 
   const handlePrintDownload = async () => {
@@ -161,7 +191,17 @@ const InvoiceForm = () => {
       doc.text(`Invoice #: ${formData.invoiceNumber || '-'}`, 14, 28);
       doc.text(`Invoice Date: ${formData.invoiceDate || '-'}`, 14, 34);
       doc.text(`Due Date: ${formData.dueDate || '-'}`, 14, 40);
-      doc.text(`Customer Name: ${formData.customerName || '-'}`, 14, 46);
+      // Show customer name from dropdown
+      const selectedCustomer = customers.find(c => c.id === Number(formData.customerId));
+      doc.text(
+        `Customer Name: ${
+          selectedCustomer
+            ? (selectedCustomer.displayName || selectedCustomer.companyName || selectedCustomer.emailAddress)
+            : '-'
+        }`,
+        14,
+        46
+      );
 
       // Items Table
       const itemRows = items.map((item, idx) => [
@@ -251,14 +291,21 @@ const InvoiceForm = () => {
           <label className="block font-semibold text-sm mb-1">
             Customer Name<span className="text-red-500">*</span>
           </label>
-          <input
-            type="text"
-            name="customerName"
+          <select
+            name="customerId"
             required
-            value={formData.customerName}
+            value={formData.customerId}
             onChange={handleChange}
             className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-300 shadow-sm"
-          />
+            disabled={customerLoading}
+          >
+            <option value="">Select Customer</option>
+            {customers.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.displayName || c.companyName || c.emailAddress}
+              </option>
+            ))}
+          </select>
         </div>
         <div>
           <label className="block font-semibold text-sm mb-1">Invoice #</label>

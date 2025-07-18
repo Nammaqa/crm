@@ -1,6 +1,6 @@
 "use client"
 import React, { useState, useRef, useEffect } from "react";
-import { FaPlus, FaTrash, FaEdit, FaCheck, FaTimes, FaSearch } from "react-icons/fa";
+import { FaPlus, FaTrash, FaEdit, FaCheck, FaTimes, FaSearch, FaChevronDown } from "react-icons/fa";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 
@@ -59,11 +59,172 @@ const paymentTermsOptions = [
   { value: "NET_45", label: "Net 45" },
   { value: "NET_60", label: "Net 60" },
   { value: "DUE_ON_RECEIPT", label: "Due on Receipt" },
-  { value: "DUE_END_OF_MONTH", label: "Due End of Month" },
-  { value: "DUE_END_OF_NEXT_MONTH", label: "Due End of Next Month" },
+  { value: "DUE_END_OF_MONTH", label: "Due end of the month" },
+  { value: "DUE_END_OF_NEXT_MONTH", label: "Due end of next month" },
 ];
 
-// Validation functions
+// Place of Supply Options
+const placeOfSupplyOptions = [
+  { value: "", label: "Select Place of Supply" },
+  { value: "AP", label: "[AP] - Andhra Pradesh" },
+  { value: "AR", label: "[AR] - Arunachal Pradesh" },
+  { value: "AS", label: "[AS] - Assam" },
+  { value: "BR", label: "[BR] - Bihar" },
+  { value: "CG", label: "[CG] - Chhattisgarh" },
+  { value: "GA", label: "[GA] - Goa" },
+  { value: "GJ", label: "[GJ] - Gujarat" },
+  { value: "HR", label: "[HR] - Haryana" },
+  { value: "HP", label: "[HP] - Himachal Pradesh" },
+  { value: "JH", label: "[JH] - Jharkhand" },
+  { value: "KA", label: "[KA] - Karnataka" },
+  { value: "KL", label: "[KL] - Kerala" },
+  { value: "MP", label: "[MP] - Madhya Pradesh" },
+  { value: "MH", label: "[MH] - Maharashtra" },
+  { value: "MN", label: "[MN] - Manipur" },
+  { value: "ML", label: "[ML] - Meghalaya" },
+  { value: "MZ", label: "[MZ] - Mizoram" },
+  { value: "NL", label: "[NL] - Nagaland" },
+  { value: "OD", label: "[OD] - Odisha (Orissa)" },
+  { value: "PB", label: "[PB] - Punjab" },
+  { value: "RJ", label: "[RJ] - Rajasthan" },
+  { value: "SK", label: "[SK] - Sikkim" },
+  { value: "TN", label: "[TN] - Tamil Nadu" },
+  { value: "TS", label: "[TS] - Telangana" },
+  { value: "TR", label: "[TR] - Tripura" },
+  { value: "UP", label: "[UP] - Uttar Pradesh" },
+  { value: "UK", label: "[UK] - Uttarakhand" },
+  { value: "WB", label: "[WB] - West Bengal" },
+];
+
+// GST Treatment Options with Descriptions (formatted as requested)
+const gstTreatmentOptions = [
+  {
+    value: "REGISTERED_REGULAR",
+    label: "Registered Business – Regular",
+    description: "Business that is registered under GST."
+  },
+  {
+    value: "REGISTERED_COMPOSITION",
+    label: "Registered Business – Composition",
+    description: "Business that is registered under the Composition Scheme in GST."
+  },
+  {
+    value: "UNREGISTERED",
+    label: "Unregistered Business",
+    description: "Business that has not been registered under GST."
+  },
+  {
+    value: "CONSUMER",
+    label: "Consumer",
+    description: "A customer who is a regular consumer."
+  },
+  {
+    value: "OVERSEAS",
+    label: "Overseas",
+    description: "Persons with whom you do import or export of supplies outside India."
+  },
+  {
+    value: "SEZ",
+    label: "Special Economic Zone",
+    description: "Business (Unit) that is located in a Special Economic Zone (SEZ) of India or a SEZ Developer."
+  },
+  {
+    value: "DEEMED_EXPORT",
+    label: "Deemed Export",
+    description: "Supply of goods to an Export Oriented Unit or against Advanced Authorization/Export Promotion Goods."
+  },
+  {
+    value: "TAX_DEDUCTOR",
+    label: "Tax Deductor",
+    description: "Departments of the State/Central government, governmental agencies or local authorities."
+  },
+  {
+    value: "SEZ_DEVELOPER",
+    label: "SEZ Developer",
+    description: "A person/organisation who owns at least 26% of the equity in creating business units in a Special Economic Zone (SEZ)."
+  },
+];
+
+// --- SearchableDropdown for Place of Supply ---
+function SearchableDropdown({ options, value, onChange, placeholder, name }) {
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const ref = useRef(null);
+
+  // Filter options based on search
+  const filtered = options.filter(
+    (opt) =>
+      opt.label.toLowerCase().includes(search.toLowerCase()) ||
+      opt.value.toLowerCase().includes(search.toLowerCase())
+  );
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    function handleClick(e) {
+      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
+    }
+    if (open) document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [open]);
+
+  // Find selected label
+  const selected = options.find((opt) => opt.value === value);
+
+  return (
+    <div className="relative" ref={ref}>
+      <button
+        type="button"
+        className="flex items-center justify-between w-full p-2 border rounded bg-white"
+        onClick={() => setOpen((v) => !v)}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+      >
+        <span className={selected?.value ? "text-gray-900" : "text-gray-400"}>
+          {selected?.label || placeholder}
+        </span>
+        <FaChevronDown className="ml-2 text-gray-400" />
+      </button>
+      {open && (
+        <div className="absolute z-10 mt-1 w-full bg-white border rounded shadow-lg max-h-60 overflow-auto">
+          <div className="p-2">
+            <input
+              type="text"
+              className="w-full border rounded px-2 py-1 text-sm"
+              placeholder="Search..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              autoFocus
+            />
+          </div>
+          <ul tabIndex={-1} className="max-h-48 overflow-auto">
+            {filtered.length === 0 && (
+              <li className="px-4 py-2 text-gray-400 text-sm">No results</li>
+            )}
+            {filtered.map((opt) => (
+              <li
+                key={opt.value}
+                className={`px-4 py-2 cursor-pointer hover:bg-blue-50 ${
+                  value === opt.value ? "bg-blue-100 font-semibold" : ""
+                }`}
+                onClick={() => {
+                  onChange({ target: { name, value: opt.value } });
+                  setOpen(false);
+                  setSearch("");
+                }}
+                role="option"
+                aria-selected={value === opt.value}
+              >
+                {opt.label}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Validation functions (unchanged)
 function validateAddressFields(address) {
   const errors = {};
   if (!address.attention || address.attention.trim() === "") errors.attention = "Attention is required";
@@ -96,7 +257,7 @@ function validateContactPerson(person) {
   return errors;
 }
 
-// GST Modal Component
+// GST Modal Component (unchanged)
 function GSTModal({ open, onClose, gstDetails, onPrefill }) {
   if (!open) return null;
   return (
@@ -142,7 +303,7 @@ function GSTModal({ open, onClose, gstDetails, onPrefill }) {
   );
 }
 
-// Customer Form
+// CustomerForm (unchanged)
 function CustomerForm({ customer, setCustomer, customerErrors, setCustomerErrors, gstNumber, setGstNumber, onGstCheck }) {
   // Compute display name options from Primary Contact and Company
   const displayNameOptions = [
@@ -313,8 +474,7 @@ function CustomerForm({ customer, setCustomer, customerErrors, setCustomerErrors
   );
 }
 
-// ... rest of the code remains unchanged (InvoiceOtherDetails, AddCustomerForm, etc.)
-
+// InvoiceOtherDetails with new GST fields and dropdowns
 function InvoiceOtherDetails({
   otherDetails = {},
   setOtherDetails,
@@ -451,6 +611,69 @@ function InvoiceOtherDetails({
     setNewContactErrors({});
   };
 
+  // Custom GST Treatment dropdown with label bold and description italic
+  function GSTTreatmentDropdown({ value, onChange }) {
+    const [open, setOpen] = useState(false);
+    const ref = useRef(null);
+
+    const selected = gstTreatmentOptions.find((opt) => opt.value === value);
+
+    useEffect(() => {
+      function handleClick(e) {
+        if (ref.current && !ref.current.contains(e.target)) setOpen(false);
+      }
+      if (open) document.addEventListener("mousedown", handleClick);
+      return () => document.removeEventListener("mousedown", handleClick);
+    }, [open]);
+
+    return (
+      <div className="relative" ref={ref}>
+        <button
+          type="button"
+          className="flex items-center justify-between w-full p-2 border rounded bg-white"
+          onClick={() => setOpen((v) => !v)}
+          aria-haspopup="listbox"
+          aria-expanded={open}
+        >
+          <span className={selected?.value ? "text-gray-900" : "text-gray-400"}>
+            {selected
+              ? (
+                <span>
+                  <b>{selected.label}</b>
+                  <span className="ml-1 italic text-xs text-gray-500">({selected.description})</span>
+                </span>
+              )
+              : "Select GST Treatment"}
+          </span>
+          <FaChevronDown className="ml-2 text-gray-400" />
+        </button>
+        {open && (
+          <div className="absolute z-10 mt-1 w-full bg-white border rounded shadow-lg max-h-72 overflow-auto">
+            <ul tabIndex={-1} className="max-h-64 overflow-auto">
+              {gstTreatmentOptions.map((opt) => (
+                <li
+                  key={opt.value}
+                  className={`px-4 py-2 cursor-pointer hover:bg-blue-50 ${
+                    value === opt.value ? "bg-blue-100 font-semibold" : ""
+                  }`}
+                  onClick={() => {
+                    onChange({ target: { name: "gstTreatment", value: opt.value } });
+                    setOpen(false);
+                  }}
+                  role="option"
+                  aria-selected={value === opt.value}
+                >
+                  <b>{opt.label}</b>
+                  <span className="ml-1 italic text-xs text-gray-500">({opt.description})</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className="bg-white rounded-xl shadow-lg px-8 py-8 mb-8">
       <div className="mb-6">
@@ -474,19 +697,74 @@ function InvoiceOtherDetails({
       <div className="mt-4">
         {activeTab === "otherDetails" && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* GST Number field removed from here, now at the top */}
+            {/* GST Treatment */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">PAN Number</label>
-              <Input
-                name="panNumber"
-                value={otherDetails.panNumber || ""}
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                GST Treatment
+              </label>
+              <GSTTreatmentDropdown
+                value={otherDetails.gstTreatment || ""}
                 onChange={handleChange}
-                placeholder="Enter PAN Number"
+              />
+            </div>
+            {/* GSTIN/UIN */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                GSTIN/UIN
+              </label>
+              <Input
+                name="gstinUin"
+                value={otherDetails.gstinUin || ""}
+                onChange={handleChange}
+                placeholder="Enter GSTIN/UIN"
+                className="p-2 border rounded w-full"
+                maxLength={15}
+              />
+            </div>
+            {/* Business Legal Name */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Business Legal Name
+              </label>
+              <Input
+                name="businessLegalName"
+                value={otherDetails.businessLegalName || ""}
+                onChange={handleChange}
+                placeholder="Enter Business Legal Name"
                 className="p-2 border rounded w-full"
               />
             </div>
+            {/* Business Trade Name */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Payment Terms</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Business Trade Name
+              </label>
+              <Input
+                name="businessTradeName"
+                value={otherDetails.businessTradeName || ""}
+                onChange={handleChange}
+                placeholder="Enter Business Trade Name"
+                className="p-2 border rounded w-full"
+              />
+            </div>
+            {/* Place of Supply (searchable) */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Place of Supply
+              </label>
+              <SearchableDropdown
+                options={placeOfSupplyOptions}
+                value={otherDetails.placeOfSupply || ""}
+                onChange={handleChange}
+                placeholder="Select Place of Supply"
+                name="placeOfSupply"
+              />
+            </div>
+            {/* Payment Terms */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Payment Terms
+              </label>
               <select
                 name="paymentTerms"
                 value={otherDetails.paymentTerms || "NET_30"}
@@ -498,6 +776,18 @@ function InvoiceOtherDetails({
                 ))}
               </select>
             </div>
+            {/* PAN Number */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">PAN Number</label>
+              <Input
+                name="panNumber"
+                value={otherDetails.panNumber || ""}
+                onChange={handleChange}
+                placeholder="Enter PAN Number"
+                className="p-2 border rounded w-full"
+              />
+            </div>
+            {/* Document */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Document</label>
               <input
@@ -514,6 +804,7 @@ function InvoiceOtherDetails({
                 </div>
               )}
             </div>
+            {/* Department */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Department</label>
               <Input
@@ -524,6 +815,7 @@ function InvoiceOtherDetails({
                 className="p-2 border rounded w-full"
               />
             </div>
+            {/* Designation */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Designation</label>
               <Input
@@ -534,6 +826,7 @@ function InvoiceOtherDetails({
                 className="p-2 border rounded w-full"
               />
             </div>
+            {/* Website */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Website</label>
               <Input
@@ -546,7 +839,13 @@ function InvoiceOtherDetails({
             </div>
           </div>
         )}
-
+        {/* ...rest of the tabs (contactPersons, address, remarks) remain unchanged */}
+        {/* ... */}
+      {/* </div>
+    </div>
+  );
+} */}
+        {/* ...rest of the tabs (contactPersons, address, remarks) remain unchanged */}
         {activeTab === "contactPersons" && (
           <div>
             {/* Contact person form and table */}
