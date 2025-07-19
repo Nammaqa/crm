@@ -791,7 +791,7 @@ function InvoiceOtherDetails({
               />
             </div>
             {/* Document */}
-            <div>
+            {/* <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Document</label>
               <input
                 type="file"
@@ -806,9 +806,9 @@ function InvoiceOtherDetails({
                   Uploaded: {otherDetails.documentName}
                 </div>
               )}
-            </div>
+            </div> */}
             {/* Department */}
-            <div>
+            {/* <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Department</label>
               <Input
                 name="department"
@@ -817,9 +817,9 @@ function InvoiceOtherDetails({
                 placeholder="Enter Department"
                 className="p-2 border rounded w-full"
               />
-            </div>
+            </div> */}
             {/* Designation */}
-            <div>
+            {/* <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Designation</label>
               <Input
                 name="designation"
@@ -828,9 +828,9 @@ function InvoiceOtherDetails({
                 placeholder="Enter Designation"
                 className="p-2 border rounded w-full"
               />
-            </div>
+            </div> */}
             {/* Website */}
-            <div>
+            {/* <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Website</label>
               <Input
                 name="website"
@@ -839,7 +839,7 @@ function InvoiceOtherDetails({
                 placeholder="Enter Website"
                 className="p-2 border rounded w-full"
               />
-            </div>
+            </div> */}
           </div>
         )}
         {/* ...rest of the tabs (contactPersons, address, remarks) remain unchanged */}
