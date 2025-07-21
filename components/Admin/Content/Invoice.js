@@ -489,6 +489,12 @@ function InvoiceOtherDetails({
 }) {
   const [activeTab, setActiveTab] = useState("otherDetails");
 
+  // --- Pagination State ---
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5;
+  const totalPages = Math.ceil(contactPersons.length / itemsPerPage);
+
+  // --- Contact Person Form State ---
   const [newContact, setNewContact] = useState({
     salutation: "",
     firstName: "",
@@ -564,6 +570,10 @@ function InvoiceOtherDetails({
       setEditIndex(null);
     } else {
       setContactPersons((prev) => [...prev, newContact]);
+      // If new page is needed after adding, go to last page
+      if ((contactPersons.length + 1) > itemsPerPage * totalPages) {
+        setCurrentPage(totalPages + 1);
+      }
     }
     setNewContact({
       salutation: "",
@@ -592,6 +602,10 @@ function InvoiceOtherDetails({
       });
       setNewContactErrors({});
     }
+    // If last item on page removed, go to previous page if needed
+    if ((contactPersons.length - 1) <= itemsPerPage * (currentPage - 1) && currentPage > 1) {
+      setCurrentPage(currentPage - 1);
+    }
   };
 
   const handleEditContactPerson = (idx) => {
@@ -613,6 +627,18 @@ function InvoiceOtherDetails({
     });
     setNewContactErrors({});
   };
+
+  // --- Pagination Handlers ---
+  const handlePageChange = (page) => {
+    if (page < 1 || page > totalPages) return;
+    setCurrentPage(page);
+  };
+
+  // --- Paginated Data ---
+  const paginatedContactPersons = contactPersons.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
 
   // Custom GST Treatment dropdown with label bold and description italic
   function GSTTreatmentDropdown({ value, onChange }) {
@@ -790,56 +816,6 @@ function InvoiceOtherDetails({
                 className="p-2 border rounded w-full"
               />
             </div>
-            {/* Document */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Document</label>
-              <input
-                type="file"
-                name="document"
-                accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
-                onChange={handleChange}
-                className="p-2 border rounded w-full"
-                ref={documentInputRef}
-              />
-              {otherDetails.documentName && (
-                <div className="text-xs text-gray-600 mt-1">
-                  Uploaded: {otherDetails.documentName}
-                </div>
-              )}
-            </div>
-            {/* Department */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Department</label>
-              <Input
-                name="department"
-                value={otherDetails.department || ""}
-                onChange={handleChange}
-                placeholder="Enter Department"
-                className="p-2 border rounded w-full"
-              />
-            </div>
-            {/* Designation */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Designation</label>
-              <Input
-                name="designation"
-                value={otherDetails.designation || ""}
-                onChange={handleChange}
-                placeholder="Enter Designation"
-                className="p-2 border rounded w-full"
-              />
-            </div>
-            {/* Website */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Website</label>
-              <Input
-                name="website"
-                value={otherDetails.website || ""}
-                onChange={handleChange}
-                placeholder="Enter Website"
-                className="p-2 border rounded w-full"
-              />
-            </div>
           </div>
         )}
         {/* ...rest of the tabs (contactPersons, address, remarks) remain unchanged */}
@@ -992,38 +968,69 @@ function InvoiceOtherDetails({
                       </td>
                     </tr>
                   ) : (
-                    contactPersons.map((person, idx) => (
-                      <tr key={idx} className="hover:bg-gray-50">
-                        <td className="px-3 py-2 border">{person.salutation}</td>
-                        <td className="px-3 py-2 border">{person.firstName}</td>
-                        <td className="px-3 py-2 border">{person.lastName}</td>
-                        <td className="px-3 py-2 border">{person.email}</td>
-                        <td className="px-3 py-2 border">{person.address}</td>
-                        <td className="px-3 py-2 border">{person.workPhone}</td>
-                        <td className="px-3 py-2 border">{person.mobile}</td>
-                        <td className="px-3 py-2 border text-center flex gap-2 justify-center">
-                          <button
-                            className="text-yellow-600 hover:text-yellow-800"
-                            onClick={() => handleEditContactPerson(idx)}
-                            title="Edit"
-                            type="button"
-                          >
-                            <FaEdit />
-                          </button>
-                          <button
-                            className="text-red-500 hover:text-red-700"
-                            onClick={() => handleRemoveContactPerson(idx)}
-                            title="Remove"
-                            type="button"
-                          >
-                            <FaTrash />
-                          </button>
-                        </td>
-                      </tr>
-                    ))
+                    paginatedContactPersons.map((person, idx) => {
+                      const actualIdx = (currentPage - 1) * itemsPerPage + idx;
+                      return (
+                        <tr key={actualIdx} className="hover:bg-gray-50">
+                          <td className="px-3 py-2 border">{person.salutation}</td>
+                          <td className="px-3 py-2 border">{person.firstName}</td>
+                          <td className="px-3 py-2 border">{person.lastName}</td>
+                          <td className="px-3 py-2 border">{person.email}</td>
+                          <td className="px-3 py-2 border">{person.address}</td>
+                          <td className="px-3 py-2 border">{person.workPhone}</td>
+                          <td className="px-3 py-2 border">{person.mobile}</td>
+                          <td className="px-3 py-2 border text-center flex gap-2 justify-center">
+                            <button
+                              className="text-yellow-600 hover:text-yellow-800"
+                              onClick={() => handleEditContactPerson(actualIdx)}
+                              title="Edit"
+                              type="button"
+                            >
+                              <FaEdit />
+                            </button>
+                            <button
+                              className="text-red-500 hover:text-red-700"
+                              onClick={() => handleRemoveContactPerson(actualIdx)}
+                              title="Remove"
+                              type="button"
+                            >
+                              <FaTrash />
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })
                   )}
                 </tbody>
               </table>
+              {/* --- Page Slider --- */}
+              {contactPersons.length > itemsPerPage && (
+                <div className="flex justify-center items-center gap-2 mt-4">
+                  <button
+                    className="px-2 py-1 rounded bg-gray-200 hover:bg-gray-300"
+                    onClick={() => handlePageChange(currentPage - 1)}
+                    disabled={currentPage === 1}
+                  >
+                    &lt;
+                  </button>
+                  {Array.from({ length: totalPages }, (_, i) => (
+                    <button
+                      key={i + 1}
+                      className={`px-3 py-1 rounded ${currentPage === i + 1 ? "bg-blue-500 text-white" : "bg-gray-200 hover:bg-gray-300"}`}
+                      onClick={() => handlePageChange(i + 1)}
+                    >
+                      {i + 1}
+                    </button>
+                  ))}
+                  <button
+                    className="px-2 py-1 rounded bg-gray-200 hover:bg-gray-300"
+                    onClick={() => handlePageChange(currentPage + 1)}
+                    disabled={currentPage === totalPages}
+                  >
+                    &gt;
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -1405,7 +1412,7 @@ export default function AddCustomerForm() {
           Print Invoice
         </button>
       </div>
-      <GSTModal
+       <GSTModal
         open={gstModalOpen}
         onClose={() => setGstModalOpen(false)}
         gstDetails={gstDetails}
