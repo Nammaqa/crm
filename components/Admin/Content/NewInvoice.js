@@ -538,553 +538,555 @@ const InvoiceForm = () => {
   };
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      className="max-w-7xl mx-auto px-6 py-10 bg-white shadow-2xl rounded-2xl space-y-10 text-gray-800"
-    >
-      <h2 className="text-3xl font-bold text-gray-800 border-b pb-4">
-        Create Invoice
-      </h2>
+    <div className="w-full px-4">
+      <form
+        onSubmit={handleSubmit}
+        className="max-w-screen-2xl mx-auto px-8 py-10 bg-white shadow-2xl rounded-2xl space-y-10 text-gray-800 my-8"
+      >
+        <h2 className="text-3xl font-bold text-gray-800 border-b pb-4">
+          Create Invoice
+        </h2>
 
-      {/* Invoice Details */}
-      <div className="space-y-6">
-        <div>
-          <label className="block font-semibold text-sm mb-1">
-            Customer Name<span className="text-red-500">*</span>
-          </label>
-          <select
-            name="customerId"
-            required
-            value={formData.customerId}
-            onChange={handleChange}
-            className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-300 shadow-sm"
-            disabled={customerLoading}
-          >
-            <option value="">Select Customer</option>
-            {customers.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.displayName || c.companyName || c.emailAddress}
-              </option>
-            ))}
-          </select>
-        </div>
-        {formData.customerId && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div>
-              <label className="block font-semibold text-sm mb-1">GST Treatment</label>
-              <input
-                type="text"
-                value={selectedCustomer && selectedCustomer.gstTreatment ? selectedCustomer.gstTreatment : ''}
-                readOnly
-                className="w-full border border-gray-300 rounded-lg px-4 py-2 bg-gray-100 text-gray-700"
-              />
+        {/* Invoice Details */}
+        <div className="space-y-6">
+          <div>
+            <label className="block font-semibold text-sm mb-1">
+              Customer Name<span className="text-red-500">*</span>
+            </label>
+            <select
+              name="customerId"
+              required
+              value={formData.customerId}
+              onChange={handleChange}
+              className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-300 shadow-sm"
+              disabled={customerLoading}
+            >
+              <option value="">Select Customer</option>
+              {customers.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.displayName || c.companyName || c.emailAddress}
+                </option>
+              ))}
+            </select>
+          </div>
+          {formData.customerId && (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div>
+                <label className="block font-semibold text-sm mb-1">GST Treatment</label>
+                <input
+                  type="text"
+                  value={selectedCustomer && selectedCustomer.gstTreatment ? selectedCustomer.gstTreatment : ''}
+                  readOnly
+                  className="w-full border border-gray-300 rounded-lg px-4 py-2 bg-gray-100 text-gray-700"
+                />
+              </div>
+              <div>
+                <label className="block font-semibold text-sm mb-1">GSTIN</label>
+                <input
+                  type="text"
+                  value={selectedCustomer && selectedCustomer.gstin ? selectedCustomer.gstin : ''}
+                  readOnly
+                  className="w-full border border-gray-300 rounded-lg px-4 py-2 bg-gray-100 text-gray-700"
+                />
+              </div>
+              <div>
+                <label className="block font-semibold text-sm mb-1">Place of Supply</label>
+                <input
+                  type="text"
+                  name="placeOfSupply"
+                  value={formData.placeOfSupply}
+                  onChange={handleChange}
+                  placeholder="Enter Place of Supply"
+                  className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-300 shadow-sm"
+                />
+              </div>
             </div>
+          )}
+          <div>
+            <label className="block font-semibold text-sm mb-1">Invoice #</label>
+            <input
+              type="text"
+              name="invoiceNumber"
+              value={formData.invoiceNumber}
+              onChange={handleChange}
+              className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-300 shadow-sm"
+            />
+          </div>
+          <div className="grid md:grid-cols-3 gap-6">
             <div>
-              <label className="block font-semibold text-sm mb-1">GSTIN</label>
+              <label className="block font-semibold text-sm mb-1">
+                Invoice Date
+              </label>
               <input
-                type="text"
-                value={selectedCustomer && selectedCustomer.gstin ? selectedCustomer.gstin : ''}
-                readOnly
-                className="w-full border border-gray-300 rounded-lg px-4 py-2 bg-gray-100 text-gray-700"
-              />
-            </div>
-            <div>
-              <label className="block font-semibold text-sm mb-1">Place of Supply</label>
-              <input
-                type="text"
-                name="placeOfSupply"
-                value={formData.placeOfSupply}
+                type="date"
+                name="invoiceDate"
+                value={formData.invoiceDate}
                 onChange={handleChange}
-                placeholder="Enter Place of Supply"
+                className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-300 shadow-sm"
+              />
+            </div>
+            <div>
+              <label className="block font-semibold text-sm mb-1">Terms</label>
+              <select
+                name="terms"
+                value={formData.terms}
+                onChange={handleChange}
+                className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-300 shadow-sm"
+              >
+                <option value="">Select Terms</option>
+                <option>Net 15</option>
+                <option>Net 30</option>
+                <option>Net 45</option>
+                <option>Net 60</option>
+                <option>Due on Receipt</option>
+                <option>Due end of the month</option>
+                <option>Due end of next month</option>
+              </select>
+            </div>
+            <div>
+              <label className="block font-semibold text-sm mb-1">Due Date</label>
+              <input
+                type="date"
+                name="dueDate"
+                value={formData.dueDate}
+                onChange={handleChange}
+                className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-300 shadow-sm"
+                readOnly={!!formData.terms}
+              />
+            </div>
+          </div>
+          <div className="grid md:grid-cols-2 gap-6">
+            <div>
+              <label className="block font-semibold text-sm mb-1">PO Number</label>
+              <input
+                type="text"
+                name="poNumber"
+                value={formData.poNumber}
+                onChange={handleChange}
+                placeholder="Enter PO Number"
+                className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-300 shadow-sm"
+              />
+            </div>
+            <div>
+              <label className="block font-semibold text-sm mb-1">Ship To</label>
+              <input
+                type="text"
+                name="shipTo"
+                value={formData.shipTo}
+                onChange={handleChange}
+                placeholder="Enter Ship To Address"
                 className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-300 shadow-sm"
               />
             </div>
           </div>
-        )}
-        <div>
-          <label className="block font-semibold text-sm mb-1">Invoice #</label>
-          <input
-            type="text"
-            name="invoiceNumber"
-            value={formData.invoiceNumber}
-            onChange={handleChange}
-            className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-300 shadow-sm"
-          />
         </div>
-        <div className="grid md:grid-cols-3 gap-6">
-          <div>
-            <label className="block font-semibold text-sm mb-1">
-              Invoice Date
-            </label>
-            <input
-              type="date"
-              name="invoiceDate"
-              value={formData.invoiceDate}
-              onChange={handleChange}
-              className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-300 shadow-sm"
-            />
-          </div>
-          <div>
-            <label className="block font-semibold text-sm mb-1">Terms</label>
-            <select
-              name="terms"
-              value={formData.terms}
-              onChange={handleChange}
-              className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-300 shadow-sm"
-            >
-              <option value="">Select Terms</option>
-              <option>Net 15</option>
-              <option>Net 30</option>
-              <option>Net 45</option>
-              <option>Net 60</option>
-              <option>Due on Receipt</option>
-              <option>Due end of the month</option>
-              <option>Due end of next month</option>
-            </select>
-          </div>
-          <div>
-            <label className="block font-semibold text-sm mb-1">Due Date</label>
-            <input
-              type="date"
-              name="dueDate"
-              value={formData.dueDate}
-              onChange={handleChange}
-              className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-300 shadow-sm"
-              readOnly={!!formData.terms}
-            />
-          </div>
-        </div>
-        <div className="grid md:grid-cols-2 gap-6">
-          <div>
-            <label className="block font-semibold text-sm mb-1">PO Number</label>
-            <input
-              type="text"
-              name="poNumber"
-              value={formData.poNumber}
-              onChange={handleChange}
-              placeholder="Enter PO Number"
-              className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-300 shadow-sm"
-            />
-          </div>
-          <div>
-            <label className="block font-semibold text-sm mb-1">Ship To</label>
-            <input
-              type="text"
-              name="shipTo"
-              value={formData.shipTo}
-              onChange={handleChange}
-              placeholder="Enter Ship To Address"
-              className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-300 shadow-sm"
-            />
-          </div>
-        </div>
-      </div>
 
-      {/* Items Table */}
-      <div>
-        <h3 className="text-xl font-semibold mb-4">Item Details</h3>
-        <div className="overflow-x-auto rounded-xl shadow-lg border border-gray-200 bg-gradient-to-br from-white to-blue-50">
-          <DndContext
-            sensors={sensors}
-            collisionDetection={closestCenter}
-            onDragEnd={handleDragEnd}
-          >
-            <SortableContext
-              items={items.map(i => i.id)}
-              strategy={verticalListSortingStrategy}
+        {/* Items Table */}
+        <div>
+          <h3 className="text-xl font-semibold mb-4">Item Details</h3>
+          <div className="overflow-x-auto rounded-xl shadow-lg border border-gray-200 bg-gradient-to-br from-white to-blue-50">
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={handleDragEnd}
             >
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="bg-gradient-to-r from-blue-100 to-blue-200 text-blue-900">
-                    <th className="border-b px-6 py-3 text-left font-semibold">Item</th>
-                    <th className="border-b px-6 py-3 text-right font-semibold">Quantity</th>
-                    <th className="border-b px-6 py-3 text-right font-semibold">Rate</th>
-                    <th className="border-b px-6 py-3 text-right font-semibold">Discount (%)</th>
-                    <th className="border-b px-6 py-3 text-right font-semibold">Tax (%)</th>
-                    <th className="border-b px-6 py-3 text-right font-semibold">Amount</th>
-                    <th className="border-b px-6 py-3 text-center font-semibold">Remove</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {items.map((item, idx) => (
-                    <SortableRow key={item.id} id={item.id}>
-                      {({ dragHandleProps }) => (
-                        <>
-                          <td className="px-6 py-3">
-                            <div className="flex items-center gap-2">
-                              <span
-                                {...dragHandleProps}
-                                title="Drag to reorder"
-                                className="cursor-grab text-gray-400 hover:text-blue-500"
-                                style={{ fontSize: 18 }}
-                              >
-                                &#9776;
-                              </span>
-                              <input
-                                type="text"
-                                value={item.name}
-                                placeholder="Item name"
-                                onChange={(e) =>
-                                  handleItemChange(idx, 'name', e.target.value)
-                                }
-                                className={invisibleInput}
-                              />
-                            </div>
-                            {/* Show SAC field only if item name is filled */}
-                            {item.name && (
-                              <div className="mt-2">
+              <SortableContext
+                items={items.map(i => i.id)}
+                strategy={verticalListSortingStrategy}
+              >
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="bg-gradient-to-r from-blue-100 to-blue-200 text-blue-900">
+                      <th className="border-b px-6 py-3 text-left font-semibold">Item</th>
+                      <th className="border-b px-6 py-3 text-right font-semibold">Quantity</th>
+                      <th className="border-b px-6 py-3 text-right font-semibold">Rate</th>
+                      <th className="border-b px-6 py-3 text-right font-semibold">Discount (%)</th>
+                      <th className="border-b px-6 py-3 text-right font-semibold">Tax (%)</th>
+                      <th className="border-b px-6 py-3 text-right font-semibold">Amount</th>
+                      <th className="border-b px-6 py-3 text-center font-semibold">Remove</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {items.map((item, idx) => (
+                      <SortableRow key={item.id} id={item.id}>
+                        {({ dragHandleProps }) => (
+                          <>
+                            <td className="px-6 py-3">
+                              <div className="flex items-center gap-2">
+                                <span
+                                  {...dragHandleProps}
+                                  title="Drag to reorder"
+                                  className="cursor-grab text-gray-400 hover:text-blue-500"
+                                  style={{ fontSize: 18 }}
+                                >
+                                  &#9776;
+                                </span>
                                 <input
                                   type="text"
-                                  value={item.sac}
-                                  placeholder="SAC"
+                                  value={item.name}
+                                  placeholder="Item name"
                                   onChange={(e) =>
-                                    handleItemChange(idx, 'sac', e.target.value)
+                                    handleItemChange(idx, 'name', e.target.value)
                                   }
-                                  className={invisibleInput + " text-xs border-b border-blue-200"}
+                                  className={invisibleInput}
                                 />
                               </div>
-                            )}
-                          </td>
-                          <td className="px-6 py-3 text-right">
-                            <input
-                              type="number"
-                              min="1"
-                              value={item.quantity === "" || isNaN(item.quantity) ? "" : item.quantity}
-                              onChange={(e) =>
-                                handleItemChange(idx, 'quantity', e.target.value)
-                              }
-                              className={invisibleInput + " text-right"}
-                            />
-                          </td>
-                          <td className="px-6 py-3 text-right">
-                            <input
-                              type="number"
-                              min="0"
-                              value={item.rate === "" || isNaN(item.rate) ? "" : item.rate}
-                              onChange={(e) =>
-                                handleItemChange(idx, 'rate', e.target.value)
-                              }
-                              className={invisibleInput + " text-right"}
-                            />
-                          </td>
-                          <td className="px-6 py-3 text-right">
-                            <input
-                              type="number"
-                              min="0"
-                              value={item.discount === "" || isNaN(item.discount) ? "" : item.discount}
-                              onChange={(e) =>
-                                handleItemChange(idx, 'discount', e.target.value)
-                              }
-                              className={invisibleInput + " text-right"}
-                            />
-                          </td>
-                          <td className="px-6 py-3 text-right">
-                            <div className="flex items-center gap-2">
-                              <select
-                                value={item.taxType || ''}
-                                onChange={e => handleItemChange(idx, 'taxType', e.target.value)}
-                                className="border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-blue-300 text-xs"
-                              >
-                                <option value="">Select Tax</option>
-                                {taxOptions.map(opt => (
-                                  <option key={opt.value} value={opt.value}>
-                                    {opt.label}
-                                  </option>
-                                ))}
-                                <option value="add-new-tax">+ Add New Tax</option>
-                              </select>
-                              {/* If custom tax, show input */}
-                              {item.taxType && item.taxType.startsWith('custom-') && (
-                                <input
-                                  type="number"
-                                  min="0"
-                                  max="100"
-                                  value={item.customTaxRate}
-                                  onChange={e => handleItemChange(idx, 'customTaxRate', e.target.value)}
-                                  placeholder="Tax %"
-                                  className="w-16 border border-gray-300 rounded px-1 py-1 text-xs"
-                                />
-                              )}
-                            </div>
-                            {/* Show description for special tax types */}
-                            {(() => {
-                              const found = taxOptions.find(opt => opt.value === item.taxType);
-                              if (found && found.description) {
-                                return (
-                                  <div className="text-xs text-gray-500 mt-1">{found.description}</div>
-                                );
-                              }
-                              return null;
-                            })()}
-                            {/* Handle add new tax */}
-                            {item.taxType === "add-new-tax" && (
-                              <div className="mt-2 bg-blue-50 p-2 rounded shadow">
-                                <form
-                                  className="flex items-center gap-2"
-                                  onSubmit={handleAddTaxOption}
-                                >
+                              {/* Show SAC field only if item name is filled */}
+                              {item.name && (
+                                <div className="mt-2">
                                   <input
                                     type="text"
-                                    placeholder="Tax Label"
-                                    value={newTaxLabel}
-                                    onChange={e => setNewTaxLabel(e.target.value)}
-                                    className="border border-gray-300 rounded px-2 py-1 text-xs"
-                                    required
+                                    value={item.sac}
+                                    placeholder="SAC"
+                                    onChange={(e) =>
+                                      handleItemChange(idx, 'sac', e.target.value)
+                                    }
+                                    className={invisibleInput + " text-xs border-b border-blue-200"}
                                   />
+                                </div>
+                              )}
+                            </td>
+                            <td className="px-6 py-3 text-right">
+                              <input
+                                type="number"
+                                min="1"
+                                value={item.quantity === "" || isNaN(item.quantity) ? "" : item.quantity}
+                                onChange={(e) =>
+                                  handleItemChange(idx, 'quantity', e.target.value)
+                                }
+                                className={invisibleInput + " text-right"}
+                              />
+                            </td>
+                            <td className="px-6 py-3 text-right">
+                              <input
+                                type="number"
+                                min="0"
+                                value={item.rate === "" || isNaN(item.rate) ? "" : item.rate}
+                                onChange={(e) =>
+                                  handleItemChange(idx, 'rate', e.target.value)
+                                }
+                                className={invisibleInput + " text-right"}
+                              />
+                            </td>
+                            <td className="px-6 py-3 text-right">
+                              <input
+                                type="number"
+                                min="0"
+                                value={item.discount === "" || isNaN(item.discount) ? "" : item.discount}
+                                onChange={(e) =>
+                                  handleItemChange(idx, 'discount', e.target.value)
+                                }
+                                className={invisibleInput + " text-right"}
+                              />
+                            </td>
+                            <td className="px-6 py-3 text-right">
+                              <div className="flex items-center gap-2">
+                                <select
+                                  value={item.taxType || ''}
+                                  onChange={e => handleItemChange(idx, 'taxType', e.target.value)}
+                                  className="border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-blue-300 text-xs"
+                                >
+                                  <option value="">Select Tax</option>
+                                  {taxOptions.map(opt => (
+                                    <option key={opt.value} value={opt.value}>
+                                      {opt.label}
+                                    </option>
+                                  ))}
+                                  <option value="add-new-tax">+ Add New Tax</option>
+                                </select>
+                                {/* If custom tax, show input */}
+                                {item.taxType && item.taxType.startsWith('custom-') && (
                                   <input
                                     type="number"
                                     min="0"
                                     max="100"
-                                    placeholder="Rate %"
-                                    value={newTaxRate}
-                                    onChange={e => setNewTaxRate(e.target.value)}
-                                    className="border border-gray-300 rounded px-2 py-1 text-xs w-16"
-                                    required
+                                    value={item.customTaxRate}
+                                    onChange={e => handleItemChange(idx, 'customTaxRate', e.target.value)}
+                                    placeholder="Tax %"
+                                    className="w-16 border border-gray-300 rounded px-1 py-1 text-xs"
                                   />
-                                  <button
-                                    type="submit"
-                                    className="bg-blue-500 text-white px-2 py-1 rounded text-xs"
-                                  >
-                                    Add
-                                  </button>
-                                  <button
-                                    type="button"
-                                    className="text-xs text-gray-500 ml-2"
-                                    onClick={() => {
-                                      setShowAddTax(false);
-                                      setNewTaxLabel('');
-                                      setNewTaxRate('');
-                                      // Reset the taxType for this item
-                                      handleItemChange(idx, 'taxType', '');
-                                    }}
-                                  >
-                                    Cancel
-                                  </button>
-                                </form>
+                                )}
                               </div>
-                            )}
-                          </td>
-                          <td className="px-6 py-3 text-right font-semibold text-blue-700">
-                            {calculateItemAmount(item).toFixed(2)}
-                          </td>
-                          <td className="px-6 py-3 text-center">
-                            <button
-                              type="button"
-                              onClick={() => handleRemoveRow(idx)}
-                              className="text-red-500 font-bold hover:text-red-700 transition"
-                              title="Remove Item"
-                            >
-                              ✖
-                            </button>
-                          </td>
-                        </>
-                      )}
-                    </SortableRow>
-                  ))}
-                </tbody>
-              </table>
-            </SortableContext>
-          </DndContext>
+                              {/* Show description for special tax types */}
+                              {(() => {
+                                const found = taxOptions.find(opt => opt.value === item.taxType);
+                                if (found && found.description) {
+                                  return (
+                                    <div className="text-xs text-gray-500 mt-1">{found.description}</div>
+                                  );
+                                }
+                                return null;
+                              })()}
+                              {/* Handle add new tax */}
+                              {item.taxType === "add-new-tax" && (
+                                <div className="mt-2 bg-blue-50 p-2 rounded shadow">
+                                  <form
+                                    className="flex items-center gap-2"
+                                    onSubmit={handleAddTaxOption}
+                                  >
+                                    <input
+                                      type="text"
+                                      placeholder="Tax Label"
+                                      value={newTaxLabel}
+                                      onChange={e => setNewTaxLabel(e.target.value)}
+                                      className="border border-gray-300 rounded px-2 py-1 text-xs"
+                                      required
+                                    />
+                                    <input
+                                      type="number"
+                                      min="0"
+                                      max="100"
+                                      placeholder="Rate %"
+                                      value={newTaxRate}
+                                      onChange={e => setNewTaxRate(e.target.value)}
+                                      className="border border-gray-300 rounded px-2 py-1 text-xs w-16"
+                                      required
+                                    />
+                                    <button
+                                      type="submit"
+                                      className="bg-blue-500 text-white px-2 py-1 rounded text-xs"
+                                    >
+                                      Add
+                                    </button>
+                                    <button
+                                      type="button"
+                                      className="text-xs text-gray-500 ml-2"
+                                      onClick={() => {
+                                        setShowAddTax(false);
+                                        setNewTaxLabel('');
+                                        setNewTaxRate('');
+                                        // Reset the taxType for this item
+                                        handleItemChange(idx, 'taxType', '');
+                                      }}
+                                    >
+                                      Cancel
+                                    </button>
+                                  </form>
+                                </div>
+                              )}
+                            </td>
+                            <td className="px-6 py-3 text-right font-semibold text-blue-700">
+                              {calculateItemAmount(item).toFixed(2)}
+                            </td>
+                            <td className="px-6 py-3 text-center">
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveRow(idx)}
+                                className="text-red-500 font-bold hover:text-red-700 transition"
+                                title="Remove Item"
+                              >
+                                ✖
+                              </button>
+                            </td>
+                          </>
+                        )}
+                      </SortableRow>
+                    ))}
+                  </tbody>
+                </table>
+              </SortableContext>
+            </DndContext>
+          </div>
+          <button
+            type="button"
+            onClick={handleAddRow}
+            className="mt-4 inline-block text-sm px-5 py-2 border-2 border-blue-400 rounded-lg text-blue-700 font-semibold bg-white hover:bg-blue-50 transition"
+          >
+            + Add New Item
+          </button>
         </div>
-        <button
-          type="button"
-          onClick={handleAddRow}
-          className="mt-4 inline-block text-sm px-5 py-2 border-2 border-blue-400 rounded-lg text-blue-700 font-semibold bg-white hover:bg-blue-50 transition"
-        >
-          + Add New Item
-        </button>
-      </div>
 
-      {/* Subtotal Section */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
-        <div>
-          <label className="block font-semibold mb-2">Customer Notes</label>
-          <textarea
-            name="notes"
-            rows="4"
-            value={formData.notes}
-            onChange={handleChange}
-            className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-300 shadow-sm"
-          />
-        </div>
-        <div className="bg-gradient-to-br from-blue-50 to-white rounded-xl p-6 border border-blue-100 shadow space-y-4">
-          <div className="flex justify-between">
-            <span className="font-medium">Sub Total</span>
-            <span className="font-semibold text-blue-900">
-              ₹ {calculateSubtotal().toFixed(2)}
-            </span>
-          </div>
-          <div className="flex justify-between">
-            <span className="font-medium">CGST ({cgstRate}%)</span>
-            <input
-              type="number"
-              name="cgst"
-              value={cgstRate}
-              readOnly
-              className="w-20 text-right border border-gray-300 rounded px-2 py-1 bg-gray-100 text-gray-700"
+        {/* Subtotal Section */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+          <div>
+            <label className="block font-semibold mb-2">Customer Notes</label>
+            <textarea
+              name="notes"
+              rows="4"
+              value={formData.notes}
+              onChange={handleChange}
+              className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-300 shadow-sm"
             />
-            <span className="font-semibold text-blue-900">
-              ₹ {calculateCGST().toFixed(2)}
-            </span>
           </div>
-          <div className="flex justify-between">
-            <span className="font-medium">SGST ({sgstRate}%)</span>
-            <input
-              type="number"
-              name="sgst"
-              value={sgstRate}
-              readOnly
-              className="w-20 text-right border border-gray-300 rounded px-2 py-1 bg-gray-100 text-gray-700"
-            />
-            <span className="font-semibold text-blue-900">
-              ₹ {calculateSGST().toFixed(2)}
-            </span>
-          </div>
-          {/* TDS/TCS Section */}
-          <div className="flex flex-col gap-2">
-            <span className="font-medium">TDS / TCS</span>
-            <div className="flex gap-4 items-center">
-              <label className="flex items-center gap-1">
-                <input
-                  type="radio"
-                  name="tdsTcsType"
-                  value="TDS"
-                  checked={formData.tdsTcsType === 'TDS'}
-                  onChange={handleTdsTcsTypeChange}
-                />
-                TDS
-              </label>
-              <label className="flex items-center gap-1">
-                <input
-                  type="radio"
-                  name="tdsTcsType"
-                  value="TCS"
-                  checked={formData.tdsTcsType === 'TCS'}
-                  onChange={handleTdsTcsTypeChange}
-                />
-                TCS
-              </label>
+          <div className="bg-gradient-to-br from-blue-50 to-white rounded-xl p-6 border border-blue-100 shadow space-y-4">
+            <div className="flex justify-between">
+              <span className="font-medium">Sub Total</span>
+              <span className="font-semibold text-blue-900">
+                ₹ {calculateSubtotal().toFixed(2)}
+              </span>
             </div>
-            {formData.tdsTcsType === 'TDS' && (
-              <div className="flex gap-2 items-center mt-2">
-                <select
-                  name="tdsOption"
-                  value={formData.tdsOption}
-                  onChange={handleTdsOptionChange}
-                  className="border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-blue-300 text-xs"
-                >
-                  <option value="">Select TDS Type</option>
-                  {TDS_OPTIONS.map((opt, idx) => (
-                    <option key={idx} value={opt.label}>
-                      {opt.label}
-                    </option>
-                  ))}
-                </select>
-                <input
-                  type="number"
-                  name="tdsRate"
-                  value={formData.tdsRate}
-                  readOnly
-                  className="w-16 text-right border border-gray-300 rounded px-2 py-1 bg-gray-100 text-gray-700"
-                  placeholder="Rate %"
-                />
-                <span className="text-gray-500 text-xs">%</span>
-                <span className="font-semibold text-blue-900 ml-2">
-                  ₹ {calculateTDS().toFixed(2)}
-                </span>
+            <div className="flex justify-between">
+              <span className="font-medium">CGST ({cgstRate}%)</span>
+              <input
+                type="number"
+                name="cgst"
+                value={cgstRate}
+                readOnly
+                className="w-20 text-right border border-gray-300 rounded px-2 py-1 bg-gray-100 text-gray-700"
+              />
+              <span className="font-semibold text-blue-900">
+                ₹ {calculateCGST().toFixed(2)}
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span className="font-medium">SGST ({sgstRate}%)</span>
+              <input
+                type="number"
+                name="sgst"
+                value={sgstRate}
+                readOnly
+                className="w-20 text-right border border-gray-300 rounded px-2 py-1 bg-gray-100 text-gray-700"
+              />
+              <span className="font-semibold text-blue-900">
+                ₹ {calculateSGST().toFixed(2)}
+              </span>
+            </div>
+            {/* TDS/TCS Section */}
+            <div className="flex flex-col gap-2">
+              <span className="font-medium">TDS / TCS</span>
+              <div className="flex gap-4 items-center">
+                <label className="flex items-center gap-1">
+                  <input
+                    type="radio"
+                    name="tdsTcsType"
+                    value="TDS"
+                    checked={formData.tdsTcsType === 'TDS'}
+                    onChange={handleTdsTcsTypeChange}
+                  />
+                  TDS
+                </label>
+                <label className="flex items-center gap-1">
+                  <input
+                    type="radio"
+                    name="tdsTcsType"
+                    value="TCS"
+                    checked={formData.tdsTcsType === 'TCS'}
+                    onChange={handleTdsTcsTypeChange}
+                  />
+                  TCS
+                </label>
               </div>
-            )}
-            {formData.tdsTcsType === 'TCS' && (
-              <div className="flex gap-2 items-center mt-2">
-                <input
-                  type="number"
-                  name="tcsRate"
-                  value={formData.tcsRate}
-                  onChange={handleTcsRateChange}
-                  min="0"
-                  max="100"
-                  className="w-16 text-right border border-gray-300 rounded px-2 py-1"
-                  placeholder="TCS %"
-                />
-                <span className="text-gray-500 text-xs">%</span>
-                <span className="font-semibold text-blue-900 ml-2">
-                  ₹ {calculateTCS().toFixed(2)}
-                </span>
-              </div>
-            )}
+              {formData.tdsTcsType === 'TDS' && (
+                <div className="flex gap-2 items-center mt-2">
+                  <select
+                    name="tdsOption"
+                    value={formData.tdsOption}
+                    onChange={handleTdsOptionChange}
+                    className="border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-blue-300 text-xs"
+                  >
+                    <option value="">Select TDS Type</option>
+                    {TDS_OPTIONS.map((opt, idx) => (
+                      <option key={idx} value={opt.label}>
+                        {opt.label}
+                      </option>
+                    ))}
+                  </select>
+                  <input
+                    type="number"
+                    name="tdsRate"
+                    value={formData.tdsRate}
+                    readOnly
+                    className="w-16 text-right border border-gray-300 rounded px-2 py-1 bg-gray-100 text-gray-700"
+                    placeholder="Rate %"
+                  />
+                  <span className="text-gray-500 text-xs">%</span>
+                  <span className="font-semibold text-blue-900 ml-2">
+                    ₹ {calculateTDS().toFixed(2)}
+                  </span>
+                </div>
+              )}
+              {formData.tdsTcsType === 'TCS' && (
+                <div className="flex gap-2 items-center mt-2">
+                  <input
+                    type="number"
+                    name="tcsRate"
+                    value={formData.tcsRate}
+                    onChange={handleTcsRateChange}
+                    min="0"
+                    max="100"
+                    className="w-16 text-right border border-gray-300 rounded px-2 py-1"
+                    placeholder="TCS %"
+                  />
+                  <span className="text-gray-500 text-xs">%</span>
+                  <span className="font-semibold text-blue-900 ml-2">
+                    ₹ {calculateTCS().toFixed(2)}
+                  </span>
+                </div>
+              )}
+            </div>
+            <div className="flex justify-between font-bold text-lg border-t pt-4">
+              <span>Total </span>
+              <span className="text-blue-700">
+                ₹ {calculateTotal().toFixed(2)}
+              </span>
+            </div>
+            <button
+              type="button"
+              className="text-xs text-blue-500 underline mt-2"
+              onClick={() => setFormData({ ...formData, showSummary: !formData.showSummary })}
+            >
+              {formData.showSummary ? "Hide Total Summary^" : "Show Total Summary^"}
+            </button>
           </div>
-          <div className="flex justify-between font-bold text-lg border-t pt-4">
-            <span>Total </span>
-            <span className="text-blue-700">
-              ₹ {calculateTotal().toFixed(2)}
-            </span>
+        </div>
+
+        {/* Terms and Upload */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <label className="block font-semibold mb-2">
+              Terms & Conditions
+            </label>
+            <textarea
+              name="termsAndConditions"
+              rows="3"
+              value={formData.termsAndConditions}
+              onChange={handleChange}
+              className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-300 shadow-sm"
+            />
           </div>
+          <div>
+            <label className="block font-semibold mb-2">Attach File(s)</label>
+            <input
+              type="file"
+              multiple
+              onChange={(e) =>
+                setFormData({ ...formData, files: e.target.files })
+              }
+              className="w-full border border-gray-300 rounded-lg px-4 py-2"
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              Max 3 files, 10MB each
+            </p>
+          </div>
+        </div>
+
+        {/* Footer Buttons */}
+        <div className="flex justify-between pt-8 border-t">
           <button
             type="button"
-            className="text-xs text-blue-500 underline mt-2"
-            onClick={() => setFormData({ ...formData, showSummary: !formData.showSummary })}
+            className="px-4 py-2 rounded-lg border text-gray-600 hover:bg-gray-100 font-medium disabled:opacity-50"
+            onClick={handlePrintDownload}
+            disabled={isGeneratingPDF}
           >
-            {formData.showSummary ? "Hide Total Summary^" : "Show Total Summary^"}
+            {isGeneratingPDF ? 'Generating PDF...' : 'Print/Download'}
           </button>
+          <div className="space-x-2">
+            <button
+              type="submit"
+              className="px-6 py-2 bg-blue-600 text-white rounded-lg font-semibold shadow hover:bg-blue-700 transition"
+            >
+              Save & Send
+            </button>
+            <button
+              type="button"
+              className="px-4 py-2 rounded-lg border text-gray-600 hover:bg-gray-100 font-medium"
+            >
+              Cancel
+            </button>
+          </div>
         </div>
-      </div>
-
-      {/* Terms and Upload */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div>
-          <label className="block font-semibold mb-2">
-            Terms & Conditions
-          </label>
-          <textarea
-            name="termsAndConditions"
-            rows="3"
-            value={formData.termsAndConditions}
-            onChange={handleChange}
-            className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-300 shadow-sm"
-          />
-        </div>
-        <div>
-          <label className="block font-semibold mb-2">Attach File(s)</label>
-          <input
-            type="file"
-            multiple
-            onChange={(e) =>
-              setFormData({ ...formData, files: e.target.files })
-            }
-            className="w-full border border-gray-300 rounded-lg px-4 py-2"
-          />
-          <p className="text-xs text-gray-500 mt-1">
-            Max 3 files, 10MB each
-          </p>
-        </div>
-      </div>
-
-      {/* Footer Buttons */}
-      <div className="flex justify-between pt-8 border-t">
-        <button
-          type="button"
-          className="px-4 py-2 rounded-lg border text-gray-600 hover:bg-gray-100 font-medium disabled:opacity-50"
-          onClick={handlePrintDownload}
-          disabled={isGeneratingPDF}
-        >
-          {isGeneratingPDF ? 'Generating PDF...' : 'Print/Download'}
-        </button>
-        <div className="space-x-2">
-          <button
-            type="submit"
-            className="px-6 py-2 bg-blue-600 text-white rounded-lg font-semibold shadow hover:bg-blue-700 transition"
-          >
-            Save & Send
-          </button>
-          <button
-            type="button"
-            className="px-4 py-2 rounded-lg border text-gray-600 hover:bg-gray-100 font-medium"
-          >
-            Cancel
-          </button>
-        </div>
-      </div>
-    </form>
+      </form>
+    </div>
   );
 };
 
