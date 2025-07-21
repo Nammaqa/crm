@@ -1,4 +1,4 @@
-import validateSuperAdmin from "@/actions/validateInvoice";
+import validateSuperAdmin from "@/actions/validateInvoiceAdmin";
 import { redirect } from "next/navigation";
 import SidebarContainer from "@components/Invoice/InvoiceSidebarContainer";
 import { validateInvoiceAdmin } from "@/actions/validateInvoiceAdmin";
