@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { FaBars, FaTimes } from "react-icons/fa";
+import { Suspense } from 'react'
 import Image from "next/image";
 
 // Import section components
@@ -52,95 +53,95 @@ export default function Dashboard({ editContent }) {
     }, [])
 
   return (
-    <div className="flex h-screen w-full">
-      {/* Sidebar (Left Side) */}
-      <aside
-        className={`bg-gray-900 text-white h-full p-5 pt-8 transition-all duration-300 flex flex-col border-r border-gray-800 shadow-md ${open ? "w-64" : "w-20"
-          } relative overflow-y-auto overflow-x-hidden`}
-      >
-        {/* Toggle Button */}
-        <button
-          className="absolute top-6 right-[-15px] bg-gray-800 text-white p-2 rounded-full border-2 border-gray-600 hover:bg-gray-700 focus:outline-none transition-all"
-          onClick={() => setOpen(!open)}
+      <div className="flex h-screen w-full">
+        {/* Sidebar (Left Side) */}
+        <aside
+          className={`bg-gray-900 text-white h-full p-5 pt-8 transition-all duration-300 flex flex-col border-r border-gray-800 shadow-md ${open ? "w-64" : "w-20"
+            } relative overflow-y-auto overflow-x-hidden`}
         >
-          {open ? <FaTimes size={18} /> : <FaBars size={18} />}
-        </button>
+          {/* Toggle Button */}
+          <button
+            className="absolute top-6 right-[-15px] bg-gray-800 text-white p-2 rounded-full border-2 border-gray-600 hover:bg-gray-700 focus:outline-none transition-all"
+            onClick={() => setOpen(!open)}
+          >
+            {open ? <FaTimes size={18} /> : <FaBars size={18} />}
+          </button>
 
-        {/* Logo */}
-        <div className="flex items-center gap-x-4 mb-6">
-          <Image
-            src="/Wizzybox Logo.png"
-            alt="Company Logo"
-            width={open ? 150 : 40}
-            height={50}
-            className={`transition-all duration-300 ${!open ? "opacity-0 w-0" : "opacity-100 w-auto"}`}
-          />
-        </div>
+          {/* Logo */}
+          <div className="flex items-center gap-x-4 mb-6">
+            <Image
+              src="/Wizzybox Logo.png"
+              alt="Company Logo"
+              width={open ? 150 : 40}
+              height={50}
+              className={`transition-all duration-300 ${!open ? "opacity-0 w-0" : "opacity-100 w-auto"}`}
+            />
+          </div>
 
-        {/* Sidebar Menu Items */}
-        <ul className="flex flex-col space-y-2">
-                  {editContent ? <li
-                    key={1}
-                    className={`flex items-center p-2 rounded-md cursor-pointer text-sm transition-all hover:bg-gray-700 bg-gray-700
-                        }`}
-                    onClick={() => { router.replace('/recruiter/?replace=candidate-list') }}
-                    tabIndex={0}
-                  >
-                    <div className="w-8 text-center"><FaLongArrowAltLeft size={20} /></div>
-                    <span
-                      className={`transition-all duration-300 ${!open ? "opacity-0 w-0" : "opacity-100 w-auto"
-                        }`}
-                    >
-                      BACK
-                    </span>
-                  </li> : sections.map((section) => (
-                    <li
-                      key={section.id}
-                      className={`flex items-center p-2 rounded-md cursor-pointer text-sm transition-all hover:bg-gray-700 ${selectedSection === section.id ? "bg-gray-700" : ""
-                        }`}
-                      onClick={() => { setSelectedSection(section.id) }}
+          {/* Sidebar Menu Items */}
+          <ul className="flex flex-col space-y-2">
+                    {editContent ? <li
+                      key={1}
+                      className={`flex items-center p-2 rounded-md cursor-pointer text-sm transition-all hover:bg-gray-700 bg-gray-700
+                          }`}
+                      onClick={() => { router.replace('/recruiter/?replace=candidate-list') }}
                       tabIndex={0}
                     >
-                      <div className="w-8 text-center">{section.icon}</div>
+                      <div className="w-8 text-center"><FaLongArrowAltLeft size={20} /></div>
                       <span
                         className={`transition-all duration-300 ${!open ? "opacity-0 w-0" : "opacity-100 w-auto"
                           }`}
                       >
-                        {section.label}
+                        BACK
                       </span>
-                    </li>
-                  ))}
-                </ul>
+                    </li> : sections.map((section) => (
+                      <li
+                        key={section.id}
+                        className={`flex items-center p-2 rounded-md cursor-pointer text-sm transition-all hover:bg-gray-700 ${selectedSection === section.id ? "bg-gray-700" : ""
+                          }`}
+                        onClick={() => { setSelectedSection(section.id) }}
+                        tabIndex={0}
+                      >
+                        <div className="w-8 text-center">{section.icon}</div>
+                        <span
+                          className={`transition-all duration-300 ${!open ? "opacity-0 w-0" : "opacity-100 w-auto"
+                            }`}
+                        >
+                          {section.label}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
 
-        {/* Logout Button */}
-        <button
-          onClick={handleLogout}
-          className="mt-auto flex items-center p-2 rounded-md cursor-pointer text-sm transition-all bg-red-600 hover:bg-red-700 text-white"
-        >
-          <div className="w-8 text-center">
-            <FaSignOutAlt size={20} />
-          </div>
-          <span
-            className={`transition-all duration-300 ${!open ? "opacity-0 w-0" : "opacity-100 w-auto"
-              }`}
+          {/* Logout Button */}
+          <button
+            onClick={handleLogout}
+            className="mt-auto flex items-center p-2 rounded-md cursor-pointer text-sm transition-all bg-red-600 hover:bg-red-700 text-white"
           >
-            Logout
-          </span>
-        </button>
-      </aside>
+            <div className="w-8 text-center">
+              <FaSignOutAlt size={20} />
+            </div>
+            <span
+              className={`transition-all duration-300 ${!open ? "opacity-0 w-0" : "opacity-100 w-auto"
+                }`}
+            >
+              Logout
+            </span>
+          </button>
+        </aside>
 
-      {/* Main Content Area (Right Side) */}
-      <main className="flex-1 h-full overflow-auto p-6 bg-gray-100">
-        {editContent ? (
-          <div className="w-full max-w-6xl pt-6">
-            {editContent}
-          </div>
-        ) : (
-          <div className="w-full max-w-6xl pt-6">
-            {sections.find((s) => s.id === selectedSection)?.content}
-          </div>
-        )}
-      </main>
-    </div>
+        {/* Main Content Area (Right Side) */}
+        <main className="flex-1 h-full overflow-auto p-6 bg-gray-100">
+          {editContent ? (
+            <div className="w-full max-w-6xl pt-6">
+              {editContent}
+            </div>
+          ) : (
+            <div className="w-full max-w-6xl pt-6">
+              {sections.find((s) => s.id === selectedSection)?.content}
+            </div>
+          )}
+        </main>
+      </div>
   );
 }
