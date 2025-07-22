@@ -24,64 +24,135 @@ async function parseFormData(request: NextRequest) {
   return { customer, otherDetails, contactPersons, invoiceData, documentUrl };
 }
 
-// GET /api/customer/[id]
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(request: NextRequest) {
   try {
-    const id = Number(params.id);
-    if (!id) {
-      return NextResponse.json({ success: false, error: 'Missing customer ID' }, { status: 400 });
-    }
-   const customer = await prisma.customer.findUnique({
-  where: { id },
-  select: {
-    id: true,
-    customerType: true,
-    primaryContact: true,
-    companyName: true,
-    displayName: true,
-    currency: true,
-    emailAddress: true,
-    phoneNumberWork: true,
-    phoneNumberMobile: true,
-    pan: true,
-    paymentTerms: true,
-    documents: true,
-    department: true,
-    designation: true,
-    website: true,
-    billingAttention: true,
-    billingCountry: true,
-    billingAddress: true,
-    billingCity: true,
-    billingState: true,
-    billingPinCode: true,
-    billingPhone: true,
-    billingFax: true,
-    remarks: true,
-    createdAt: true,
-    updatedAt: true,
-    ContactPerson: true,
-    Invoice: { include: { Item: true } },
-  },
-});
-    if (!customer) {
-      return NextResponse.json({ success: false, error: 'Customer not found' }, { status: 404 });
-    }
-    return NextResponse.json({ success: true, data: customer });
+    const { customer, otherDetails, contactPersons, invoiceData, documentUrl } = await parseFormData(request);
+    const createdCustomer = await prisma.customer.create({
+      data: {
+        customerType: customer.customerType || 'BUSINESS',
+        primaryContact: customer.primaryName || '',
+        companyName: customer.company || '',
+        displayName: customer.displayName || '',
+        currency: customer.currency || 'INR',
+        emailAddress: customer.email || '',
+        phoneNumberWork: customer.phone || '',
+        pan: otherDetails.panNumber || '',
+        paymentTerms: otherDetails.paymentTerms || 'NET_30',
+        documents: documentUrl ? [documentUrl] : [],
+        department: otherDetails.department || '',
+        designation: otherDetails.designation || '',
+        website: otherDetails.website || '',
+        billingAttention: otherDetails.attention || '',
+        billingCountry: otherDetails.country || 'India',
+        billingAddress: otherDetails.address || '',
+        billingCity: otherDetails.city || '',
+        billingState: otherDetails.state || '',
+        billingPinCode: otherDetails.pinCode || '',
+        billingPhone: otherDetails.phone || '',
+        billingFax: otherDetails.faxNumber || '',
+        shippingAttention: otherDetails.shippingAttention || '',
+        shippingCountry: otherDetails.shippingCountry || '',
+        shippingAddress: otherDetails.shippingAddress || '',
+        shippingCity: otherDetails.shippingCity || '',
+        shippingState: otherDetails.shippingState || '',
+        shippingPinCode: otherDetails.shippingPinCode || '',
+        shippingPhone: otherDetails.shippingPhone || '',
+        // shippingFax: otherDetails.shippingFax || '',
+        remarks: otherDetails.remarks || '',
+        // --- FIX: Add GST fields ---
+        gstNumber: otherDetails.gstNumber || '',
+        gstTreatment: otherDetails.gstTreatment || '',
+        // ---
+        ContactPerson: {
+          create: contactPersons.map((person: any) => ({
+            salutation: person.salutation || '',
+            firstName: person.firstName || '',
+            lastName: person.lastName || '',
+            emailAddress: person.email || '',
+            workPhone: person.workPhone || '',
+            mobile: person.mobile || '',
+          })),
+        },
+      },
+      include: { ContactPerson: true, Invoice: { include: { Item: true } } },
+    });
+    return NextResponse.json({ success: true, data: createdCustomer }, { status: 201 });
   } catch (error: any) {
-    return NextResponse.json({ success: false, error: error.message || 'Failed to fetch customer' }, { status: 500 });
+    return NextResponse.json({ success: false, error: error.message || 'Failed to create customer' }, { status: 500 });
   }
 }
 
-// PUT /api/customer/[id]
-export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(request: NextRequest) {
   try {
-    const id = Number(params.id);
-    if (!id) {
-      return NextResponse.json({ success: false, error: 'Missing customer ID' }, { status: 400 });
-    }
-    const { customer, otherDetails, contactPersons, documentUrl } = await parseFormData(request);
+    const customers = await prisma.customer.findMany({
+      include: {
+        ContactPerson: true,
+        Invoice: { include: { Item: true } },
+      },
+      orderBy: { id: 'desc' },
+    });
+    // Return all fields needed by the frontend
+    return NextResponse.json({
+      success: true,
+      data: customers.map((c) => ({
+        id: c.id,
+        customerType: c.customerType,
+        primaryContact: c.primaryContact,
+        companyName: c.companyName,
+        company: c.companyName,
+        displayName: c.displayName,
+        currency: c.currency,
+        emailAddress: c.emailAddress,
+        email: c.emailAddress,
+        phoneNumberWork: c.phoneNumberWork,
+        phone: c.phoneNumberWork,
+        phoneNumberMobile: c.phoneNumberMobile,
+        pan: c.pan,
+        paymentTerms: c.paymentTerms,
+        documents: c.documents,
+        department: c.department,
+        designation: c.designation,
+        website: c.website,
+        billingAttention: c.billingAttention,
+        billingCountry: c.billingCountry,
+        billingAddress: c.billingAddress,
+        billingCity: c.billingCity,
+        billingState: c.billingState,
+        billingPinCode: c.billingPinCode,
+        billingPhone: c.billingPhone,
+        billingFax: c.billingFax,
+        shippingAttention: c.shippingAttention,
+        shippingCountry: c.shippingCountry,
+        shippingAddress: c.shippingAddress,
+        shippingCity: c.shippingCity,
+        shippingState: c.shippingState,
+        shippingPinCode: c.shippingPinCode,
+        shippingPhone: c.shippingPhone,
+        // shippingFax: c.shippingFax, // Removed because property does not exist
+        remarks: c.remarks,
+        // --- FIX: Add GST fields to response ---
+        gstNumber: c.gstNumber,
+        gstTreatment: c.gstTreatment,
+        // ---
+        createdAt: c.createdAt,
+        updatedAt: c.updatedAt,
+        ContactPerson: c.ContactPerson,
+        Invoice: c.Invoice,
+      })),
+    });
+  } catch (error: any) {
+    return NextResponse.json({ success: false, error: error.message || 'Failed to fetch customers' }, { status: 500 });
+  }
+}
 
+// ...PUT and DELETE unchanged...
+
+export async function PUT(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const id = Number(searchParams.get('id'));
+    if (!id) return NextResponse.json({ success: false, error: 'Missing customer ID' }, { status: 400 });
+    const { customer, otherDetails, contactPersons, documentUrl } = await parseFormData(request);
     const updatedCustomer = await prisma.customer.update({
       where: { id },
       data: {
@@ -107,11 +178,13 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
         billingPhone: otherDetails.phone || '',
         billingFax: otherDetails.faxNumber || '',
         remarks: otherDetails.remarks || '',
+        // --- FIX: Add GST fields ---
+        gstNumber: otherDetails.gstNumber || '',
+        gstTreatment: otherDetails.gstTreatment || '',
+        // ---
       },
       include: { ContactPerson: true, Invoice: { include: { Item: true } } },
     });
-
-    // Update contact persons: remove all and re-create
     await prisma.contactPerson.deleteMany({ where: { customerId: id } });
     if (contactPersons.length > 0) {
       await prisma.contactPerson.createMany({
@@ -126,12 +199,10 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
         })),
       });
     }
-
     const finalCustomer = await prisma.customer.findUnique({
       where: { id },
       include: { ContactPerson: true, Invoice: { include: { Item: true } } },
     });
-
     return NextResponse.json({ success: true, data: finalCustomer });
   } catch (error: any) {
     return NextResponse.json({ success: false, error: error.message || 'Failed to update customer' }, { status: 500 });
