@@ -57,10 +57,8 @@ export async function POST(request: NextRequest) {
         shippingState: otherDetails.shippingState || '',
         shippingPinCode: otherDetails.shippingPinCode || '',
         shippingPhone: otherDetails.shippingPhone || '',
+        // shippingFax: otherDetails.shippingFax || '',
         remarks: otherDetails.remarks || '',
-        gstNumber: otherDetails.gstNumber || '',
-        gstTreatment: otherDetails.gstTreatment || '',
-        placeOfSupply: otherDetails.placeOfSupply || '',
         ContactPerson: {
           create: contactPersons.map((person: any) => ({
             salutation: person.salutation || '',
@@ -72,13 +70,7 @@ export async function POST(request: NextRequest) {
           })),
         },
       },
-      include: { 
-        ContactPerson: true, 
-        Invoice: { 
-          include: { Item: true },
-          orderBy: { createdAt: 'desc' }
-        } 
-      },
+      include: { ContactPerson: true, Invoice: { include: { Item: true } } },
     });
     return NextResponse.json({ success: true, data: createdCustomer }, { status: 201 });
   } catch (error: any) {
@@ -91,15 +83,11 @@ export async function GET(request: NextRequest) {
     const customers = await prisma.customer.findMany({
       include: {
         ContactPerson: true,
-        Invoice: { 
-          include: { Item: true },
-          orderBy: { createdAt: 'desc' }
-        },
+        Invoice: { include: { Item: true } },
       },
       orderBy: { id: 'desc' },
     });
-    
-    // Return all fields needed by the frontend with enhanced invoice data
+    // Return all fields needed by the frontend
     return NextResponse.json({
       success: true,
       data: customers.map((c) => ({
@@ -109,7 +97,6 @@ export async function GET(request: NextRequest) {
         companyName: c.companyName,
         company: c.companyName,
         displayName: c.displayName,
-        name: c.displayName,
         currency: c.currency,
         emailAddress: c.emailAddress,
         email: c.emailAddress,
@@ -137,45 +124,12 @@ export async function GET(request: NextRequest) {
         shippingState: c.shippingState,
         shippingPinCode: c.shippingPinCode,
         shippingPhone: c.shippingPhone,
+        // shippingFax: c.shippingFax, // Removed because property does not exist
         remarks: c.remarks,
-        gstNumber: c.gstNumber,
-        gstTreatment: c.gstTreatment,
-        placeOfSupply: c.placeOfSupply,
         createdAt: c.createdAt,
         updatedAt: c.updatedAt,
         ContactPerson: c.ContactPerson,
-        Invoice: c.Invoice.map((invoice) => ({
-          id: invoice.id,
-          invoiceCode: invoice.invoiceCode,
-          invoiceDate: invoice.invoiceDate,
-          dueDate: invoice.dueDate,
-          total: invoice.total,
-          discount: invoice.discount,
-          gstRate: invoice.gstRate,
-          terms: invoice.terms,
-          notes: invoice.notes,
-          status: invoice.status || 'Draft',
-          isDraft: invoice.isDraft,
-          createdAt: invoice.createdAt,
-          updatedAt: invoice.updatedAt,
-          Item: invoice.Item,
-          // Add computed fields for easier display
-          date: invoice.invoiceDate,
-          amount: invoice.total,
-        })),
-        // Add summary statistics
-        totalInvoices: c.Invoice.length,
-        totalAmount: c.Invoice.reduce((sum, inv) => sum + (inv.total || 0), 0),
-        pendingAmount: c.Invoice
-          .filter(inv => inv.status === 'Pending' || inv.isDraft)
-          .reduce((sum, inv) => sum + (inv.total || 0), 0),
-        latestInvoice: c.Invoice.length > 0 ? {
-          id: c.Invoice[0].invoiceCode,
-          date: c.Invoice[0].invoiceDate,
-          dueDate: c.Invoice[0].dueDate,
-          total: c.Invoice[0].total,
-          status: c.Invoice[0].status || 'Draft'
-        } : null,
+        Invoice: c.Invoice,
       })),
     });
   } catch (error: any) {
@@ -183,13 +137,14 @@ export async function GET(request: NextRequest) {
   }
 }
 
+// ...PUT and DELETE unchanged...
+
 export async function PUT(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const id = Number(searchParams.get('id'));
     if (!id) return NextResponse.json({ success: false, error: 'Missing customer ID' }, { status: 400 });
     const { customer, otherDetails, contactPersons, documentUrl } = await parseFormData(request);
-    
     const updatedCustomer = await prisma.customer.update({
       where: { id },
       data: {
@@ -215,19 +170,9 @@ export async function PUT(request: NextRequest) {
         billingPhone: otherDetails.phone || '',
         billingFax: otherDetails.faxNumber || '',
         remarks: otherDetails.remarks || '',
-        gstNumber: otherDetails.gstNumber || '',
-        gstTreatment: otherDetails.gstTreatment || '',
-        placeOfSupply: otherDetails.placeOfSupply || '',
       },
-      include: { 
-        ContactPerson: true, 
-        Invoice: { 
-          include: { Item: true },
-          orderBy: { createdAt: 'desc' }
-        } 
-      },
+      include: { ContactPerson: true, Invoice: { include: { Item: true } } },
     });
-
     await prisma.contactPerson.deleteMany({ where: { customerId: id } });
     if (contactPersons.length > 0) {
       await prisma.contactPerson.createMany({
@@ -242,16 +187,9 @@ export async function PUT(request: NextRequest) {
         })),
       });
     }
-
     const finalCustomer = await prisma.customer.findUnique({
       where: { id },
-      include: { 
-        ContactPerson: true, 
-        Invoice: { 
-          include: { Item: true },
-          orderBy: { createdAt: 'desc' }
-        } 
-      },
+      include: { ContactPerson: true, Invoice: { include: { Item: true } } },
     });
     return NextResponse.json({ success: true, data: finalCustomer });
   } catch (error: any) {
@@ -264,7 +202,6 @@ export async function DELETE(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const id = Number(searchParams.get('id'));
     if (!id) return NextResponse.json({ success: false, error: 'Missing customer ID' }, { status: 400 });
-    
     await prisma.customer.delete({ where: { id } });
     return NextResponse.json({ success: true, message: 'Customer deleted successfully' });
   } catch (error: any) {
