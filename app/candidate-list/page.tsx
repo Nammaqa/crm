@@ -1,17 +1,13 @@
-// app/candidate-list/page.tsx
-import { Suspense } from 'react';
+import CandidateList from '@/components/Recruiter/content/CandidateList';
 import SidebarContainer from '@/components/Recruiter/HrSidbarContainer';
-import CandidateListContent from '@/components/Recruiter/content/CandidateListContent';
+import { Suspense } from 'react';
 
-export default function CandidateListPage() {
+export default function CandidateFormPage() {
+
+
   return (
-    <Suspense fallback={<div>Loading candidate list...</div>}>
-    <SidebarContainer
-      editContent={
-        
-          <CandidateListContent />
-    
-      }
-    />   </Suspense>
+    <Suspense>
+      <SidebarContainer editContent={<CandidateList   />} />
+    </Suspense>
   );
 }
