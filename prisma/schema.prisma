@@ -315,19 +315,16 @@ model Invoice {
   id                Int           @id @default(autoincrement())
   customerId        Int
   customer          Customer      @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  invoiceCode       String?       @unique 
-  invoiceDate       DateTime?
-  terms             PaymentTerms?
-  dueDate           DateTime?
+  invoiceCode       String        @unique 
+  invoiceDate       DateTime
+  terms             PaymentTerms
+  dueDate           DateTime
   poNumber          String?
   customerNotes     String?
-  total             Float?
+  total             Float
   Documents        String[]
-  status            String ?      @default("Draft")
+  status            String        @default("Draft")
   isDraft           Boolean       @default(true)
-   gstNumber         String?
-  gstTreatment      String?
-   placeOfSupply    String?
   createdAt         DateTime      @default(now())
   updatedAt         DateTime      @updatedAt
   Item Item[]
