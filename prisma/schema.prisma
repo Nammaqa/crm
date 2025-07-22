@@ -279,13 +279,16 @@ model Customer {
   billingPhone      String?
   billingFax        String?
   gstNumber         String?
-  // shippingAttention String?
-  // shippingCountry   String
-  // shippingAddress   String[]       
-  // shippingCity      String
-  // shippingState     String
-  // shippingPinCode   String
-  // shippingPhone     String?
+  gstTreatment      String?
+  shippingAttention String?
+  shippingCountry   String?
+  shippingAddress   String?  
+  shippingCity      String?
+  shippingState     String?
+  shippingPinCode   String?
+  shippingPhone     String?
+  placeOfSupply    String?
+  shippingFax       String? 
   remarks           String?
   createdAt         DateTime       @default(now())
   updatedAt         DateTime       @updatedAt
@@ -316,10 +319,11 @@ model Invoice {
   invoiceDate       DateTime
   terms             PaymentTerms
   dueDate           DateTime
+  poNumber          String?
   customerNotes     String?
   total             Float
-  discountPercentage Float?
-  GstPercentage      Float?
+  Documents        String[]
+  status            String        @default("Draft")
   isDraft           Boolean       @default(true)
   createdAt         DateTime      @default(now())
   updatedAt         DateTime      @updatedAt
@@ -334,6 +338,9 @@ model Item {
   quantity   Int
   rate       Float
   amount     Float
+  sac        String?
+  discountPercentage Float?
+  GstPercentage      Float?
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 }

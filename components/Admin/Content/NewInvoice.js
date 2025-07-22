@@ -53,6 +53,13 @@ function formatDate(date) {
   return `${d.getFullYear()}-${month}-${day}`;
 }
 
+function formatDisplayDate(date) {
+  const d = new Date(date);
+  const day = `${d.getDate()}`.padStart(2, '0');
+  const month = `${d.getMonth() + 1}`.padStart(2, '0');
+  return `${day}/${month}/${d.getFullYear()}`;
+}
+
 function addDays(date, days) {
   const d = new Date(date);
   d.setDate(d.getDate() + days);
@@ -69,6 +76,50 @@ function getLastDayOfNextMonth(date) {
   const d = new Date(date);
   d.setMonth(d.getMonth() + 2, 0);
   return formatDate(d);
+}
+
+// Number to words conversion - Fixed naming conflict
+function numberToWords(num) {
+  const ones = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine'];
+  const teens = ['Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen', 'Seventeen', 'Eighteen', 'Nineteen'];
+  const tens = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
+
+  if (num === 0) return 'Zero';
+
+  function convertHundreds(n) {
+    let result = '';
+    if (n >= 100) {
+      result += ones[Math.floor(n / 100)] + ' Hundred ';
+      n %= 100;
+    }
+    if (n >= 20) {
+      result += tens[Math.floor(n / 10)] + ' ';
+      n %= 10;
+    } else if (n >= 10) {
+      result += teens[n - 10] + ' ';
+      return result;
+    }
+    if (n > 0) {
+      result += ones[n] + ' ';
+    }
+    return result;
+  }
+
+  const crores = Math.floor(num / 10000000);
+  num %= 10000000;
+  const lakhs = Math.floor(num / 100000);
+  num %= 100000;
+  const thousandsValue = Math.floor(num / 1000); // Fixed: renamed from 'thousands' to 'thousandsValue'
+  num %= 1000;
+  const hundreds = num;
+
+  let result = '';
+  if (crores > 0) result += convertHundreds(crores) + 'Crore ';
+  if (lakhs > 0) result += convertHundreds(lakhs) + 'Lakh ';
+  if (thousandsValue > 0) result += convertHundreds(thousandsValue) + 'Thousand '; // Fixed: use 'thousandsValue'
+  if (hundreds > 0) result += convertHundreds(hundreds);
+
+  return result.trim();
 }
 
 // --- DnD Kit Sortable Row ---
@@ -143,7 +194,18 @@ const InvoiceForm = () => {
     placeOfSupply: '',
     poNumber: '',
     shipTo: '',
-    showSummary: true,
+    gstTreatment: '',
+    gstin: '',
+    showSummary: false, // Changed to false by default
+    // Company details
+    companyName: 'Wizzybox Private Limited',
+    companyAddress: 'Bengaluru Karnataka 560056\nIndia',
+    companyGSTIN: '29AADCW7843F1ZY',
+    companyEmail: 'contactus@wizzybox.com',
+    companyWebsite: 'www.wizzybox.com',
+    bankName: 'State Bank of India',
+    bankAccountNo: '00000042985985552',
+    bankIFSC: 'SBIN0016225',
   });
 
   // Fetch customers from API on mount
@@ -165,6 +227,34 @@ const InvoiceForm = () => {
     }
     fetchCustomers();
   }, []);
+
+  // Auto-fill GST Treatment, GSTIN, Place of Supply, Ship To when customer is selected
+  useEffect(() => {
+    if (formData.customerId) {
+      const selectedCustomer = customers.find(c => c.id === Number(formData.customerId));
+      setFormData(prev => ({
+        ...prev,
+        gstTreatment: selectedCustomer?.gstTreatment || "",
+        gstin: selectedCustomer?.gstNumber || "",
+        placeOfSupply: selectedCustomer?.placeOfSupply || "",
+        shipTo: [
+          selectedCustomer?.shippingAddress,
+          selectedCustomer?.shippingCity,
+          selectedCustomer?.shippingState,
+          selectedCustomer?.shippingPinCode,
+          selectedCustomer?.shippingCountry,
+        ].filter(Boolean).join(", ")
+      }));
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        gstTreatment: "",
+        gstin: "",
+        placeOfSupply: "",
+        shipTo: ""
+      }));
+    }
+  }, [formData.customerId, customers]);
 
   useEffect(() => {
     let dueDate = formData.dueDate;
@@ -347,30 +437,53 @@ const InvoiceForm = () => {
     return total;
   };
 
-  const handleSubmit = (e) => {
+  // --- API Submission ---
+  const handleSubmit = async (e) => {
     e.preventDefault();
     const selectedCustomer = customers.find(c => c.id === Number(formData.customerId));
     const invoiceData = {
-      ...formData,
-      customerName: selectedCustomer
-        ? (selectedCustomer.displayName || selectedCustomer.companyName || selectedCustomer.emailAddress)
-        : '',
-      items,
-      subtotal: calculateSubtotal(),
-      totalDiscount: calculateTotalDiscount(),
-      cgst: calculateCGST(),
-      sgst: calculateSGST(),
-      tds: calculateTDS(),
-      tcs: calculateTCS(),
+      customerId: formData.customerId,
+      invoiceNumber: formData.invoiceNumber,
+      invoiceDate: formData.invoiceDate,
+      dueDate: formData.dueDate,
+      terms: formData.terms,
+      notes: formData.notes,
       total: calculateTotal(),
-      gstTreatment: selectedCustomer ? selectedCustomer.gstTreatment : '',
-      gstin: selectedCustomer ? selectedCustomer.gstin : '',
-      cgstRate,
-      sgstRate,
+      discount: calculateTotalDiscount(),
       gstRate,
+      poNumber: formData.poNumber,
     };
-    console.log('Submitting Invoice:', invoiceData);
-    // TODO: Replace with actual API call
+    const itemsData = items.map(item => ({
+      name: item.name,
+      description: item.description,
+      quantity: item.quantity,
+      rate: item.rate,
+      discount: item.discount,
+      taxType: item.taxType,
+      customTaxRate: item.customTaxRate,
+      sac: item.sac,
+      amount: calculateItemAmount(item),
+    }));
+
+    try {
+      const res = await fetch("/api/invoice", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          invoice: invoiceData,
+          items: itemsData,
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        alert("Invoice saved successfully!");
+        // Optionally reset form or redirect
+      } else {
+        alert("Failed to save invoice: " + (data.error || "Unknown error"));
+      }
+    } catch (err) {
+      alert("Failed to save invoice. Please try again.");
+    }
   };
 
   const handlePrintDownload = async () => {
@@ -380,107 +493,226 @@ const InvoiceForm = () => {
       const autoTable = (await import('jspdf-autotable')).default;
       const doc = new jsPDF();
 
-      doc.setFontSize(22);
-      doc.text('INVOICE', 14, 18);
+      // Colors
+      const primaryColor = [41, 128, 185];
+      const lightGray = [240, 240, 240];
+      const darkGray = [80, 80, 80];
 
-      doc.setFontSize(12);
-      doc.text(`Invoice #: ${formData.invoiceNumber || '-'}`, 14, 28);
-      doc.text(`Invoice Date: ${formData.invoiceDate || '-'}`, 14, 34);
-      doc.text(`Due Date: ${formData.dueDate || '-'}`, 14, 40);
+      // Header - Company Details
+      doc.setFontSize(18);
+      doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+      doc.text(formData.companyName, 14, 20);
+      
+      doc.setFontSize(9);
+      doc.setTextColor(darkGray[0], darkGray[1], darkGray[2]);
+      const companyAddressLines = formData.companyAddress.split('\n');
+      let yPos = 28;
+      companyAddressLines.forEach(line => {
+        doc.text(line, 14, yPos);
+        yPos += 4;
+      });
+      
+      doc.text(`GSTIN ${formData.companyGSTIN}`, 14, yPos);
+      doc.text(formData.companyEmail, 14, yPos + 4);
+      doc.text(formData.companyWebsite, 14, yPos + 8);
+
+      // TAX INVOICE Header - Right Aligned
+      doc.setFontSize(20);
+      doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+      doc.text('TAX INVOICE', 200, 20, { align: 'right' });
+
+      // Invoice Details - Right side
+      doc.setFontSize(10);
+      doc.setTextColor(0, 0, 0);
+      doc.text(`Invoice# ${formData.invoiceNumber || 'WB-IN106'}`, 200, 35, { align: 'right' });
+
+      // Customer Details Section
       const selectedCustomer = customers.find(c => c.id === Number(formData.customerId));
-      doc.text(
-        `Customer Name: ${
-          selectedCustomer
-            ? (selectedCustomer.displayName || selectedCustomer.companyName || selectedCustomer.emailAddress)
-            : '-'
-        }`,
-        14,
-        46
-      );
-      doc.text(
-        `GST Treatment: ${selectedCustomer && selectedCustomer.gstTreatment ? selectedCustomer.gstTreatment : '-'}`,
-        14,
-        52
-      );
-      doc.text(
-        `GSTIN: ${selectedCustomer && selectedCustomer.gstin ? selectedCustomer.gstin : '-'}`,
-        100,
-        52
-      );
-      doc.text(
-        `Place of Supply: ${formData.placeOfSupply || '-'}`,
-        14,
-        58
-      );
+      
+      // Bill To
+      doc.setFontSize(12);
+      doc.setFont(undefined, 'bold');
+      doc.text('Bill To', 14, 65);
+      
+      doc.setFontSize(10);
+      doc.setFont(undefined, 'normal');
+      if (selectedCustomer) {
+        const customerName = selectedCustomer.displayName || selectedCustomer.companyName || selectedCustomer.emailAddress;
+        doc.text(customerName, 14, 73);
+        
+        // Customer address
+        let customerAddressY = 78;
+        if (selectedCustomer.billingAddress) {
+          const addressLines = [
+            selectedCustomer.billingAddress,
+            selectedCustomer.billingCity,
+            selectedCustomer.billingState,
+            selectedCustomer.billingPinCode,
+            selectedCustomer.billingCountry
+          ].filter(Boolean);
+          
+          addressLines.forEach(line => {
+            if (line) {
+              doc.text(line, 14, customerAddressY);
+              customerAddressY += 4;
+            }
+          });
+        }
+        
+        if (formData.gstin) {
+          doc.text(`GSTIN ${formData.gstin}`, 14, customerAddressY + 4);
+        }
+      }
+
+      // Ship To
+      doc.setFontSize(12);
+      doc.setFont(undefined, 'bold');
+      doc.text('Ship To', 110, 65);
+      
+      doc.setFontSize(10);
+      doc.setFont(undefined, 'normal');
+      if (formData.gstin) {
+        doc.text(`GSTIN ${formData.gstin}`, 110, 73);
+      }
+      if (formData.placeOfSupply) {
+        doc.text(`Place Of Supply: ${formData.placeOfSupply}`, 110, 78);
+      }
+
+      // Invoice Info Table
+      doc.setFontSize(10);
+      const invoiceInfoY = 90;
+      doc.text('Invoice Date', 14, invoiceInfoY);
+      doc.text('Terms', 60, invoiceInfoY);
+      doc.text('Due Date', 110, invoiceInfoY);
+      doc.text('PO Number', 160, invoiceInfoY);
+
+      doc.text(formatDisplayDate(formData.invoiceDate), 14, invoiceInfoY + 6);
+      doc.text(formData.terms || 'Due on Receipt', 60, invoiceInfoY + 6);
+      doc.text(formatDisplayDate(formData.dueDate), 110, invoiceInfoY + 6);
+      doc.text(formData.poNumber || 'NA', 160, invoiceInfoY + 6);
 
       // Items Table
-      const itemRows = items.map((item, idx) => [
-        idx + 1,
-        item.name || '',
-        item.quantity === "" || isNaN(item.quantity) ? '' : item.quantity,
-        item.rate === "" || isNaN(item.rate) ? '' : item.rate,
-        item.discount === "" || isNaN(item.discount) ? '' : item.discount,
-        (() => {
-          // Show label and rate for custom tax
-          if (item.taxType && item.taxType.startsWith('custom-')) {
-            return `${item.customTaxRate || 0}%`;
-          }
-          const found = taxOptions.find(opt => opt.value === item.taxType);
-          return found ? found.label : '';
-        })(),
-        item.sac || '',
-        calculateItemAmount(item).toFixed(2)
-      ]);
+      const itemTableY = invoiceInfoY + 20;
+      const itemRows = items.map((item, idx) => {
+        const baseAmount = (parseFloat(item.quantity) || 0) * (parseFloat(item.rate) || 0);
+        const discountAmount = (baseAmount * (parseFloat(item.discount) || 0)) / 100;
+        const netAmount = baseAmount - discountAmount;
+        const cgstAmount = (netAmount * cgstRate) / 100;
+        const sgstAmount = (netAmount * sgstRate) / 100;
+        
+        return [
+          idx + 1,
+          item.name || '',
+          item.sac || '998313',
+          item.quantity === "" || isNaN(item.quantity) ? '1.00' : parseFloat(item.quantity).toFixed(2),
+          item.rate === "" || isNaN(item.rate) ? '0.00' : parseFloat(item.rate).toFixed(2),
+          cgstAmount.toFixed(2),
+          `${cgstRate}%`,
+          sgstAmount.toFixed(2),
+          `${sgstRate}%`,
+          netAmount.toFixed(2)
+        ];
+      });
 
       autoTable(doc, {
-        startY: 64,
-        head: [['#', 'Item', 'Qty', 'Rate', 'Discount (%)', 'Tax (%)', 'SAC', 'Amount']],
+        startY: itemTableY,
+        head: [['#', 'Item & Description', 'HSN/SAC', 'Qty', 'Rate', 'CGST', '', 'SGST', '', 'Amount']],
         body: itemRows,
         theme: 'grid',
-        headStyles: { fillColor: [41, 128, 185] },
-        styles: { fontSize: 10 },
+        headStyles: { 
+          fillColor: lightGray,
+          textColor: [0, 0, 0],
+          fontSize: 9,
+          fontStyle: 'bold'
+        },
+        styles: { 
+          fontSize: 9,
+          cellPadding: 3
+        },
+        columnStyles: {
+          0: { halign: 'center', cellWidth: 15 },
+          1: { cellWidth: 50 },
+          2: { halign: 'center', cellWidth: 25 },
+          3: { halign: 'right', cellWidth: 20 },
+          4: { halign: 'right', cellWidth: 25 },
+          5: { halign: 'right', cellWidth: 20 },
+          6: { halign: 'center', cellWidth: 15 },
+          7: { halign: 'right', cellWidth: 20 },
+          8: { halign: 'center', cellWidth: 15 },
+          9: { halign: 'right', cellWidth: 25 }
+        }
       });
 
-      let finalY = doc.lastAutoTable.finalY || 64;
+      let finalY = doc.lastAutoTable.finalY || itemTableY + 40;
 
       // Summary section
-      doc.setFontSize(12);
-      doc.text('Summary', 14, finalY + 10);
-
-      const summaryRows = [
-        ['Subtotal', `₹ ${calculateSubtotal().toFixed(2)}`],
-        ['Total Discount', `₹ ${calculateTotalDiscount().toFixed(2)}`],
-        [`CGST (${cgstRate}%)`, `₹ ${calculateCGST().toFixed(2)}`],
-        [`SGST (${sgstRate}%)`, `₹ ${calculateSGST().toFixed(2)}`],
-        ['TDS', `₹ ${calculateTDS().toFixed(2)}`],
-        ['TCS', `₹ ${calculateTCS().toFixed(2)}`],
-        ['Total', `₹ ${calculateTotal().toFixed(2)}`],
+      const summaryStartY = finalY + 10;
+      const summaryData = [
+        ['Sub Total', calculateSubtotal().toFixed(2)],
+        [`CGST${cgstRate} (${cgstRate}%)`, calculateCGST().toFixed(2)],
+        [`SGST${sgstRate} (${sgstRate}%)`, calculateSGST().toFixed(2)],
+        ['Total', `₹${calculateTotal().toFixed(2)}`],
+        ['Balance Due', `₹${calculateTotal().toFixed(2)}`]
       ];
 
+      // Add TDS/TCS if applicable
+      if (formData.tdsTcsType === 'TDS' && formData.tdsRate) {
+        summaryData.splice(-2, 0, [`TDS (${formData.tdsRate}%)`, calculateTDS().toFixed(2)]);
+      }
+      if (formData.tdsTcsType === 'TCS' && formData.tcsRate) {
+        summaryData.splice(-2, 0, [`TCS (${formData.tcsRate}%)`, calculateTCS().toFixed(2)]);
+      }
+
+      // Summary table positioned on right side
       autoTable(doc, {
-        startY: finalY + 14,
-        head: [],
-        body: summaryRows,
+        startY: summaryStartY,
+        body: summaryData,
         theme: 'plain',
-        styles: { fontSize: 11, cellPadding: 2 },
-        columnStyles: { 0: { fontStyle: 'bold' }, 1: { halign: 'right' } },
+        styles: { 
+          fontSize: 10,
+          cellPadding: 2
+        },
+        columnStyles: {
+          0: { fontStyle: 'bold', cellWidth: 40 },
+          1: { halign: 'right', cellWidth: 30 }
+        },
+        margin: { left: 140 }
       });
 
-      let afterSummaryY = doc.lastAutoTable.finalY || (finalY + 14 + summaryRows.length * 8);
+      // Total in Words
+      const totalInWords = numberToWords(Math.floor(calculateTotal()));
+      doc.setFontSize(10);
+      doc.setFont(undefined, 'bold');
+      doc.text('Total In Words:', 14, summaryStartY + 10);
+      doc.setFont(undefined, 'normal');
+      doc.text(`Indian Rupee ${totalInWords} Only`, 14, summaryStartY + 16);
 
+      // Notes
       if (formData.notes) {
-        doc.setFontSize(11);
-        doc.text('Notes:', 14, afterSummaryY + 10);
         doc.setFontSize(10);
-        doc.text(formData.notes, 14, afterSummaryY + 16);
-        afterSummaryY += 12;
+        doc.text(formData.notes, 14, summaryStartY + 26);
       }
-      if (formData.termsAndConditions) {
-        doc.setFontSize(11);
-        doc.text('Terms & Conditions:', 14, afterSummaryY + 18);
-        doc.setFontSize(10);
-        doc.text(formData.termsAndConditions, 14, afterSummaryY + 24);
-      }
+
+      // Payment Details
+      const paymentY = summaryStartY + 40;
+      doc.setFontSize(10);
+      doc.setFont(undefined, 'bold');
+      doc.text('Payment Details', 14, paymentY);
+      doc.setFont(undefined, 'normal');
+      doc.text(formData.companyName, 14, paymentY + 6);
+      doc.text(formData.bankName, 14, paymentY + 11);
+      doc.text(`Bank A/C No: ${formData.bankAccountNo}`, 14, paymentY + 16);
+      doc.text(`IFSC Code: ${formData.bankIFSC}`, 14, paymentY + 21);
+
+      // Authorized Signature
+      doc.setFont(undefined, 'bold');
+      doc.text('Authorized Signature', 150, paymentY + 16);
+
+      // Footer - Zoho branding
+      doc.setFontSize(8);
+      doc.setTextColor(100, 100, 100);
+      doc.text('Crafted with ease using', 14, 280);
+      doc.text('Visit zoho.com/invoice to create truly professional invoices', 14, 285);
 
       doc.save(`Invoice_${formData.invoiceNumber || 'Draft'}.pdf`);
     } catch (error) {
@@ -541,7 +773,7 @@ const InvoiceForm = () => {
     <div className="w-full px-4">
       <form
         onSubmit={handleSubmit}
-        className="max-w-screen-2xl mx-auto px-8 py-10 bg-white shadow-2xl rounded-2xl space-y-10 text-gray-800 my-8"
+        className="max-w-screen-2xl mx-auto px-8 py-10 space-y-10 text-gray-800 my-8"
       >
         <h2 className="text-3xl font-bold text-gray-800 border-b pb-4">
           Create Invoice
@@ -575,7 +807,7 @@ const InvoiceForm = () => {
                 <label className="block font-semibold text-sm mb-1">GST Treatment</label>
                 <input
                   type="text"
-                  value={selectedCustomer && selectedCustomer.gstTreatment ? selectedCustomer.gstTreatment : ''}
+                  value={formData.gstTreatment || ''}
                   readOnly
                   className="w-full border border-gray-300 rounded-lg px-4 py-2 bg-gray-100 text-gray-700"
                 />
@@ -584,7 +816,7 @@ const InvoiceForm = () => {
                 <label className="block font-semibold text-sm mb-1">GSTIN</label>
                 <input
                   type="text"
-                  value={selectedCustomer && selectedCustomer.gstin ? selectedCustomer.gstin : ''}
+                  value={formData.gstin || ''}
                   readOnly
                   className="w-full border border-gray-300 rounded-lg px-4 py-2 bg-gray-100 text-gray-700"
                 />
@@ -909,124 +1141,143 @@ const InvoiceForm = () => {
             />
           </div>
           <div className="bg-gradient-to-br from-blue-50 to-white rounded-xl p-6 border border-blue-100 shadow space-y-4">
-            <div className="flex justify-between">
-              <span className="font-medium">Sub Total</span>
-              <span className="font-semibold text-blue-900">
-                ₹ {calculateSubtotal().toFixed(2)}
-              </span>
+            {/* Show/Hide Summary Toggle Button */}
+            <div className="flex justify-between items-center">
+              <button
+                type="button"
+                className="text-blue-500 font-semibold underline hover:text-blue-700 transition"
+                onClick={() => setFormData({ ...formData, showSummary: !formData.showSummary })}
+              >
+                {formData.showSummary ? "Hide Total Summary" : "Show Total Summary"}
+              </button>
             </div>
-            <div className="flex justify-between">
-              <span className="font-medium">CGST ({cgstRate}%)</span>
-              <input
-                type="number"
-                name="cgst"
-                value={cgstRate}
-                readOnly
-                className="w-20 text-right border border-gray-300 rounded px-2 py-1 bg-gray-100 text-gray-700"
-              />
-              <span className="font-semibold text-blue-900">
-                ₹ {calculateCGST().toFixed(2)}
-              </span>
-            </div>
-            <div className="flex justify-between">
-              <span className="font-medium">SGST ({sgstRate}%)</span>
-              <input
-                type="number"
-                name="sgst"
-                value={sgstRate}
-                readOnly
-                className="w-20 text-right border border-gray-300 rounded px-2 py-1 bg-gray-100 text-gray-700"
-              />
-              <span className="font-semibold text-blue-900">
-                ₹ {calculateSGST().toFixed(2)}
-              </span>
-            </div>
-            {/* TDS/TCS Section */}
-            <div className="flex flex-col gap-2">
-              <span className="font-medium">TDS / TCS</span>
-              <div className="flex gap-4 items-center">
-                <label className="flex items-center gap-1">
-                  <input
-                    type="radio"
-                    name="tdsTcsType"
-                    value="TDS"
-                    checked={formData.tdsTcsType === 'TDS'}
-                    onChange={handleTdsTcsTypeChange}
-                  />
-                  TDS
-                </label>
-                <label className="flex items-center gap-1">
-                  <input
-                    type="radio"
-                    name="tdsTcsType"
-                    value="TCS"
-                    checked={formData.tdsTcsType === 'TCS'}
-                    onChange={handleTdsTcsTypeChange}
-                  />
-                  TCS
-                </label>
-              </div>
-              {formData.tdsTcsType === 'TDS' && (
-                <div className="flex gap-2 items-center mt-2">
-                  <select
-                    name="tdsOption"
-                    value={formData.tdsOption}
-                    onChange={handleTdsOptionChange}
-                    className="border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-blue-300 text-xs"
-                  >
-                    <option value="">Select TDS Type</option>
-                    {TDS_OPTIONS.map((opt, idx) => (
-                      <option key={idx} value={opt.label}>
-                        {opt.label}
-                      </option>
-                    ))}
-                  </select>
-                  <input
-                    type="number"
-                    name="tdsRate"
-                    value={formData.tdsRate}
-                    readOnly
-                    className="w-16 text-right border border-gray-300 rounded px-2 py-1 bg-gray-100 text-gray-700"
-                    placeholder="Rate %"
-                  />
-                  <span className="text-gray-500 text-xs">%</span>
-                  <span className="font-semibold text-blue-900 ml-2">
-                    ₹ {calculateTDS().toFixed(2)}
+            
+            {/* Subtotal Details (hidden by default, shown when showSummary is true) */}
+            {formData.showSummary && (
+              <>
+                <div className="flex justify-between">
+                  <span className="font-medium">Sub Total</span>
+                  <span className="font-semibold text-blue-900">
+                    ₹ {calculateSubtotal().toFixed(2)}
                   </span>
                 </div>
-              )}
-              {formData.tdsTcsType === 'TCS' && (
-                <div className="flex gap-2 items-center mt-2">
-                  <input
-                    type="number"
-                    name="tcsRate"
-                    value={formData.tcsRate}
-                    onChange={handleTcsRateChange}
-                    min="0"
-                    max="100"
-                    className="w-16 text-right border border-gray-300 rounded px-2 py-1"
-                    placeholder="TCS %"
-                  />
-                  <span className="text-gray-500 text-xs">%</span>
-                  <span className="font-semibold text-blue-900 ml-2">
-                    ₹ {calculateTCS().toFixed(2)}
-                  </span>
+                <div className="flex justify-between items-center">
+                  <span className="font-medium">CGST</span>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="number"
+                      name="cgst"
+                      value={cgstRate}
+                      readOnly
+                      className="w-16 text-right border border-gray-300 rounded px-2 py-1 bg-gray-100 text-gray-700 text-sm"
+                    />
+                    <span className="text-sm">%</span>
+                    <span className="font-semibold text-blue-900 min-w-[80px] text-right">
+                      ₹ {calculateCGST().toFixed(2)}
+                    </span>
+                  </div>
                 </div>
-              )}
-            </div>
+                <div className="flex justify-between items-center">
+                  <span className="font-medium">SGST</span>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="number"
+                      name="sgst"
+                      value={sgstRate}
+                      readOnly
+                      className="w-16 text-right border border-gray-300 rounded px-2 py-1 bg-gray-100 text-gray-700 text-sm"
+                    />
+                    <span className="text-sm">%</span>
+                    <span className="font-semibold text-blue-900 min-w-[80px] text-right">
+                      ₹ {calculateSGST().toFixed(2)}
+                    </span>
+                  </div>
+                </div>
+                {/* TDS/TCS Section */}
+                <div className="flex flex-col gap-2">
+                  <span className="font-medium">TDS / TCS</span>
+                  <div className="flex gap-4 items-center">
+                    <label className="flex items-center gap-1">
+                      <input
+                        type="radio"
+                        name="tdsTcsType"
+                        value="TDS"
+                        checked={formData.tdsTcsType === 'TDS'}
+                        onChange={handleTdsTcsTypeChange}
+                      />
+                      TDS
+                    </label>
+                    <label className="flex items-center gap-1">
+                      <input
+                        type="radio"
+                        name="tdsTcsType"
+                        value="TCS"
+                        checked={formData.tdsTcsType === 'TCS'}
+                        onChange={handleTdsTcsTypeChange}
+                      />
+                      TCS
+                    </label>
+                  </div>
+                  {formData.tdsTcsType === 'TDS' && (
+                    <div className="flex flex-col gap-2">
+                      <select
+                        name="tdsOption"
+                        value={formData.tdsOption}
+                        onChange={handleTdsOptionChange}
+                        className="border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-blue-300 text-xs"
+                      >
+                        <option value="">Select TDS Type</option>
+                        {TDS_OPTIONS.map((opt, idx) => (
+                          <option key={idx} value={opt.label}>
+                            {opt.label}
+                          </option>
+                        ))}
+                      </select>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="number"
+                          name="tdsRate"
+                          value={formData.tdsRate}
+                          readOnly
+                          className="w-16 text-right border border-gray-300 rounded px-2 py-1 bg-gray-100 text-gray-700 text-sm"
+                          placeholder="Rate %"
+                        />
+                        <span className="text-gray-500 text-xs">%</span>
+                        <span className="font-semibold text-blue-900 min-w-[80px] text-right">
+                          ₹ {calculateTDS().toFixed(2)}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                  {formData.tdsTcsType === 'TCS' && (
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="number"
+                        name="tcsRate"
+                        value={formData.tcsRate}
+                        onChange={handleTcsRateChange}
+                        min="0"
+                        max="100"
+                        className="w-16 text-right border border-gray-300 rounded px-2 py-1 text-sm"
+                        placeholder="TCS %"
+                      />
+                      <span className="text-gray-500 text-xs">%</span>
+                      <span className="font-semibold text-blue-900 min-w-[80px] text-right">
+                        ₹ {calculateTCS().toFixed(2)}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
+            
+            {/* Total (always visible) */}
             <div className="flex justify-between font-bold text-lg border-t pt-4">
-              <span>Total </span>
+              <span>Total</span>
               <span className="text-blue-700">
                 ₹ {calculateTotal().toFixed(2)}
               </span>
             </div>
-            <button
-              type="button"
-              className="text-xs text-blue-500 underline mt-2"
-              onClick={() => setFormData({ ...formData, showSummary: !formData.showSummary })}
-            >
-              {formData.showSummary ? "Hide Total Summary^" : "Show Total Summary^"}
-            </button>
           </div>
         </div>
 

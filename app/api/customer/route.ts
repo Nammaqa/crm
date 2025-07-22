@@ -50,6 +50,14 @@ export async function POST(request: NextRequest) {
         billingPinCode: otherDetails.pinCode || '',
         billingPhone: otherDetails.phone || '',
         billingFax: otherDetails.faxNumber || '',
+        shippingAttention: otherDetails.shippingAttention || '',
+        shippingCountry: otherDetails.shippingCountry || '',
+        shippingAddress: otherDetails.shippingAddress || '',
+        shippingCity: otherDetails.shippingCity || '',
+        shippingState: otherDetails.shippingState || '',
+        shippingPinCode: otherDetails.shippingPinCode || '',
+        shippingPhone: otherDetails.shippingPhone || '',
+        // shippingFax: otherDetails.shippingFax || '',
         remarks: otherDetails.remarks || '',
         ContactPerson: {
           create: contactPersons.map((person: any) => ({
@@ -70,29 +78,66 @@ export async function POST(request: NextRequest) {
   }
 }
 
-
 export async function GET(request: NextRequest) {
   try {
     const customers = await prisma.customer.findMany({
       include: {
         ContactPerson: true,
-        // Add Invoice if you want to aggregate receivables etc.
+        Invoice: { include: { Item: true } },
       },
       orderBy: { id: 'desc' },
     });
-    // Optionally transform data for frontend
-    const data = customers.map((c) => ({
-      id: c.id,
-      name: c.primaryContact,
-      company: c.companyName,
-      email: c.emailAddress,
-      phone: c.phoneNumberWork,
-    }));
-    return NextResponse.json({ success: true, data });
+    // Return all fields needed by the frontend
+    return NextResponse.json({
+      success: true,
+      data: customers.map((c) => ({
+        id: c.id,
+        customerType: c.customerType,
+        primaryContact: c.primaryContact,
+        companyName: c.companyName,
+        company: c.companyName,
+        displayName: c.displayName,
+        currency: c.currency,
+        emailAddress: c.emailAddress,
+        email: c.emailAddress,
+        phoneNumberWork: c.phoneNumberWork,
+        phone: c.phoneNumberWork,
+        phoneNumberMobile: c.phoneNumberMobile,
+        pan: c.pan,
+        paymentTerms: c.paymentTerms,
+        documents: c.documents,
+        department: c.department,
+        designation: c.designation,
+        website: c.website,
+        billingAttention: c.billingAttention,
+        billingCountry: c.billingCountry,
+        billingAddress: c.billingAddress,
+        billingCity: c.billingCity,
+        billingState: c.billingState,
+        billingPinCode: c.billingPinCode,
+        billingPhone: c.billingPhone,
+        billingFax: c.billingFax,
+        shippingAttention: c.shippingAttention,
+        shippingCountry: c.shippingCountry,
+        shippingAddress: c.shippingAddress,
+        shippingCity: c.shippingCity,
+        shippingState: c.shippingState,
+        shippingPinCode: c.shippingPinCode,
+        shippingPhone: c.shippingPhone,
+        // shippingFax: c.shippingFax, // Removed because property does not exist
+        remarks: c.remarks,
+        createdAt: c.createdAt,
+        updatedAt: c.updatedAt,
+        ContactPerson: c.ContactPerson,
+        Invoice: c.Invoice,
+      })),
+    });
   } catch (error: any) {
     return NextResponse.json({ success: false, error: error.message || 'Failed to fetch customers' }, { status: 500 });
   }
 }
+
+// ...PUT and DELETE unchanged...
 
 export async function PUT(request: NextRequest) {
   try {

@@ -1,6 +1,6 @@
 "use client"
 import React, { useState, useRef, useEffect } from "react";
-import { FaPlus, FaTrash, FaEdit, FaCheck, FaTimes, FaSearch, FaChevronDown } from "react-icons/fa";
+import { FaPlus, FaTrash, FaEdit, FaCheck, FaTimes, FaSearch, FaChevronDown, FaCopy } from "react-icons/fa";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 
@@ -63,7 +63,6 @@ const paymentTermsOptions = [
   { value: "DUE_END_OF_NEXT_MONTH", label: "Due end of next month" },
 ];
 
-// Place of Supply Options
 const placeOfSupplyOptions = [
   { value: "", label: "Select Place of Supply" },
   { value: "AP", label: "[AP] - Andhra Pradesh" },
@@ -96,7 +95,6 @@ const placeOfSupplyOptions = [
   { value: "WB", label: "[WB] - West Bengal" },
 ];
 
-// GST Treatment Options with Descriptions (formatted as requested)
 const gstTreatmentOptions = [
   {
     value: "REGISTERED_REGULAR",
@@ -145,20 +143,18 @@ const gstTreatmentOptions = [
   },
 ];
 
-// --- SearchableDropdown for Place of Supply ---
+// SearchableDropdown component
 function SearchableDropdown({ options, value, onChange, placeholder, name }) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
   const ref = useRef(null);
 
-  // Filter options based on search
   const filtered = options.filter(
     (opt) =>
       opt.label.toLowerCase().includes(search.toLowerCase()) ||
       opt.value.toLowerCase().includes(search.toLowerCase())
   );
 
-  // Close dropdown on outside click
   useEffect(() => {
     function handleClick(e) {
       if (ref.current && !ref.current.contains(e.target)) setOpen(false);
@@ -167,7 +163,6 @@ function SearchableDropdown({ options, value, onChange, placeholder, name }) {
     return () => document.removeEventListener("mousedown", handleClick);
   }, [open]);
 
-  // Find selected label
   const selected = options.find((opt) => opt.value === value);
 
   return (
@@ -224,7 +219,7 @@ function SearchableDropdown({ options, value, onChange, placeholder, name }) {
   );
 }
 
-// Validation functions (unchanged)
+// Validation functions
 function validateAddressFields(address) {
   const errors = {};
   if (!address.attention || address.attention.trim() === "") errors.attention = "Attention is required";
@@ -257,7 +252,7 @@ function validateContactPerson(person) {
   return errors;
 }
 
-// GST Modal Component (unchanged)
+// GST Modal Component
 function GSTModal({ open, onClose, gstDetails, onPrefill }) {
   if (!open) return null;
   return (
@@ -303,15 +298,13 @@ function GSTModal({ open, onClose, gstDetails, onPrefill }) {
   );
 }
 
-// CustomerForm (unchanged except for bugfix in handleCustomerChange)
+// CustomerForm component
 function CustomerForm({ customer, setCustomer, customerErrors, setCustomerErrors, gstNumber, setGstNumber, onGstCheck }) {
-  // Compute display name options from Primary Contact and Company
   const displayNameOptions = [
     customer.primaryName?.trim() ? customer.primaryName : null,
     customer.company?.trim() ? customer.company : null,
   ].filter(Boolean);
 
-  // If displayName is not in options, add it (for backward compatibility)
   if (
     customer.displayName &&
     !displayNameOptions.includes(customer.displayName)
@@ -351,11 +344,9 @@ function CustomerForm({ customer, setCustomer, customerErrors, setCustomerErrors
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-lg px-8 py-8 mb-8">
-      <div className="mb-6">
-        <h2 className="text-2xl font-bold text-gray-800 mb-2">New Customer</h2>
-      </div>
-      {/* GST Field at the top */}
+    <>
+      <h2 className="text-2xl font-bold text-gray-800 mb-6">New Customer</h2>
+      
       <div className="mb-6 flex items-end gap-2">
         <div className="flex-1">
           <label className="block text-sm font-medium text-gray-700 mb-1">GST Number</label>
@@ -378,7 +369,8 @@ function CustomerForm({ customer, setCustomer, customerErrors, setCustomerErrors
           <FaSearch /> Check
         </button>
       </div>
-      <form className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      
+      <form className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
         <div className="md:col-span-2">
           <label className="block text-sm font-medium text-gray-700 mb-1">Primary Contact</label>
           <div className="flex gap-2">
@@ -473,11 +465,11 @@ function CustomerForm({ customer, setCustomer, customerErrors, setCustomerErrors
           )}
         </div>
       </form>
-    </div>
+    </>
   );
 }
 
-// InvoiceOtherDetails with new GST fields and dropdowns
+// InvoiceOtherDetails component
 function InvoiceOtherDetails({
   otherDetails = {},
   setOtherDetails,
@@ -485,16 +477,12 @@ function InvoiceOtherDetails({
   setAddressErrors,
   contactPersons,
   setContactPersons,
-  documentInputRef,
 }) {
   const [activeTab, setActiveTab] = useState("otherDetails");
-
-  // --- Pagination State ---
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 5;
   const totalPages = Math.ceil(contactPersons.length / itemsPerPage);
 
-  // --- Contact Person Form State ---
   const [newContact, setNewContact] = useState({
     salutation: "",
     firstName: "",
@@ -521,6 +509,7 @@ function InvoiceOtherDetails({
         ...prev,
         [name]: value,
       }));
+      
       if (
         [
           "attention",
@@ -541,8 +530,18 @@ function InvoiceOtherDetails({
     }
   };
 
-  const handleAddressBlur = () => {
-    setAddressErrors(validateAddressFields(otherDetails));
+  const copyBillingToShipping = () => {
+    setOtherDetails((prev) => ({
+      ...prev,
+      shippingAttention: prev.attention || "",
+      shippingCountry: prev.country || "",
+      shippingAddress: prev.address || "",
+      shippingCity: prev.city || "",
+      shippingState: prev.state || "",
+      shippingPinCode: prev.pinCode || "",
+      shippingPhone: prev.phone || "",
+      shippingFax: prev.faxNumber || "",
+    }));
   };
 
   const handleNewContactChange = (e) => {
@@ -570,7 +569,6 @@ function InvoiceOtherDetails({
       setEditIndex(null);
     } else {
       setContactPersons((prev) => [...prev, newContact]);
-      // If new page is needed after adding, go to last page
       if ((contactPersons.length + 1) > itemsPerPage * totalPages) {
         setCurrentPage(totalPages + 1);
       }
@@ -602,7 +600,6 @@ function InvoiceOtherDetails({
       });
       setNewContactErrors({});
     }
-    // If last item on page removed, go to previous page if needed
     if ((contactPersons.length - 1) <= itemsPerPage * (currentPage - 1) && currentPage > 1) {
       setCurrentPage(currentPage - 1);
     }
@@ -628,23 +625,19 @@ function InvoiceOtherDetails({
     setNewContactErrors({});
   };
 
-  // --- Pagination Handlers ---
   const handlePageChange = (page) => {
     if (page < 1 || page > totalPages) return;
     setCurrentPage(page);
   };
 
-  // --- Paginated Data ---
   const paginatedContactPersons = contactPersons.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   );
 
-  // Custom GST Treatment dropdown with label bold and description italic
   function GSTTreatmentDropdown({ value, onChange }) {
     const [open, setOpen] = useState(false);
     const ref = useRef(null);
-
     const selected = gstTreatmentOptions.find((opt) => opt.value === value);
 
     useEffect(() => {
@@ -704,10 +697,9 @@ function InvoiceOtherDetails({
   }
 
   return (
-    <div className="bg-white rounded-xl shadow-lg px-8 py-8 mb-8">
-      <div className="mb-6">
-        <h2 className="text-2xl font-bold text-gray-800 mb-2">Other Information</h2>
-      </div>
+    <>
+      <h2 className="text-2xl font-bold text-gray-800 mb-6">Other Information</h2>
+      
       <div className="flex border-b mb-6">
         {TABS.map((tab) => (
           <button
@@ -723,467 +715,571 @@ function InvoiceOtherDetails({
           </button>
         ))}
       </div>
-      <div className="mt-4">
-        {activeTab === "otherDetails" && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* GST Treatment */}
+      
+      {activeTab === "otherDetails" && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              GST Treatment
+            </label>
+            <GSTTreatmentDropdown
+              value={otherDetails.gstTreatment || ""}
+              onChange={handleChange}
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              GSTIN/UIN
+            </label>
+            <Input
+              name="gstinUin"
+              value={otherDetails.gstinUin || ""}
+              onChange={handleChange}
+              placeholder="Enter GSTIN/UIN"
+              className="p-2 border rounded w-full"
+              maxLength={15}
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Business Legal Name
+            </label>
+            <Input
+              name="businessLegalName"
+              value={otherDetails.businessLegalName || ""}
+              onChange={handleChange}
+              placeholder="Enter Business Legal Name"
+              className="p-2 border rounded w-full"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Business Trade Name
+            </label>
+            <Input
+              name="businessTradeName"
+              value={otherDetails.businessTradeName || ""}
+              onChange={handleChange}
+              placeholder="Enter Business Trade Name"
+              className="p-2 border rounded w-full"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Place of Supply
+            </label>
+            <SearchableDropdown
+              options={placeOfSupplyOptions}
+              value={otherDetails.placeOfSupply || ""}
+              onChange={handleChange}
+              placeholder="Select Place of Supply"
+              name="placeOfSupply"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Payment Terms
+            </label>
+            <select
+              name="paymentTerms"
+              value={otherDetails.paymentTerms || "NET_30"}
+              onChange={handleChange}
+              className="p-2 border rounded w-full"
+            >
+              {paymentTermsOptions.map((opt) => (
+                <option key={opt.value} value={opt.value}>{opt.label}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">PAN Number</label>
+            <Input
+              name="panNumber"
+              value={otherDetails.panNumber || ""}
+              onChange={handleChange}
+              placeholder="Enter PAN Number"
+              className="p-2 border rounded w-full"
+            />
+          </div>
+        </div>
+      )}
+
+      {activeTab === "contactPersons" && (
+        <div className="mb-8">
+          <form
+            className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end mb-4 bg-gray-50 p-4 rounded"
+            onSubmit={handleAddOrEditContactPerson}
+          >
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                GST Treatment
-              </label>
-              <GSTTreatmentDropdown
-                value={otherDetails.gstTreatment || ""}
-                onChange={handleChange}
-              />
-            </div>
-            {/* GSTIN/UIN */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                GSTIN/UIN
-              </label>
-              <Input
-                name="gstinUin"
-                value={otherDetails.gstinUin || ""}
-                onChange={handleChange}
-                placeholder="Enter GSTIN/UIN"
-                className="p-2 border rounded w-full"
-                maxLength={15}
-              />
-            </div>
-            {/* Business Legal Name */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Business Legal Name
-              </label>
-              <Input
-                name="businessLegalName"
-                value={otherDetails.businessLegalName || ""}
-                onChange={handleChange}
-                placeholder="Enter Business Legal Name"
-                className="p-2 border rounded w-full"
-              />
-            </div>
-            {/* Business Trade Name */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Business Trade Name
-              </label>
-              <Input
-                name="businessTradeName"
-                value={otherDetails.businessTradeName || ""}
-                onChange={handleChange}
-                placeholder="Enter Business Trade Name"
-                className="p-2 border rounded w-full"
-              />
-            </div>
-            {/* Place of Supply (searchable) */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Place of Supply
-              </label>
-              <SearchableDropdown
-                options={placeOfSupplyOptions}
-                value={otherDetails.placeOfSupply || ""}
-                onChange={handleChange}
-                placeholder="Select Place of Supply"
-                name="placeOfSupply"
-              />
-            </div>
-            {/* Payment Terms */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Payment Terms
-              </label>
+              <label className="block text-xs font-medium text-gray-700 mb-1">Salutation</label>
               <select
-                name="paymentTerms"
-                value={otherDetails.paymentTerms || "NET_30"}
-                onChange={handleChange}
-                className="p-2 border rounded w-full"
+                name="salutation"
+                value={newContact.salutation}
+                onChange={handleNewContactChange}
+                className={`p-2 border rounded w-full ${newContactErrors.salutation ? "border-red-500" : ""}`}
               >
-                {paymentTermsOptions.map((opt) => (
+                {salutationOptions.map((opt) => (
                   <option key={opt.value} value={opt.value}>{opt.label}</option>
                 ))}
               </select>
+              {newContactErrors.salutation && (
+                <div className="text-xs text-red-600">{newContactErrors.salutation}</div>
+              )}
             </div>
-            {/* PAN Number */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">PAN Number</label>
+              <label className="block text-xs font-medium text-gray-700 mb-1">First Name</label>
               <Input
-                name="panNumber"
-                value={otherDetails.panNumber || ""}
-                onChange={handleChange}
-                placeholder="Enter PAN Number"
+                name="firstName"
+                value={newContact.firstName}
+                onChange={handleNewContactChange}
+                placeholder="First Name"
+                className={`p-2 border rounded w-full ${newContactErrors.firstName ? "border-red-500" : ""}`}
+              />
+              {newContactErrors.firstName && (
+                <div className="text-xs text-red-600">{newContactErrors.firstName}</div>
+              )}
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">Last Name</label>
+              <Input
+                name="lastName"
+                value={newContact.lastName}
+                onChange={handleNewContactChange}
+                placeholder="Last Name"
+                className={`p-2 border rounded w-full ${newContactErrors.lastName ? "border-red-500" : ""}`}
+              />
+              {newContactErrors.lastName && (
+                <div className="text-xs text-red-600">{newContactErrors.lastName}</div>
+              )}
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">Email</label>
+              <Input
+                name="email"
+                value={newContact.email}
+                onChange={handleNewContactChange}
+                placeholder="Email"
+                className={`p-2 border rounded w-full ${newContactErrors.email ? "border-red-500" : ""}`}
+                type="email"
+              />
+              {newContactErrors.email && (
+                <div className="text-xs text-red-600">{newContactErrors.email}</div>
+              )}
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">Address</label>
+              <Input
+                name="address"
+                value={newContact.address}
+                onChange={handleNewContactChange}
+                placeholder="Address"
                 className="p-2 border rounded w-full"
               />
             </div>
-          </div>
-        )}
-        {/* ...rest of the tabs (contactPersons, address, remarks) remain unchanged */}
-        {/* ... */}
-        {activeTab === "contactPersons" && (
-          <div>
-            {/* Contact person form and table */}
-            <form
-              className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end mb-4 bg-gray-50 p-4 rounded"
-              onSubmit={handleAddOrEditContactPerson}
-            >
-              <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">Salutation</label>
-                <select
-                  name="salutation"
-                  value={newContact.salutation}
-                  onChange={handleNewContactChange}
-                  className={`p-2 border rounded w-full ${newContactErrors.salutation ? "border-red-500" : ""}`}
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">Work Phone</label>
+              <Input
+                name="workPhone"
+                value={newContact.workPhone}
+                onChange={handleNewContactChange}
+                placeholder="Work Phone"
+                className={`p-2 border rounded w-full ${newContactErrors.workPhone ? "border-red-500" : ""}`}
+                type="tel"
+                maxLength={10}
+              />
+              {newContactErrors.workPhone && (
+                <div className="text-xs text-red-600">{newContactErrors.workPhone}</div>
+              )}
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">Mobile</label>
+              <Input
+                name="mobile"
+                value={newContact.mobile}
+                onChange={handleNewContactChange}
+                placeholder="Mobile"
+                className={`p-2 border rounded w-full ${newContactErrors.mobile ? "border-red-500" : ""}`}
+                type="tel"
+                maxLength={10}
+              />
+              {newContactErrors.mobile && (
+                <div className="text-xs text-red-600">{newContactErrors.mobile}</div>
+              )}
+            </div>
+            <div className="md:col-span-2 flex gap-2 justify-end mt-2">
+              <button
+                type="submit"
+                className={`flex items-center gap-2 px-4 py-2 rounded text-white transition ${
+                  editIndex !== null
+                    ? "bg-yellow-600 hover:bg-yellow-700"
+                    : "bg-blue-600 hover:bg-blue-700"
+                }`}
+              >
+                {editIndex !== null ? <FaCheck /> : <FaPlus />}
+                {editIndex !== null ? "Update" : "Add"}
+              </button>
+              {editIndex !== null && (
+                <button
+                  type="button"
+                  className="flex items-center gap-2 px-4 py-2 rounded bg-gray-400 hover:bg-gray-500 text-white"
+                  onClick={handleCancelEdit}
                 >
-                  {salutationOptions.map((opt) => (
+                  <FaTimes /> Cancel
+                </button>
+              )}
+            </div>
+          </form>
+          
+          <div className="overflow-x-auto">
+            <table className="min-w-full table-auto border">
+              <thead>
+                <tr className="bg-gray-100">
+                  <th className="px-3 py-2 border text-left font-semibold">Salutation</th>
+                  <th className="px-3 py-2 border text-left font-semibold">First Name</th>
+                  <th className="px-3 py-2 border text-left font-semibold">Last Name</th>
+                  <th className="px-3 py-2 border text-left font-semibold">Email</th>
+                  <th className="px-3 py-2 border text-left font-semibold">Address</th>
+                  <th className="px-3 py-2 border text-left font-semibold">Work Phone</th>
+                  <th className="px-3 py-2 border text-left font-semibold">Mobile</th>
+                  <th className="px-3 py-2 border text-center font-semibold">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {contactPersons.length === 0 ? (
+                  <tr>
+                    <td colSpan={8} className="text-center py-4 text-gray-500">
+                      No contact persons added.
+                    </td>
+                  </tr>
+                ) : (
+                  paginatedContactPersons.map((person, idx) => {
+                    const actualIdx = (currentPage - 1) * itemsPerPage + idx;
+                    return (
+                      <tr key={actualIdx} className="hover:bg-gray-50">
+                        <td className="px-3 py-2 border">{person.salutation}</td>
+                        <td className="px-3 py-2 border">{person.firstName}</td>
+                        <td className="px-3 py-2 border">{person.lastName}</td>
+                        <td className="px-3 py-2 border">{person.email}</td>
+                        <td className="px-3 py-2 border">{person.address}</td>
+                        <td className="px-3 py-2 border">{person.workPhone}</td>
+                        <td className="px-3 py-2 border">{person.mobile}</td>
+                        <td className="px-3 py-2 border text-center flex gap-2 justify-center">
+                          <button
+                            className="text-yellow-600 hover:text-yellow-800"
+                            onClick={() => handleEditContactPerson(actualIdx)}
+                            title="Edit"
+                            type="button"
+                          >
+                            <FaEdit />
+                          </button>
+                          <button
+                            className="text-red-500 hover:text-red-700"
+                            onClick={() => handleRemoveContactPerson(actualIdx)}
+                            title="Remove"
+                            type="button"
+                          >
+                            <FaTrash />
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+            {contactPersons.length > itemsPerPage && (
+              <div className="flex justify-center items-center gap-2 mt-4">
+                <button
+                  className="px-2 py-1 rounded bg-gray-200 hover:bg-gray-300"
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  disabled={currentPage === 1}
+                >
+                  &lt;
+                </button>
+                {Array.from({ length: totalPages }, (_, i) => (
+                  <button
+                    key={i + 1}
+                    className={`px-3 py-1 rounded ${currentPage === i + 1 ? "bg-blue-500 text-white" : "bg-gray-200 hover:bg-gray-300"}`}
+                    onClick={() => handlePageChange(i + 1)}
+                  >
+                    {i + 1}
+                  </button>
+                ))}
+                <button
+                  className="px-2 py-1 rounded bg-gray-200 hover:bg-gray-300"
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                >
+                  &gt;
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {activeTab === "address" && (
+        <div className="space-y-8 mb-8">
+          <div className="border rounded-lg p-6 bg-gray-50">
+            <h3 className="text-lg font-semibold text-gray-800 mb-4">Billing Address</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Attention<span className="text-red-500">*</span>
+                </label>
+                <Input
+                  name="attention"
+                  value={otherDetails.attention || ""}
+                  onChange={handleChange}
+                  placeholder="Enter Attention"
+                  className={`p-2 border rounded w-full ${addressErrors.attention ? "border-red-500" : ""}`}
+                />
+                {addressErrors.attention && (
+                  <div className="text-xs text-red-600 mt-1">{addressErrors.attention}</div>
+                )}
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Country/Region<span className="text-red-500">*</span>
+                </label>
+                <select
+                  name="country"
+                  value={otherDetails.country || ""}
+                  onChange={handleChange}
+                  className={`p-2 border rounded w-full ${addressErrors.country ? "border-red-500" : ""}`}
+                >
+                  {countryOptions.map((opt) => (
                     <option key={opt.value} value={opt.value}>{opt.label}</option>
                   ))}
                 </select>
-                {newContactErrors.salutation && (
-                  <div className="text-xs text-red-600">{newContactErrors.salutation}</div>
+                {addressErrors.country && (
+                  <div className="text-xs text-red-600 mt-1">{addressErrors.country}</div>
                 )}
               </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">First Name</label>
-                <Input
-                  name="firstName"
-                  value={newContact.firstName}
-                  onChange={handleNewContactChange}
-                  placeholder="First Name"
-                  className={`p-2 border rounded w-full ${newContactErrors.firstName ? "border-red-500" : ""}`}
-                />
-                {newContactErrors.firstName && (
-                  <div className="text-xs text-red-600">{newContactErrors.firstName}</div>
-                )}
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">Last Name</label>
-                <Input
-                  name="lastName"
-                  value={newContact.lastName}
-                  onChange={handleNewContactChange}
-                  placeholder="Last Name"
-                  className={`p-2 border rounded w-full ${newContactErrors.lastName ? "border-red-500" : ""}`}
-                />
-                {newContactErrors.lastName && (
-                  <div className="text-xs text-red-600">{newContactErrors.lastName}</div>
-                )}
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">Email</label>
-                <Input
-                  name="email"
-                  value={newContact.email}
-                  onChange={handleNewContactChange}
-                  placeholder="Email"
-                  className={`p-2 border rounded w-full ${newContactErrors.email ? "border-red-500" : ""}`}
-                  type="email"
-                />
-                {newContactErrors.email && (
-                  <div className="text-xs text-red-600">{newContactErrors.email}</div>
-                )}
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">Address</label>
-                <Input
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Address<span className="text-red-500">*</span>
+                </label>
+                <Textarea
                   name="address"
-                  value={newContact.address}
-                  onChange={handleNewContactChange}
-                  placeholder="Address"
+                  value={otherDetails.address || ""}
+                  onChange={handleChange}
+                  placeholder="Enter Address"
+                  className={`p-2 border rounded w-full ${addressErrors.address ? "border-red-500" : ""}`}
+                />
+                {addressErrors.address && (
+                  <div className="text-xs text-red-600 mt-1">{addressErrors.address}</div>
+                )}
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  City<span className="text-red-500">*</span>
+                </label>
+                <Input
+                  name="city"
+                  value={otherDetails.city || ""}
+                  onChange={handleChange}
+                  placeholder="Enter City"
+                  className={`p-2 border rounded w-full ${addressErrors.city ? "border-red-500" : ""}`}
+                />
+                {addressErrors.city && (
+                  <div className="text-xs text-red-600 mt-1">{addressErrors.city}</div>
+                )}
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  State<span className="text-red-500">*</span>
+                </label>
+                <select
+                  name="state"
+                  value={otherDetails.state || ""}
+                  onChange={handleChange}
+                  className={`p-2 border rounded w-full ${addressErrors.state ? "border-red-500" : ""}`}
+                >
+                  {stateOptions.map((opt) => (
+                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                  ))}
+                </select>
+                {addressErrors.state && (
+                  <div className="text-xs text-red-600 mt-1">{addressErrors.state}</div>
+                )}
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Pin Code<span className="text-red-500">*</span>
+                </label>
+                <Input
+                  name="pinCode"
+                  value={otherDetails.pinCode || ""}
+                  onChange={handleChange}
+                  placeholder="Enter 6 digit Pin Code"
+                  className={`p-2 border rounded w-full ${addressErrors.pinCode ? "border-red-500" : ""}`}
+                  maxLength={6}
+                  pattern="\d{6}"
+                />
+                {addressErrors.pinCode && (
+                  <div className="text-xs text-red-600 mt-1">{addressErrors.pinCode}</div>
+                )}
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Phone<span className="text-red-500">*</span>
+                </label>
+                <Input
+                  name="phone"
+                  value={otherDetails.phone || ""}
+                  onChange={handleChange}
+                  placeholder="10 digit phone number"
+                  className={`p-2 border rounded w-full ${addressErrors.phone ? "border-red-500" : ""}`}
+                  maxLength={10}
+                  pattern="[6-9][0-9]{9}"
+                />
+                {addressErrors.phone && (
+                  <div className="text-xs text-red-600 mt-1">{addressErrors.phone}</div>
+                )}
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Fax Number</label>
+                <Input
+                  name="faxNumber"
+                  value={otherDetails.faxNumber || ""}
+                  onChange={handleChange}
+                  placeholder="Fax Number (6-15 digits)"
+                  className={`p-2 border rounded w-full ${addressErrors.faxNumber ? "border-red-500" : ""}`}
+                  maxLength={15}
+                  pattern="\d{6,15}"
+                />
+                {addressErrors.faxNumber && (
+                  <div className="text-xs text-red-600 mt-1">{addressErrors.faxNumber}</div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <div className="border rounded-lg p-6 bg-blue-50">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-800">Shipping Address <span className="text-sm text-gray-500">(Optional)</span></h3>
+              <button
+                type="button"
+                onClick={copyBillingToShipping}
+                className="flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                title="Copy from Billing Address"
+              >
+                <FaCopy size={14} />
+                Copy from Billing
+              </button>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Attention</label>
+                <Input
+                  name="shippingAttention"
+                  value={otherDetails.shippingAttention || ""}
+                  onChange={handleChange}
+                  placeholder="Enter Attention"
                   className="p-2 border rounded w-full"
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">Work Phone</label>
-                <Input
-                  name="workPhone"
-                  value={newContact.workPhone}
-                  onChange={handleNewContactChange}
-                  placeholder="Work Phone"
-                  className={`p-2 border rounded w-full ${newContactErrors.workPhone ? "border-red-500" : ""}`}
-                  type="tel"
-                  maxLength={10}
+                <label className="block text-sm font-medium text-gray-700 mb-1">Country/Region</label>
+                <select
+                  name="shippingCountry"
+                  value={otherDetails.shippingCountry || ""}
+                  onChange={handleChange}
+                  className="p-2 border rounded w-full"
+                >
+                  {countryOptions.map((opt) => (
+                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Address</label>
+                <Textarea
+                  name="shippingAddress"
+                  value={otherDetails.shippingAddress || ""}
+                  onChange={handleChange}
+                  placeholder="Enter Shipping Address"
+                  className="p-2 border rounded w-full"
                 />
-                {newContactErrors.workPhone && (
-                  <div className="text-xs text-red-600">{newContactErrors.workPhone}</div>
-                )}
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">Mobile</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">City</label>
                 <Input
-                  name="mobile"
-                  value={newContact.mobile}
-                  onChange={handleNewContactChange}
-                  placeholder="Mobile"
-                  className={`p-2 border rounded w-full ${newContactErrors.mobile ? "border-red-500" : ""}`}
-                  type="tel"
-                  maxLength={10}
+                  name="shippingCity"
+                  value={otherDetails.shippingCity || ""}
+                  onChange={handleChange}
+                  placeholder="Enter City"
+                  className="p-2 border rounded w-full"
                 />
-                {newContactErrors.mobile && (
-                  <div className="text-xs text-red-600">{newContactErrors.mobile}</div>
-                )}
               </div>
-              <div className="md:col-span-2 flex gap-2 justify-end mt-2">
-                <button
-                  type="submit"
-                  className={`flex items-center gap-2 px-4 py-2 rounded text-white transition ${
-                    editIndex !== null
-                      ? "bg-yellow-600 hover:bg-yellow-700"
-                      : "bg-blue-600 hover:bg-blue-700"
-                  }`}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">State</label>
+                <select
+                  name="shippingState"
+                  value={otherDetails.shippingState || ""}
+                  onChange={handleChange}
+                  className="p-2 border rounded w-full"
                 >
-                  {editIndex !== null ? <FaCheck /> : <FaPlus />}
-                  {editIndex !== null ? "Update" : "Add"}
-                </button>
-                {editIndex !== null && (
-                  <button
-                    type="button"
-                    className="flex items-center gap-2 px-4 py-2 rounded bg-gray-400 hover:bg-gray-500 text-white"
-                    onClick={handleCancelEdit}
-                  >
-                    <FaTimes /> Cancel
-                  </button>
-                )}
-              </div>
-            </form>
-            <div className="overflow-x-auto">
-              <table className="min-w-full table-auto border">
-                <thead>
-                  <tr className="bg-gray-100">
-                    <th className="px-3 py-2 border text-left font-semibold">Salutation</th>
-                    <th className="px-3 py-2 border text-left font-semibold">First Name</th>
-                    <th className="px-3 py-2 border text-left font-semibold">Last Name</th>
-                    <th className="px-3 py-2 border text-left font-semibold">Email</th>
-                    <th className="px-3 py-2 border text-left font-semibold">Address</th>
-                    <th className="px-3 py-2 border text-left font-semibold">Work Phone</th>
-                    <th className="px-3 py-2 border text-left font-semibold">Mobile</th>
-                    <th className="px-3 py-2 border text-center font-semibold">Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {contactPersons.length === 0 ? (
-                    <tr>
-                      <td colSpan={8} className="text-center py-4 text-gray-500">
-                        No contact persons added.
-                      </td>
-                    </tr>
-                  ) : (
-                    paginatedContactPersons.map((person, idx) => {
-                      const actualIdx = (currentPage - 1) * itemsPerPage + idx;
-                      return (
-                        <tr key={actualIdx} className="hover:bg-gray-50">
-                          <td className="px-3 py-2 border">{person.salutation}</td>
-                          <td className="px-3 py-2 border">{person.firstName}</td>
-                          <td className="px-3 py-2 border">{person.lastName}</td>
-                          <td className="px-3 py-2 border">{person.email}</td>
-                          <td className="px-3 py-2 border">{person.address}</td>
-                          <td className="px-3 py-2 border">{person.workPhone}</td>
-                          <td className="px-3 py-2 border">{person.mobile}</td>
-                          <td className="px-3 py-2 border text-center flex gap-2 justify-center">
-                            <button
-                              className="text-yellow-600 hover:text-yellow-800"
-                              onClick={() => handleEditContactPerson(actualIdx)}
-                              title="Edit"
-                              type="button"
-                            >
-                              <FaEdit />
-                            </button>
-                            <button
-                              className="text-red-500 hover:text-red-700"
-                              onClick={() => handleRemoveContactPerson(actualIdx)}
-                              title="Remove"
-                              type="button"
-                            >
-                              <FaTrash />
-                            </button>
-                          </td>
-                        </tr>
-                      );
-                    })
-                  )}
-                </tbody>
-              </table>
-              {/* --- Page Slider --- */}
-              {contactPersons.length > itemsPerPage && (
-                <div className="flex justify-center items-center gap-2 mt-4">
-                  <button
-                    className="px-2 py-1 rounded bg-gray-200 hover:bg-gray-300"
-                    onClick={() => handlePageChange(currentPage - 1)}
-                    disabled={currentPage === 1}
-                  >
-                    &lt;
-                  </button>
-                  {Array.from({ length: totalPages }, (_, i) => (
-                    <button
-                      key={i + 1}
-                      className={`px-3 py-1 rounded ${currentPage === i + 1 ? "bg-blue-500 text-white" : "bg-gray-200 hover:bg-gray-300"}`}
-                      onClick={() => handlePageChange(i + 1)}
-                    >
-                      {i + 1}
-                    </button>
+                  {stateOptions.map((opt) => (
+                    <option key={opt.value} value={opt.value}>{opt.label}</option>
                   ))}
-                  <button
-                    className="px-2 py-1 rounded bg-gray-200 hover:bg-gray-300"
-                    onClick={() => handlePageChange(currentPage + 1)}
-                    disabled={currentPage === totalPages}
-                  >
-                    &gt;
-                  </button>
-                </div>
-              )}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Pin Code</label>
+                <Input
+                  name="shippingPinCode"
+                  value={otherDetails.shippingPinCode || ""}
+                  onChange={handleChange}
+                  placeholder="Enter 6 digit Pin Code"
+                  className="p-2 border rounded w-full"
+                  maxLength={6}
+                  pattern="\d{6}"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+                <Input
+                  name="shippingPhone"
+                  value={otherDetails.shippingPhone || ""}
+                  onChange={handleChange}
+                  placeholder="10 digit phone number"
+                  className="p-2 border rounded w-full"
+                  maxLength={10}
+                  pattern="[6-9][0-9]{9}"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Fax Number</label>
+                <Input
+                  name="shippingFax"
+                  value={otherDetails.shippingFax || ""}
+                  onChange={handleChange}
+                  placeholder="Fax Number (6-15 digits)"
+                  className="p-2 border rounded w-full"
+                  maxLength={15}
+                  pattern="\d{6,15}"
+                />
+              </div>
             </div>
           </div>
-        )}
+        </div>
+      )}
 
-        {activeTab === "address" && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6" onBlur={handleAddressBlur}>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Attention<span className="text-red-500">*</span>
-              </label>
-              <Input
-                name="attention"
-                value={otherDetails.attention || ""}
-                onChange={handleChange}
-                placeholder="Enter Attention"
-                className={`p-2 border rounded w-full ${addressErrors.attention ? "border-red-500" : ""}`}
-              />
-              {addressErrors.attention && (
-                <div className="text-xs text-red-600 mt-1">{addressErrors.attention}</div>
-              )}
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Country/Region<span className="text-red-500">*</span>
-              </label>
-              <select
-                name="country"
-                value={otherDetails.country || ""}
-                onChange={handleChange}
-                className={`p-2 border rounded w-full ${addressErrors.country ? "border-red-500" : ""}`}
-              >
-                {countryOptions.map((opt) => (
-                  <option key={opt.value} value={opt.value}>{opt.label}</option>
-                ))}
-              </select>
-              {addressErrors.country && (
-                <div className="text-xs text-red-600 mt-1">{addressErrors.country}</div>
-              )}
-            </div>
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Address<span className="text-red-500">*</span>
-              </label>
-              <Textarea
-                name="address"
-                value={otherDetails.address || ""}
-                onChange={handleChange}
-                placeholder="Enter Address"
-                className={`p-2 border rounded w-full ${addressErrors.address ? "border-red-500" : ""}`}
-              />
-              {addressErrors.address && (
-                <div className="text-xs text-red-600 mt-1">{addressErrors.address}</div>
-              )}
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                City<span className="text-red-500">*</span>
-              </label>
-              <Input
-                name="city"
-                value={otherDetails.city || ""}
-                onChange={handleChange}
-                placeholder="Enter City"
-                className={`p-2 border rounded w-full ${addressErrors.city ? "border-red-500" : ""}`}
-              />
-              {addressErrors.city && (
-                <div className="text-xs text-red-600 mt-1">{addressErrors.city}</div>
-              )}
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                State<span className="text-red-500">*</span>
-              </label>
-              <select
-                name="state"
-                value={otherDetails.state || ""}
-                onChange={handleChange}
-                className={`p-2 border rounded w-full ${addressErrors.state ? "border-red-500" : ""}`}
-              >
-                {stateOptions.map((opt) => (
-                  <option key={opt.value} value={opt.value}>{opt.label}</option>
-                ))}
-              </select>
-              {addressErrors.state && (
-                <div className="text-xs text-red-600 mt-1">{addressErrors.state}</div>
-              )}
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Pin Code<span className="text-red-500">*</span>
-              </label>
-              <Input
-                name="pinCode"
-                value={otherDetails.pinCode || ""}
-                onChange={handleChange}
-                placeholder="Enter 6 digit Pin Code"
-                className={`p-2 border rounded w-full ${addressErrors.pinCode ? "border-red-500" : ""}`}
-                maxLength={6}
-                pattern="\d{6}"
-              />
-              {addressErrors.pinCode && (
-                <div className="text-xs text-red-600 mt-1">{addressErrors.pinCode}</div>
-              )}
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Phone<span className="text-red-500">*</span>
-              </label>
-              <Input
-                name="phone"
-                value={otherDetails.phone || ""}
-                onChange={handleChange}
-                placeholder="10 digit phone number"
-                className={`p-2 border rounded w-full ${addressErrors.phone ? "border-red-500" : ""}`}
-                maxLength={10}
-                pattern="[6-9][0-9]{9}"
-              />
-              {addressErrors.phone && (
-                <div className="text-xs text-red-600 mt-1">{addressErrors.phone}</div>
-              )}
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Fax Number</label>
-              <Input
-                name="faxNumber"
-                value={otherDetails.faxNumber || ""}
-                onChange={handleChange}
-                placeholder="Fax Number (6-15 digits)"
-                className={`p-2 border rounded w-full ${addressErrors.faxNumber ? "border-red-500" : ""}`}
-                maxLength={15}
-                pattern="\d{6,15}"
-              />
-              {addressErrors.faxNumber && (
-                <div className="text-xs text-red-600 mt-1">{addressErrors.faxNumber}</div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {activeTab === "remarks" && (
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Remarks</label>
-            <Textarea
-              name="remarks"
-              value={otherDetails.remarks || ""}
-              onChange={handleChange}
-              placeholder="Enter any remarks"
-              className="p-2 border rounded w-full"
-            />
-          </div>
-        )}
-      </div>
-    </div>
+      {activeTab === "remarks" && (
+        <div className="mb-8">
+          <label className="block text-sm font-medium text-gray-700 mb-1">Remarks</label>
+          <Textarea
+            name="remarks"
+            value={otherDetails.remarks || ""}
+            onChange={handleChange}
+            placeholder="Enter any remarks"
+            className="p-2 border rounded w-full"
+          />
+        </div>
+      )}
+    </>
   );
 }
 
@@ -1208,18 +1304,13 @@ export default function AddCustomerForm() {
   const [otherDetails, setOtherDetails] = useState({});
   const [addressErrors, setAddressErrors] = useState({});
   const [contactPersons, setContactPersons] = useState([]);
-  const documentInputRef = useRef(null);
 
-  // GST Modal State
   const [gstNumber, setGstNumber] = useState("");
   const [gstModalOpen, setGstModalOpen] = useState(false);
   const [gstDetails, setGstDetails] = useState(null);
 
-  // Simulate GST fetch (replace with real API if available)
   const fetchGstDetails = async (gstin) => {
-    // Simulate API delay
     await new Promise((res) => setTimeout(res, 700));
-    // Mocked GST details (replace with real API response)
     if (gstin === "29ABCDE1234F2Z5") {
       return {
         gstin: "29ABCDE1234F2Z5",
@@ -1229,14 +1320,12 @@ export default function AddCustomerForm() {
         state: "Karnataka",
         pinCode: "560001",
         status: "Active",
-        // Additional mock fields for autofill
         panNumber: "ABCDE1234F",
         attention: "Accounts Manager",
         city: "Bengaluru",
         country: "India",
       };
     }
-    // For demo, any 15-char GSTIN returns a generic mock
     if (gstin.length === 15) {
       return {
         gstin,
@@ -1266,7 +1355,6 @@ export default function AddCustomerForm() {
     setGstDetails(details);
   };
 
-  // Enhanced GST Prefill: autofill country, GSTIN/UIN, business legal name, PAN number, attention, city, etc.
   const handleGstPrefill = (details) => {
     if (!details) return;
     setCustomer((prev) => ({
@@ -1288,7 +1376,7 @@ export default function AddCustomerForm() {
       pinCode: details.pinCode || prev.pinCode,
       country: details.country || prev.country || "India",
     }));
-    setGstNumber(details.gstin); // Also update the GST field at the top
+    setGstNumber(details.gstin);
     setGstModalOpen(false);
   };
 
@@ -1333,13 +1421,13 @@ export default function AddCustomerForm() {
       });
       const data = await res.json();
       if (data.success) {
-        alert("Invoice saved successfully!");
+        alert("Customer added successfully!");
         handleCancel();
       } else {
         alert("Error: " + data.error);
       }
     } catch (error) {
-      alert("Failed to save invoice.");
+      alert("Failed to add customer.");
       console.error(error);
     }
   };
@@ -1361,7 +1449,6 @@ export default function AddCustomerForm() {
     setContactPersons([]);
     setGstNumber("");
     setGstDetails(null);
-    if (documentInputRef.current) documentInputRef.current.value = '';
   };
 
   const handlePrint = () => window.print();
@@ -1377,6 +1464,7 @@ export default function AddCustomerForm() {
         setGstNumber={setGstNumber}
         onGstCheck={handleGstCheck}
       />
+      
       <InvoiceOtherDetails
         otherDetails={otherDetails}
         setOtherDetails={setOtherDetails}
@@ -1384,8 +1472,8 @@ export default function AddCustomerForm() {
         setAddressErrors={setAddressErrors}
         contactPersons={contactPersons}
         setContactPersons={setContactPersons}
-        documentInputRef={documentInputRef}
       />
+      
       <div className="flex gap-2 justify-end mt-6 p-4">
         <button
           className={`px-4 py-2 text-white text-sm rounded hover:bg-blue-600 ${
@@ -1412,7 +1500,8 @@ export default function AddCustomerForm() {
           Print Invoice
         </button>
       </div>
-       <GSTModal
+      
+      <GSTModal
         open={gstModalOpen}
         onClose={() => setGstModalOpen(false)}
         gstDetails={gstDetails}
@@ -1421,3 +1510,7 @@ export default function AddCustomerForm() {
     </div>
   );
 }
+
+
+
+

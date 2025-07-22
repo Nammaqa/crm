@@ -93,7 +93,7 @@ export default function CustomerList() {
   const selectedCustomer =
     filteredCustomers.length > 0 ? filteredCustomers[safeSelectedIdx] : null;
 
-  const renderAddress = (label, address, city, state, pin, country, phone, fax, attention) => {
+ const renderAddress = (label, address, city, state, pin, country, phone, fax, attention) => {
     if (!address && !city && !state && !pin) {
       return (
         <div className="flex items-center text-slate-500">
