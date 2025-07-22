@@ -59,10 +59,9 @@ export async function POST(request: NextRequest) {
         shippingPhone: otherDetails.shippingPhone || '',
         // shippingFax: otherDetails.shippingFax || '',
         remarks: otherDetails.remarks || '',
-        // --- FIX: Add GST fields ---
-        gstNumber: otherDetails.gstNumber || '',
-        gstTreatment: otherDetails.gstTreatment || '',
-        // ---
+       gstNumber: otherDetails.gstNumber || '',
+  gstTreatment: otherDetails.gstTreatment || '',
+  placeOfSupply: otherDetails.placeOfSupply || '',
         ContactPerson: {
           create: contactPersons.map((person: any) => ({
             salutation: person.salutation || '',
@@ -130,10 +129,10 @@ export async function GET(request: NextRequest) {
         shippingPhone: c.shippingPhone,
         // shippingFax: c.shippingFax, // Removed because property does not exist
         remarks: c.remarks,
-        // --- FIX: Add GST fields to response ---
-        gstNumber: c.gstNumber,
-        gstTreatment: c.gstTreatment,
-        // ---
+       gstNumber: c.gstNumber,
+gstTreatment: c.gstTreatment,
+placeOfSupply: c.placeOfSupply,
+
         createdAt: c.createdAt,
         updatedAt: c.updatedAt,
         ContactPerson: c.ContactPerson,
@@ -178,10 +177,9 @@ export async function PUT(request: NextRequest) {
         billingPhone: otherDetails.phone || '',
         billingFax: otherDetails.faxNumber || '',
         remarks: otherDetails.remarks || '',
-        // --- FIX: Add GST fields ---
-        gstNumber: otherDetails.gstNumber || '',
-        gstTreatment: otherDetails.gstTreatment || '',
-        // ---
+       gstNumber: otherDetails.gstNumber || '',
+  gstTreatment: otherDetails.gstTreatment || '',
+  placeOfSupply: otherDetails.placeOfSupply || '',
       },
       include: { ContactPerson: true, Invoice: { include: { Item: true } } },
     });

@@ -4,20 +4,20 @@ import { PrismaClient, PaymentTerms } from "@prisma/client";
 const prisma = new PrismaClient();
 
 function mapTermsToEnum(term: string): PaymentTerms {
-  switch ((term || "").toLowerCase()) {
-    case "net 15":
+  switch ((term || "").toUpperCase()) {
+    case "NET_15":
       return "NET_15";
-    case "net 30":
+    case "NET_30":
       return "NET_30";
-    case "net 45":
+    case "NET_45":
       return "NET_45";
-    case "net 60":
+    case "NET_60":
       return "NET_60";
-    case "due on receipt":
+    case "DUE_ON_RECEIPT":
       return "DUE_ON_RECEIPT";
-    case "due end of the month":
+    case "DUE_END_OF_MONTH":
       return "DUE_END_OF_MONTH";
-    case "due end of next month":
+    case "DUE_END_OF_NEXT_MONTH":
       return "DUE_END_OF_NEXT_MONTH";
     default:
       return "NET_30";
@@ -64,88 +64,73 @@ export async function GET(request: NextRequest) {
   }
 }
 
-export async function POST(request: NextRequest) {
+export async function POST(request: Request) {
   try {
-    let invoiceData, items;
-    const contentType = request.headers.get("content-type") || "";
-    if (contentType.includes("multipart/form-data")) {
-      // Not used in your UI
-      return NextResponse.json({ success: false, error: "Multipart not supported" }, { status: 400 });
-    } else {
-      const body = await request.json();
-      invoiceData = body.invoice;
-      items = body.items;
+    const body = await request.json();
+    console.log("Received invoice data:", JSON.stringify(body, null, 2));
+
+    const {
+      customerId,
+      invoiceCode,
+      invoiceDate,
+      terms,
+      dueDate,
+      poNumber,
+      notes,
+      gstTreatment,
+      gstNumber,
+      placeOfSupply,
+      items,
+      total,
+      isDraft,
+    } = body;
+
+    if (!customerId || !invoiceCode || !invoiceDate || !dueDate || !items?.length) {
+      return NextResponse.json({ success: false, error: "Missing required invoice data" }, { status: 400 });
     }
 
-    // Validate required fields
-    if (
-      !invoiceData ||
-      !invoiceData.customerId ||
-      !invoiceData.invoiceNumber ||
-      !invoiceData.invoiceDate ||
-      !invoiceData.dueDate ||
-      !Array.isArray(items) ||
-      items.length === 0
-    ) {
-      return NextResponse.json(
-        { success: false, error: "Missing required invoice fields" },
-        { status: 400 }
-      );
-    }
-
-    // Check for duplicate invoiceCode
-    const existing = await prisma.invoice.findUnique({
-      where: { invoiceCode: invoiceData.invoiceNumber }
-    });
-    if (existing) {
-      return NextResponse.json(
-        { success: false, error: "Invoice number already exists. Please use a unique invoice number." },
-        { status: 409 }
-      );
-    }
-
-    const createdInvoice = await prisma.invoice.create({
+    // Convert terms string to enum
+    const paymentTerms: PaymentTerms = mapTermsToEnum(terms);
+   
+    // Create invoice record
+    const invoice = await prisma.invoice.create({
       data: {
-        customerId: Number(invoiceData.customerId),
-        invoiceCode: invoiceData.invoiceNumber,
-        invoiceDate: new Date(invoiceData.invoiceDate),
-        terms: mapTermsToEnum(invoiceData.terms),
-        dueDate: new Date(invoiceData.dueDate),
-        customerNotes: invoiceData.notes || "",
-        total: Number(invoiceData.total) || 0,
-        poNumber: invoiceData.poNumber || "",
-        isDraft: false,
-        Item: {
-          create: items.map((item: any) => ({
-            itemDetails: item.name || "",
-            quantity: Number(item.quantity) || 1,
-            rate: Number(item.rate) || 0,
-            amount: Number(item.amount) || 0,
-            sac: item.sac || null,
-            discountPercentage: item.discount || null,
-            GstPercentage: item.taxType && item.taxType.startsWith('gst') ? parseFloat(item.taxType.replace('gst', '')) : null,
-          })),
-        },
-      },
-      include: {
-        customer: true,
-        Item: true,
+        customerId: Number(customerId),
+        invoiceCode,
+        invoiceDate: new Date(invoiceDate),
+        terms: paymentTerms,
+        dueDate: new Date(dueDate),
+        poNumber: poNumber || null,
+        customerNotes: notes || null,
+        total: Number(total),
+        Documents: [],
+        status: isDraft ? "Draft" : "Pending",
+        isDraft: isDraft,
+        gstNumber: gstNumber || null,
+        gstTreatment: gstTreatment || null,
+        placeOfSupply: placeOfSupply || null,
       },
     });
 
-    return NextResponse.json({ success: true, data: createdInvoice }, { status: 201 });
+    // Create related items
+    const itemsToCreate = items.map((item: any) => ({
+      invoiceId: invoice.id,
+      itemDetails: (item.description || item.name || '').trim(),
+      quantity: parseInt(item.quantity) || 0,
+      rate: parseFloat(item.rate) || 0,
+      amount: parseFloat(item.amount) || 0,
+      sac: item.sac || null,
+      discountPercentage: parseFloat(item.discount) || 0,
+      GstPercentage: parseFloat(item.gstPercentage) || 0,
+    }));
+
+    await prisma.item.createMany({
+      data: itemsToCreate,
+    });
+
+    return NextResponse.json({ success: true, data: invoice }, { status: 201 });
   } catch (error: any) {
-    // Unique constraint error
-    if (error.code === 'P2002' && error.meta?.target?.includes('invoiceCode')) {
-      return NextResponse.json(
-        { success: false, error: "Invoice number already exists. Please use a unique invoice number." },
-        { status: 409 }
-      );
-    }
-    console.error("Invoice POST error:", error);
-    return NextResponse.json(
-      { success: false, error: error.message || "Failed to create invoice" },
-      { status: 500 }
-    );
+    console.error("Error saving invoice:", error);
+    return NextResponse.json({ success: false, error: error.message || "Failed to save invoice" }, { status: 500 });
   }
 }
