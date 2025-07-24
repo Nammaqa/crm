@@ -54,10 +54,19 @@ export default function BdSales({ isSidebarOpen }) {
   const fetchInitialData = async () => {
     try {
       // Fetch logged-in user
-      const userRes = await fetch("/api/users/me", { method: "GET" });
+      const baseUrl = process.env.NEXT_PUBLIC_BASEAPIURL;
+      const userRes = await fetch(`${baseUrl}/api/users/me`, { 
+        method: "GET",
+        credentials: "include"
+      });
       const userData = await userRes.json();
 
-      if (!userRes.ok || !userData?.data?.userName) {
+      if (!userRes.ok) {
+        throw new Error(userData.message || 'Failed to fetch user data');
+      }
+      
+      const username = userData?.data?.userName || userData?.userName;
+      if (!username) {
         throw new Error("Failed to fetch user data");
       }
 

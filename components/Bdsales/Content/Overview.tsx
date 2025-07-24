@@ -18,7 +18,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { CalendarIcon, PencilIcon, TrashIcon } from "@radix-ui/react-icons";
+import { CalendarIcon, TrashIcon } from "@radix-ui/react-icons";
+import { FaPen } from "react-icons/fa";
 import { format } from 'date-fns';
 import AddReminderForm from './Reminder';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, PieChart, Pie, Cell, Legend } from "recharts";
@@ -44,11 +45,18 @@ export default function Overview() {
       const baseUrl = process.env.NEXT_PUBLIC_BASEAPIURL;
       const res = await fetch(`${baseUrl}/api/users/me`, { 
         method: "GET",
+        credentials: "include" // Include credentials in the request
       });
 
       const data = await res.json();
-      if (res.ok && data?.data?.userName) {
-        setUserName("Welcome, " + data.data.userName);
+      if (res.ok) {
+        // Handle both response formats
+        const username = data?.data?.userName || data?.userName;
+        if (username) {
+          setUserName("Welcome, " + username);
+        } else {
+          console.warn("Username not found in response");
+        }
       } else {
         console.warn("User fetch failed:", data.message);
       }
@@ -292,7 +300,7 @@ export default function Overview() {
                 Add Reminder
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-2xl">
+            <DialogContent className="max-w-2xl" description="Add a new reminder for follow-up">
               <DialogHeader>
                 <DialogTitle>Add New Reminder</DialogTitle>
               </DialogHeader>
@@ -362,7 +370,7 @@ export default function Overview() {
                             size="icon"
                             onClick={() => setEditingReminder(reminder)}
                           >
-                            <PencilIcon className="h-4 w-4" />
+                            <FaPen className="h-4 w-4" />
                           </Button>
                           <Button
                             variant="destructive"

@@ -11,9 +11,10 @@ import Recruitment from "@components/Bdsales/Content/Recruitment";
 import MsaNda from '@/components/Bdsales/Content/MsaNda';
 import Sow from "@components/Bdsales/Content/Sow";
 import Po from "@components/Bdsales/Content/Po";
-import AgreementList from "@components/Admin/Content/AgreementList"; // <-- NEW IMPORT
+import AgreementList from "@components/Admin/Content/AgreementList";
 import RequirementList from "@components/Admin/Content/RequirementList";
-import Shorlisted from "@components/Bdsales/Content/Shorlisted"; // <-- Add this import
+import Shorlisted from "@components/Bdsales/Content/Shorlisted";
+import Reminder from "@components/Bdsales/Content/Reminder";
 
 
 import {
@@ -24,6 +25,7 @@ import {
   FaClipboardList,
   FaShoppingCart,
   FaListAlt,
+  FaBell,
 } from "react-icons/fa";
 
 // Sidebar sections with dynamic content
@@ -38,6 +40,7 @@ const sections = [
   // Agreement List is a navigation link, not inline content
   { id: "agreement-list", label: "Agreement List", icon: <FaClipboardList size={20} />, content: <AgreementList /> }, // <-- NEW SECTION
   { id: "shorlisted", label: "Shorlisted", icon: <FaUsers size={20} />, content: <Shorlisted /> }, // <-- Add this line
+  { id: "reminder", label: "Reminder", icon: <FaBell  size={20} />, content: <Reminder /> }, // <-- Add this line
 
 ];
 

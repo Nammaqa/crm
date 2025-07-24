@@ -78,6 +78,7 @@ model Lead {
   leadType               LeadType
   companyType            String?
   spocs                  Spoc[]
+  reminders               Reminder[]
 }
 
 model Spoc {
@@ -92,6 +93,7 @@ model Spoc {
   updatedAt   DateTime @updatedAt
   leadId      Int
   lead        Lead     @relation(fields: [leadId], references: [id])
+  reminders   Reminder[]
 }
 
 model Device {
@@ -165,6 +167,22 @@ model Candidate {
   offerDetails           String?
   acmanagerStatus        String?
   acupdateby             String?
+}
+
+model Reminder {
+  id              Int       @id @default(autoincrement())
+  clientId        Int
+  companyName     String
+  phoneNumber     String?
+  followUpDateTime DateTime
+  notes           String?
+  completed       Boolean   @default(false)
+  spocId          Int?      // Optional - can have reminders without specific SPOC
+  spoc            Spoc?     @relation(fields: [spocId], references: [id])
+  creatorEmail    String    // Email of the user who created the reminder
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  lead            Lead      @relation(fields: [clientId], references: [id])
 }
 
 enum Role {
