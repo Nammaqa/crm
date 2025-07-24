@@ -322,12 +322,24 @@ model Invoice {
   poNumber          String?
   customerNotes     String?
   total             Float?
-  Documents        String[]
+  Documents         String[]
   status            String ?      @default("Draft")
   isDraft           Boolean       @default(true)
-   gstNumber         String?
+  gstNumber         String?
   gstTreatment      String?
-   placeOfSupply    String?
+  placeOfSupply     String?
+  paymentMode       String?
+  paymentDate       DateTime?
+  referenceNumber   String?
+  notes             String?
+  bankCharges       Float?
+  pan               String?
+  taxDeducted       Boolean?
+  paymentReceivedOn DateTime?
+  amountReceived    Float?
+ paymentDocuments String[]
+ paymentId      String?
+ balancedDue       Float? @default(0)
   createdAt         DateTime      @default(now())
   updatedAt         DateTime      @updatedAt
   Item Item[]
