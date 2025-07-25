@@ -46,6 +46,16 @@ const TDS_OPTIONS = [
   { label: "Technical Fees (2%) [2%]", value: 2 },
 ];
 
+const paymentTermsOptions = [
+  { value: "NET_15", label: "Net 15" },
+  { value: "NET_30", label: "Net 30" },
+  { value: "NET_45", label: "Net 45" },
+  { value: "NET_60", label: "Net 60" },
+  { value: "DUE_ON_RECEIPT", label: "Due on Receipt" },
+  { value: "DUE_END_OF_MONTH", label: "Due end of the month" },
+  { value: "DUE_END_OF_NEXT_MONTH", label: "Due end of next month" },
+];
+
 function formatDate(date) {
   const d = new Date(date);
   const month = `${d.getMonth() + 1}`.padStart(2, '0');
@@ -78,7 +88,25 @@ function getLastDayOfNextMonth(date) {
   return formatDate(d);
 }
 
-// Number to words conversion - Fixed naming conflict
+// Helper function to convert image to base64
+async function getImageAsBase64(imagePath) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = img.width;
+      canvas.height = img.height;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0);
+      resolve(canvas.toDataURL('image/png'));
+    };
+    img.onerror = reject;
+    img.src = imagePath;
+  });
+}
+
+// Number to words conversion
 function numberToWords(num) {
   const ones = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine'];
   const teens = ['Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen', 'Seventeen', 'Eighteen', 'Nineteen'];
@@ -109,14 +137,14 @@ function numberToWords(num) {
   num %= 10000000;
   const lakhs = Math.floor(num / 100000);
   num %= 100000;
-  const thousandsValue = Math.floor(num / 1000); // Fixed: renamed from 'thousands' to 'thousandsValue'
+  const thousandsValue = Math.floor(num / 1000);
   num %= 1000;
   const hundreds = num;
 
   let result = '';
   if (crores > 0) result += convertHundreds(crores) + 'Crore ';
   if (lakhs > 0) result += convertHundreds(lakhs) + 'Lakh ';
-  if (thousandsValue > 0) result += convertHundreds(thousandsValue) + 'Thousand '; // Fixed: use 'thousandsValue'
+  if (thousandsValue > 0) result += convertHundreds(thousandsValue) + 'Thousand ';
   if (hundreds > 0) result += convertHundreds(hundreds);
 
   return result.trim();
@@ -137,7 +165,6 @@ function SortableRow({ id, children }) {
     transform: CSS.Transform.toString(transform),
     transition,
     opacity: isDragging ? 0.6 : 1,
-    background: isDragging ? "#e0f2fe" : undefined,
   };
 
   let rowChildren;
@@ -160,7 +187,7 @@ function SortableRow({ id, children }) {
   );
 }
 
-const InvoiceForm = () => {
+export default function InvoiceForm() {
   const today = formatDate(new Date());
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
 
@@ -177,26 +204,28 @@ const InvoiceForm = () => {
   const [items, setItems] = useState([
     { id: `${Date.now()}`, name: '', description: '', quantity: 1, rate: 0, discount: 0, taxType: 'gst18', customTaxRate: '', sac: '' }
   ]);
+
   const [formData, setFormData] = useState({
-    customerId: '',
-    invoiceNumber: '',
+    customerId: "",
+    invoiceNumber: "",
     invoiceDate: today,
-    dueDate: '',
-    terms: '',
+    dueDate: today,
+    terms: "DUE_ON_RECEIPT",
     discount: 0,
     tdsTcsType: 'TDS', // 'TDS' or 'TCS'
     tdsOption: '', // value from TDS_OPTIONS
     tdsRate: '', // actual rate for TDS
     tcsRate: '', // actual rate for TCS
-    notes: 'Thanks for your business.',
+    customerNotes: 'Thanks for your business.',
     termsAndConditions: '',
     files: [],
     placeOfSupply: '',
     poNumber: '',
     shipTo: '',
     gstTreatment: '',
-    gstin: '',
+    gstNumber: '',
     showSummary: false, // Changed to false by default
+    isDraft: true,
     // Company details
     companyName: 'Wizzybox Private Limited',
     companyAddress: 'Bengaluru Karnataka 560056\nIndia',
@@ -226,16 +255,30 @@ const InvoiceForm = () => {
       setCustomerLoading(false);
     }
     fetchCustomers();
+
+    // Fetch invoice number
+    fetch("/api/invoice")
+      .then(r => r.json())
+      .then(d => {
+        if (d.success && d.data.length) {
+          const last = d.data[0].invoiceCode || "INV-000000";
+          const match = last.match(/\d+$/);
+          const next = match ? String(Number(match[0]) + 1).padStart(6, "0") : "000001";
+          setFormData(f => ({ ...f, invoiceNumber: "INV-" + next }));
+        } else {
+          setFormData(f => ({ ...f, invoiceNumber: "INV-000001" }));
+        }
+      });
   }, []);
 
-  // Auto-fill GST Treatment, GSTIN, Place of Supply, Ship To when customer is selected
+  // Auto-fill GST Treatment, GST Number, Place of Supply, Ship To when customer is selected
   useEffect(() => {
     if (formData.customerId) {
       const selectedCustomer = customers.find(c => c.id === Number(formData.customerId));
       setFormData(prev => ({
         ...prev,
         gstTreatment: selectedCustomer?.gstTreatment || "",
-        gstin: selectedCustomer?.gstNumber || "",
+        gstNumber: selectedCustomer?.gstNumber || "",
         placeOfSupply: selectedCustomer?.placeOfSupply || "",
         shipTo: [
           selectedCustomer?.shippingAddress,
@@ -249,7 +292,7 @@ const InvoiceForm = () => {
       setFormData(prev => ({
         ...prev,
         gstTreatment: "",
-        gstin: "",
+        gstNumber: "",
         placeOfSupply: "",
         shipTo: ""
       }));
@@ -260,25 +303,25 @@ const InvoiceForm = () => {
     let dueDate = formData.dueDate;
     if (formData.terms && formData.invoiceDate) {
       switch (formData.terms) {
-        case 'Net 15':
+        case 'NET_15':
           dueDate = addDays(formData.invoiceDate, 15);
           break;
-        case 'Net 30':
+        case 'NET_30':
           dueDate = addDays(formData.invoiceDate, 30);
           break;
-        case 'Net 45':
+        case 'NET_45':
           dueDate = addDays(formData.invoiceDate, 45);
           break;
-        case 'Net 60':
+        case 'NET_60':
           dueDate = addDays(formData.invoiceDate, 60);
           break;
-        case 'Due on Receipt':
+        case 'DUE_ON_RECEIPT':
           dueDate = formData.invoiceDate;
           break;
-        case 'Due end of the month':
+        case 'DUE_END_OF_MONTH':
           dueDate = getLastDayOfMonth(formData.invoiceDate);
           break;
-        case 'Due end of next month':
+        case 'DUE_END_OF_NEXT_MONTH':
           dueDate = getLastDayOfNextMonth(formData.invoiceDate);
           break;
         default:
@@ -438,45 +481,49 @@ const InvoiceForm = () => {
   };
 
   // --- API Submission ---
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e, send = false) => {
     e.preventDefault();
-    const selectedCustomer = customers.find(c => c.id === Number(formData.customerId));
-    const invoiceData = {
-      customerId: formData.customerId,
-      invoiceNumber: formData.invoiceNumber,
+    if (!formData.customerId || !formData.invoiceNumber || !formData.invoiceDate || !formData.dueDate || items.length === 0) {
+      alert("Fill all required fields");
+      return;
+    }
+    const payload = {
+      customerId: Number(formData.customerId),
+      invoiceCode: formData.invoiceNumber,
       invoiceDate: formData.invoiceDate,
-      dueDate: formData.dueDate,
       terms: formData.terms,
-      notes: formData.notes,
+      dueDate: formData.dueDate,
+      notes: formData.customerNotes,
+      gstTreatment: formData.gstTreatment,
+      gstNumber: formData.gstNumber,
+      placeOfSupply: formData.placeOfSupply,
+      poNumber: formData.poNumber,
+      items: items.map(i => ({
+        name: i.name,
+        description: i.description,
+        quantity: i.quantity,
+        rate: i.rate,
+        discount: i.discount,
+        taxType: i.taxType,
+        customTaxRate: i.customTaxRate,
+        sac: i.sac,
+        amount: calculateItemAmount(i),
+      })),
       total: calculateTotal(),
       discount: calculateTotalDiscount(),
       gstRate,
-      poNumber: formData.poNumber,
+      isDraft: !send,
     };
-    const itemsData = items.map(item => ({
-      name: item.name,
-      description: item.description,
-      quantity: item.quantity,
-      rate: item.rate,
-      discount: item.discount,
-      taxType: item.taxType,
-      customTaxRate: item.customTaxRate,
-      sac: item.sac,
-      amount: calculateItemAmount(item),
-    }));
 
     try {
       const res = await fetch("/api/invoice", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          invoice: invoiceData,
-          items: itemsData,
-        }),
+        body: JSON.stringify(payload),
       });
       const data = await res.json();
       if (data.success) {
-        alert("Invoice saved successfully!");
+        alert(send ? "Invoice sent!" : "Saved as draft.");
         // Optionally reset form or redirect
       } else {
         alert("Failed to save invoice: " + (data.error || "Unknown error"));
@@ -491,22 +538,72 @@ const InvoiceForm = () => {
     try {
       const { jsPDF } = await import('jspdf');
       const autoTable = (await import('jspdf-autotable')).default;
-      const doc = new jsPDF();
+      
+      // Create landscape PDF (297mm x 210mm)
+      const doc = new jsPDF('l', 'mm', 'a4');
 
-      // Colors
-      const primaryColor = [41, 128, 185];
-      const lightGray = [240, 240, 240];
-      const darkGray = [80, 80, 80];
+      // Get page dimensions
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
 
-      // Header - Company Details
-      doc.setFontSize(18);
-      doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
-      doc.text(formData.companyName, 14, 20);
+      // Load the Wizzybox logo
+      let logoBase64 = null;
+      try {
+        logoBase64 = await getImageAsBase64('/Wizzybox Logo.png');
+      } catch (error) {
+        console.log('Could not load Wizzybox logo image');
+      }
+
+      // Load the background template image
+      let backgroundBase64 = null;
+      try {
+        backgroundBase64 = await getImageAsBase64('/template.jpg');
+      } catch (error) {
+        console.log('Could not load template background image');
+      }
+
+      // Colors matching template
+      const primaryColor = [0, 0, 0];
+      const lightGray = [245, 245, 245];
+      const borderColor = [0, 0, 0];
+
+      // Add Zoho branding at top (matching template exactly)
+      doc.setFontSize(8);
+      doc.setTextColor(100, 100, 100);
+
+      // Add Wizzybox logo - STANDARD SIZE: Reduced to standard dimensions
+      let logoYPosition = 18;
+      if (logoBase64) {
+        try {
+          // UPDATED: Standard logo size - 50x20 (width x height in mm)
+          doc.addImage(logoBase64, 'PNG', 14, logoYPosition, 60,19); 
+          logoYPosition += 25; // Adjusted spacing after logo
+        } catch (error) {
+          console.log('Error adding logo to PDF');
+          // Fallback text if logo fails to load
+          doc.setFontSize(12);
+          doc.setTextColor(0, 0, 0);
+          doc.text('WIZZYBOX', 14, logoYPosition + 10);
+          logoYPosition += 15;
+        }
+      } else {
+        // Fallback text if logo is not available
+        doc.setFontSize(12);
+        doc.setTextColor(0, 0, 0);
+        doc.text('WIZZYBOX', 14, logoYPosition + 10);
+        logoYPosition += 15;
+      }
+
+      // Header - Company Details with proper text alignment
+      doc.setFontSize(12); 
+      doc.setFont(undefined, 'bold');
+      doc.setTextColor(0, 0, 0);
+      doc.text(formData.companyName, 14, logoYPosition + 5);
       
       doc.setFontSize(9);
-      doc.setTextColor(darkGray[0], darkGray[1], darkGray[2]);
+      doc.setFont(undefined, 'normal');
       const companyAddressLines = formData.companyAddress.split('\n');
-      let yPos = 28;
+      let yPos = logoYPosition + 12;
       companyAddressLines.forEach(line => {
         doc.text(line, 14, yPos);
         yPos += 4;
@@ -516,204 +613,239 @@ const InvoiceForm = () => {
       doc.text(formData.companyEmail, 14, yPos + 4);
       doc.text(formData.companyWebsite, 14, yPos + 8);
 
-      // TAX INVOICE Header - Right Aligned
-      doc.setFontSize(20);
-      doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
-      doc.text('TAX INVOICE', 200, 20, { align: 'right' });
-
-      // Invoice Details - Right side
-      doc.setFontSize(10);
+      // TAX INVOICE Header - Right side with proper alignment
+      doc.setFontSize(30);
+      doc.setFont(undefined, 'bold');
       doc.setTextColor(0, 0, 0);
-      doc.text(`Invoice# ${formData.invoiceNumber || 'WB-IN106'}`, 200, 35, { align: 'right' });
+      doc.text('TAX INVOICE', 280, 35, { align: 'right' });
+
+      // Invoice Number - Right side
+      doc.setFontSize(10);
+      doc.setFont(undefined, 'normal');
+      doc.text(`Invoice# ${formData.invoiceNumber || 'WB-IN106'}`, 280, 45, { align: 'right' });
 
       // Customer Details Section
       const selectedCustomer = customers.find(c => c.id === Number(formData.customerId));
       
-      // Bill To
-      doc.setFontSize(12);
+      // Bill To Section with proper alignment
+      doc.setFontSize(11);
       doc.setFont(undefined, 'bold');
-      doc.text('Bill To', 14, 65);
+      doc.text('Bill To', 14, 80);
       
-      doc.setFontSize(10);
+      doc.setFontSize(9);
       doc.setFont(undefined, 'normal');
       if (selectedCustomer) {
         const customerName = selectedCustomer.displayName || selectedCustomer.companyName || selectedCustomer.emailAddress;
-        doc.text(customerName, 14, 73);
+        doc.text(customerName, 14, 88);
         
-        // Customer address
-        let customerAddressY = 78;
+        // Customer billing address - properly formatted and aligned
+        let customerAddressY = 93;
+        
+        // Address line 1
         if (selectedCustomer.billingAddress) {
-          const addressLines = [
-            selectedCustomer.billingAddress,
-            selectedCustomer.billingCity,
-            selectedCustomer.billingState,
-            selectedCustomer.billingPinCode,
-            selectedCustomer.billingCountry
-          ].filter(Boolean);
-          
-          addressLines.forEach(line => {
-            if (line) {
-              doc.text(line, 14, customerAddressY);
-              customerAddressY += 4;
-            }
-          });
+          doc.text(selectedCustomer.billingAddress, 14, customerAddressY);
+          customerAddressY += 4;
         }
         
-        if (formData.gstin) {
-          doc.text(`GSTIN ${formData.gstin}`, 14, customerAddressY + 4);
+        // City, state, pincode on separate lines
+        if (selectedCustomer.billingCity) {
+          doc.text(selectedCustomer.billingCity, 14, customerAddressY);
+          customerAddressY += 4;
+        }
+        
+        if (selectedCustomer.billingPinCode && selectedCustomer.billingState) {
+          doc.text(`${selectedCustomer.billingPinCode} ${selectedCustomer.billingState}`, 14, customerAddressY);
+          customerAddressY += 4;
+        }
+        
+        if (selectedCustomer.billingCountry) {
+          doc.text(selectedCustomer.billingCountry, 14, customerAddressY);
+          customerAddressY += 4;
+        }
+        
+        if (formData.gstNumber) {
+          doc.text(`GSTIN ${formData.gstNumber}`, 14, customerAddressY + 4);
         }
       }
 
-      // Ship To
-      doc.setFontSize(12);
+      // Ship To Section - with proper alignment
+      doc.setFontSize(11);
       doc.setFont(undefined, 'bold');
-      doc.text('Ship To', 110, 65);
+      doc.text('Ship To', 150, 80);
       
-      doc.setFontSize(10);
+      doc.setFontSize(9);
       doc.setFont(undefined, 'normal');
-      if (formData.gstin) {
-        doc.text(`GSTIN ${formData.gstin}`, 110, 73);
+      if (formData.gstNumber) {
+        doc.text(`GSTIN ${formData.gstNumber}`, 150, 88);
       }
       if (formData.placeOfSupply) {
-        doc.text(`Place Of Supply: ${formData.placeOfSupply}`, 110, 78);
+        doc.text(`Place Of Supply: ${formData.placeOfSupply}`, 150, 93);
       }
 
-      // Invoice Info Table
-      doc.setFontSize(10);
-      const invoiceInfoY = 90;
-      doc.text('Invoice Date', 14, invoiceInfoY);
-      doc.text('Terms', 60, invoiceInfoY);
-      doc.text('Due Date', 110, invoiceInfoY);
-      doc.text('PO Number', 160, invoiceInfoY);
+      // Invoice Details Table - WITHOUT GRID
+      const invoiceDetailsY = 120;
+      
+      // Table dimensions - No borders needed
+      const tableWidth = 270;
+      const colWidth = tableWidth / 4;
+      const rowHeight = 8;
+      
+      // Draw header row background with the template color (#3b3d39)
+      doc.setFillColor(59, 61, 57);
+      doc.rect(14, invoiceDetailsY - 6, tableWidth, rowHeight, 'F');
 
-      doc.text(formatDisplayDate(formData.invoiceDate), 14, invoiceInfoY + 6);
-      doc.text(formData.terms || 'Due on Receipt', 60, invoiceInfoY + 6);
-      doc.text(formatDisplayDate(formData.dueDate), 110, invoiceInfoY + 6);
-      doc.text(formData.poNumber || 'NA', 160, invoiceInfoY + 6);
+      // Header text with proper alignment
+      doc.setFont(undefined, 'bold');
+      doc.setFontSize(9);
+      doc.setTextColor(255, 255, 255); // White text for contrast
+      doc.text('Invoice Date', 16, invoiceDetailsY - 1, { align: 'left' });
+      doc.text('Terms', 16 + colWidth, invoiceDetailsY - 1, { align: 'left' });
+      doc.text('Due Date', 16 + 2*colWidth, invoiceDetailsY - 1, { align: 'left' });
+      doc.text('PO Number', 16 + 3*colWidth, invoiceDetailsY - 1, { align: 'left' });
 
-      // Items Table
-      const itemTableY = invoiceInfoY + 20;
+      // Data text with proper alignment
+      doc.setFont(undefined, 'normal');
+      doc.setTextColor(0, 0, 0);
+      doc.text(formatDisplayDate(formData.invoiceDate), 16, invoiceDetailsY + 7, { align: 'left' });
+      doc.text(formData.terms || 'Due on Receipt', 16 + colWidth, invoiceDetailsY + 7, { align: 'left' });
+      doc.text(formatDisplayDate(formData.dueDate), 16 + 2*colWidth, invoiceDetailsY + 7, { align: 'left' });
+      doc.text(formData.poNumber || 'NA', 16 + 3*colWidth, invoiceDetailsY + 7, { align: 'left' });
+
+      // Items Table - NO GRID, only header row with background
+      const itemTableY = invoiceDetailsY + 25;
+      
+      // Prepare items data for table
       const itemRows = items.map((item, idx) => {
         const baseAmount = (parseFloat(item.quantity) || 0) * (parseFloat(item.rate) || 0);
-        const discountAmount = (baseAmount * (parseFloat(item.discount) || 0)) / 100;
-        const netAmount = baseAmount - discountAmount;
-        const cgstAmount = (netAmount * cgstRate) / 100;
-        const sgstAmount = (netAmount * sgstRate) / 100;
+        const discountedAmount = baseAmount - (baseAmount * (parseFloat(item.discount) || 0) / 100);
+        const cgstAmount = (discountedAmount * cgstRate) / 100;
+        const sgstAmount = (discountedAmount * sgstRate) / 100;
         
         return [
-          idx + 1,
+          (idx + 1).toString(),
           item.name || '',
           item.sac || '998313',
-          item.quantity === "" || isNaN(item.quantity) ? '1.00' : parseFloat(item.quantity).toFixed(2),
-          item.rate === "" || isNaN(item.rate) ? '0.00' : parseFloat(item.rate).toFixed(2),
+          parseFloat(item.quantity || 1).toFixed(2),
+          parseFloat(item.rate || 0).toFixed(2).replace(/\.00$/, '.00'),
           cgstAmount.toFixed(2),
-          `${cgstRate}%`,
+          `${cgstRate.toFixed(0)}%`,
           sgstAmount.toFixed(2),
-          `${sgstRate}%`,
-          netAmount.toFixed(2)
+          `${sgstRate.toFixed(0)}%`,
+          discountedAmount.toFixed(2)
         ];
       });
 
+      // Items table WITHOUT GRID - only header background, no table borders
       autoTable(doc, {
         startY: itemTableY,
         head: [['#', 'Item & Description', 'HSN/SAC', 'Qty', 'Rate', 'CGST', '', 'SGST', '', 'Amount']],
         body: itemRows,
-        theme: 'grid',
+        theme: 'plain',
         headStyles: { 
-          fillColor: lightGray,
-          textColor: [0, 0, 0],
+          fillColor: [59, 61, 57],
+          textColor: [255, 255, 255],
           fontSize: 9,
-          fontStyle: 'bold'
+          fontStyle: 'bold',
+          lineWidth: 0, // No borders
+          halign: 'center',
+          valign: 'middle'
         },
-        styles: { 
+        bodyStyles: { 
           fontSize: 9,
-          cellPadding: 3
+          cellPadding: { top: 3, right: 3, bottom: 3, left: 3 },
+          lineWidth: 0, // No borders
+          valign: 'middle'
+        },
+        styles: {
+          lineWidth: 0, // No grid lines anywhere
         },
         columnStyles: {
           0: { halign: 'center', cellWidth: 15 },
-          1: { cellWidth: 50 },
+          1: { cellWidth: 70, halign: 'left' },
           2: { halign: 'center', cellWidth: 25 },
           3: { halign: 'right', cellWidth: 20 },
-          4: { halign: 'right', cellWidth: 25 },
-          5: { halign: 'right', cellWidth: 20 },
+          4: { halign: 'right', cellWidth: 30 },
+          5: { halign: 'right', cellWidth: 25 },
           6: { halign: 'center', cellWidth: 15 },
-          7: { halign: 'right', cellWidth: 20 },
+          7: { halign: 'right', cellWidth: 25 },
           8: { halign: 'center', cellWidth: 15 },
-          9: { halign: 'right', cellWidth: 25 }
-        }
+          9: { halign: 'right', cellWidth: 30 }
+        },
+        margin: { left: 14 },
+        tableLineWidth: 0, // Remove all table lines
+        tableLineColor: [255, 255, 255] // Make lines invisible
       });
 
-      let finalY = doc.lastAutoTable.finalY || itemTableY + 40;
+      let finalY = doc.lastAutoTable.finalY || itemTableY + 50;
 
-      // Summary section
-      const summaryStartY = finalY + 10;
+      // Add spacing before Total In Words section
+      finalY += 10;
+
+      // Total in Words section - positioned properly as per PDF reference
+      const totalInWords = numberToWords(Math.floor(calculateTotal()));
+      doc.setFontSize(9);
+      doc.setFont(undefined, 'bold');
+      doc.text('Total In Words:', 14, finalY + 15, { align: 'left' });
+      doc.setFont(undefined, 'normal');
+      // Split the words into multiple lines if too long
+      const wordsText = `Indian Rupee ${totalInWords} Only`;
+      doc.text(wordsText, 14, finalY + 22, { align: 'left' });
+
+      // Thanks message - positioned after Total In Words
+      if (formData.customerNotes) {
+        doc.setFontSize(9);
+        doc.text(formData.customerNotes, 14, finalY + 35, { align: 'left' });
+      }
+
+      // Add new page for payment details and summary WITH BACKGROUND
+      doc.addPage();
+
+      // **NEW: Add background image to second page**
+      if (backgroundBase64) {
+        try {
+          // Add background image covering the entire second page
+          doc.addImage(backgroundBase64, 'JPEG', 0, 0, pageWidth, pageHeight);
+        } catch (error) {
+          console.log('Error adding background image to second page');
+        }
+      }
+
+      // MOVED TO SECOND PAGE: Complete Summary section 
+      const summaryStartY = 40;
       const summaryData = [
-        ['Sub Total', calculateSubtotal().toFixed(2)],
-        [`CGST${cgstRate} (${cgstRate}%)`, calculateCGST().toFixed(2)],
-        [`SGST${sgstRate} (${sgstRate}%)`, calculateSGST().toFixed(2)],
+        ['Sub Total', `${calculateSubtotal().toFixed(2)}`],
+        [`CGST${cgstRate.toFixed(0)} (${cgstRate.toFixed(0)}%)`, `${calculateCGST().toFixed(2)}`],
+        [`SGST${sgstRate.toFixed(0)} (${sgstRate.toFixed(0)}%)`, `${calculateSGST().toFixed(2)}`],
         ['Total', `₹${calculateTotal().toFixed(2)}`],
         ['Balance Due', `₹${calculateTotal().toFixed(2)}`]
       ];
 
       // Add TDS/TCS if applicable
       if (formData.tdsTcsType === 'TDS' && formData.tdsRate) {
-        summaryData.splice(-2, 0, [`TDS (${formData.tdsRate}%)`, calculateTDS().toFixed(2)]);
+        summaryData.splice(-2, 0, [`TDS (${formData.tdsRate}%)`, `${calculateTDS().toFixed(2)}`]);
       }
       if (formData.tdsTcsType === 'TCS' && formData.tcsRate) {
-        summaryData.splice(-2, 0, [`TCS (${formData.tcsRate}%)`, calculateTCS().toFixed(2)]);
+        summaryData.splice(-2, 0, [`TCS (${formData.tcsRate}%)`, `${calculateTCS().toFixed(2)}`]);
       }
 
-      // Summary table positioned on right side
+      // MOVED: Summary table WITHOUT GRID - positioned at top right of second page
       autoTable(doc, {
         startY: summaryStartY,
         body: summaryData,
         theme: 'plain',
         styles: { 
-          fontSize: 10,
-          cellPadding: 2
+          fontSize: 9,
+          cellPadding: { top: 2, right: 3, bottom: 2, left: 3 },
+          lineWidth: 0 // No borders
         },
         columnStyles: {
-          0: { fontStyle: 'bold', cellWidth: 40 },
-          1: { halign: 'right', cellWidth: 30 }
+          0: { fontStyle: 'bold', cellWidth: 60, halign: 'left' },
+          1: { halign: 'right', cellWidth: 50 }
         },
-        margin: { left: 140 }
+        margin: { left: 150 } // Position on right side
       });
 
-      // Total in Words
-      const totalInWords = numberToWords(Math.floor(calculateTotal()));
-      doc.setFontSize(10);
-      doc.setFont(undefined, 'bold');
-      doc.text('Total In Words:', 14, summaryStartY + 10);
-      doc.setFont(undefined, 'normal');
-      doc.text(`Indian Rupee ${totalInWords} Only`, 14, summaryStartY + 16);
-
-      // Notes
-      if (formData.notes) {
-        doc.setFontSize(10);
-        doc.text(formData.notes, 14, summaryStartY + 26);
-      }
-
-      // Payment Details
-      const paymentY = summaryStartY + 40;
-      doc.setFontSize(10);
-      doc.setFont(undefined, 'bold');
-      doc.text('Payment Details', 14, paymentY);
-      doc.setFont(undefined, 'normal');
-      doc.text(formData.companyName, 14, paymentY + 6);
-      doc.text(formData.bankName, 14, paymentY + 11);
-      doc.text(`Bank A/C No: ${formData.bankAccountNo}`, 14, paymentY + 16);
-      doc.text(`IFSC Code: ${formData.bankIFSC}`, 14, paymentY + 21);
-
-      // Authorized Signature
-      doc.setFont(undefined, 'bold');
-      doc.text('Authorized Signature', 150, paymentY + 16);
-
-      // Footer - Zoho branding
-      doc.setFontSize(8);
-      doc.setTextColor(100, 100, 100);
-      doc.text('Crafted with ease using', 14, 280);
-      doc.text('Visit zoho.com/invoice to create truly professional invoices', 14, 285);
-
+      // Save the PDF
       doc.save(`Invoice_${formData.invoiceNumber || 'Draft'}.pdf`);
     } catch (error) {
       console.error('Error generating PDF:', error);
@@ -739,8 +871,6 @@ const InvoiceForm = () => {
 
   const invisibleInput =
     "w-full bg-transparent border-none outline-none focus:ring-0 focus:border-b focus:border-blue-400 transition placeholder-gray-400 text-gray-800";
-
-  const selectedCustomer = customers.find(c => c.id === Number(formData.customerId));
 
   // Handle TDS/TCS radio and dropdown/textbox
   const handleTdsTcsTypeChange = (e) => {
@@ -770,83 +900,98 @@ const InvoiceForm = () => {
   };
 
   return (
-    <div className="w-full px-4">
-      <form
-        onSubmit={handleSubmit}
-        className="max-w-screen-2xl mx-auto px-8 py-10 space-y-10 text-gray-800 my-8"
-      >
-        <h2 className="text-3xl font-bold text-gray-800 border-b pb-4">
-          Create Invoice
-        </h2>
+    <form
+      onSubmit={e => handleSubmit(e, true)}
+      className="w-full px-2 min-h-screen"
+    >
+      <div className="max-w-screen-2xl mx-auto px-4 py-6 space-y-6 text-gray-800 my-4">
+        <div className="flex items-center justify-between border-b pb-4">
+          <h2 className="text-xl font-bold text-gray-800">
+            Create Invoice
+          </h2>
+          <div className="text-xs text-gray-500">
+            Professional Invoice Template
+          </div>
+        </div>
 
         {/* Invoice Details */}
-        <div className="space-y-6">
-          <div>
-            <label className="block font-semibold text-sm mb-1">
-              Customer Name<span className="text-red-500">*</span>
-            </label>
-            <select
-              name="customerId"
-              required
-              value={formData.customerId}
-              onChange={handleChange}
-              className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-300 shadow-sm"
-              disabled={customerLoading}
-            >
-              <option value="">Select Customer</option>
-              {customers.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.displayName || c.companyName || c.emailAddress}
-                </option>
-              ))}
-            </select>
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div>
+              <label className="block font-medium text-xs mb-1 text-gray-700">
+                Customer Name<span className="text-red-500">*</span>
+              </label>
+              <select
+                name="customerId"
+                required
+                value={formData.customerId}
+                onChange={handleChange}
+                className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent text-xs text-gray-800"
+                disabled={customerLoading}
+              >
+                <option value="">Select Customer</option>
+                {customers.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.displayName || c.companyName || c.emailAddress}
+                  </option>
+                ))}
+              </select>
+            </div>
+            
+            <div>
+              <label className="block font-medium text-xs mb-1 text-gray-700">Invoice #</label>
+              <input
+                type="text"
+                name="invoiceNumber"
+                value={formData.invoiceNumber}
+                onChange={handleChange}
+                className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent text-xs text-gray-800"
+                required
+              />
+            </div>
           </div>
+
           {formData.customerId && (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-3 border rounded">
               <div>
-                <label className="block font-semibold text-sm mb-1">GST Treatment</label>
+                <label className="block font-medium text-xs mb-1 text-gray-700">GST Treatment</label>
                 <input
                   type="text"
+                  name="gstTreatment"
                   value={formData.gstTreatment || ''}
+                  onChange={handleChange}
+                  className="w-full border border-gray-300 rounded px-3 py-1 text-xs text-gray-700"
                   readOnly
-                  className="w-full border border-gray-300 rounded-lg px-4 py-2 bg-gray-100 text-gray-700"
                 />
               </div>
               <div>
-                <label className="block font-semibold text-sm mb-1">GSTIN</label>
+                <label className="block font-medium text-xs mb-1 text-gray-700">GST Number</label>
                 <input
                   type="text"
-                  value={formData.gstin || ''}
+                  name="gstNumber"
+                  value={formData.gstNumber || ''}
+                  onChange={handleChange}
+                  className="w-full border border-gray-300 rounded px-3 py-1 text-xs text-gray-700"
                   readOnly
-                  className="w-full border border-gray-300 rounded-lg px-4 py-2 bg-gray-100 text-gray-700"
                 />
               </div>
               <div>
-                <label className="block font-semibold text-sm mb-1">Place of Supply</label>
+                <label className="block font-medium text-xs mb-1 text-gray-700">Place of Supply</label>
                 <input
                   type="text"
                   name="placeOfSupply"
                   value={formData.placeOfSupply}
                   onChange={handleChange}
                   placeholder="Enter Place of Supply"
-                  className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-300 shadow-sm"
+                  className="w-full border border-gray-300 rounded px-3 py-1 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent text-xs"
                 />
               </div>
             </div>
           )}
-          <div>
-            <label className="block font-semibold text-sm mb-1">Invoice #</label>
-            <input
-              type="text"
-              name="invoiceNumber"
-              value={formData.invoiceNumber}
-              onChange={handleChange}
-              className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-300 shadow-sm"
-            />
-          </div>
-          <div className="grid md:grid-cols-3 gap-6">
+          
+          <div className="grid md:grid-cols-3 gap-4">
             <div>
-              <label className="block font-semibold text-sm mb-1">
+              <label className="block font-medium text-xs mb-1 text-gray-700">
                 Invoice Date
               </label>
               <input
@@ -854,69 +999,69 @@ const InvoiceForm = () => {
                 name="invoiceDate"
                 value={formData.invoiceDate}
                 onChange={handleChange}
-                className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-300 shadow-sm"
+                className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent text-xs text-gray-800"
+                required
               />
             </div>
             <div>
-              <label className="block font-semibold text-sm mb-1">Terms</label>
+              <label className="block font-medium text-xs mb-1 text-gray-700">Terms</label>
               <select
                 name="terms"
                 value={formData.terms}
                 onChange={handleChange}
-                className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-300 shadow-sm"
+                className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent text-xs text-gray-800"
               >
-                <option value="">Select Terms</option>
-                <option>Net 15</option>
-                <option>Net 30</option>
-                <option>Net 45</option>
-                <option>Net 60</option>
-                <option>Due on Receipt</option>
-                <option>Due end of the month</option>
-                <option>Due end of next month</option>
+                {paymentTermsOptions.map(opt => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
               </select>
             </div>
             <div>
-              <label className="block font-semibold text-sm mb-1">Due Date</label>
+              <label className="block font-medium text-xs mb-1 text-gray-700">Due Date</label>
               <input
                 type="date"
                 name="dueDate"
                 value={formData.dueDate}
                 onChange={handleChange}
-                className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-300 shadow-sm"
+                className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent text-xs text-gray-800"
                 readOnly={!!formData.terms}
+                required
               />
             </div>
           </div>
-          <div className="grid md:grid-cols-2 gap-6">
+          
+          <div className="grid md:grid-cols-2 gap-4">
             <div>
-              <label className="block font-semibold text-sm mb-1">PO Number</label>
+              <label className="block font-medium text-xs mb-1 text-gray-700">PO Number</label>
               <input
                 type="text"
                 name="poNumber"
                 value={formData.poNumber}
                 onChange={handleChange}
                 placeholder="Enter PO Number"
-                className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-300 shadow-sm"
+                className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent text-xs"
               />
             </div>
             <div>
-              <label className="block font-semibold text-sm mb-1">Ship To</label>
+              <label className="block font-medium text-xs mb-1 text-gray-700">Ship To</label>
               <input
                 type="text"
                 name="shipTo"
                 value={formData.shipTo}
                 onChange={handleChange}
                 placeholder="Enter Ship To Address"
-                className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-300 shadow-sm"
+                className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent text-xs"
               />
             </div>
           </div>
         </div>
 
         {/* Items Table */}
-        <div>
-          <h3 className="text-xl font-semibold mb-4">Item Details</h3>
-          <div className="overflow-x-auto rounded-xl shadow-lg border border-gray-200 bg-gradient-to-br from-white to-blue-50">
+        <div className="space-y-3">
+          <h3 className="text-lg font-medium text-gray-800">
+            Item Details
+          </h3>
+          <div className="overflow-x-auto rounded border">
             <DndContext
               sensors={sensors}
               collisionDetection={closestCenter}
@@ -926,16 +1071,16 @@ const InvoiceForm = () => {
                 items={items.map(i => i.id)}
                 strategy={verticalListSortingStrategy}
               >
-                <table className="w-full text-sm">
+                <table className="w-full text-xs">
                   <thead>
-                    <tr className="bg-gradient-to-r from-blue-100 to-blue-200 text-blue-900">
-                      <th className="border-b px-6 py-3 text-left font-semibold">Item</th>
-                      <th className="border-b px-6 py-3 text-right font-semibold">Quantity</th>
-                      <th className="border-b px-6 py-3 text-right font-semibold">Rate</th>
-                      <th className="border-b px-6 py-3 text-right font-semibold">Discount (%)</th>
-                      <th className="border-b px-6 py-3 text-right font-semibold">Tax (%)</th>
-                      <th className="border-b px-6 py-3 text-right font-semibold">Amount</th>
-                      <th className="border-b px-6 py-3 text-center font-semibold">Remove</th>
+                    <tr className="border-b">
+                      <th className="px-3 py-2 text-left font-medium">Item</th>
+                      <th className="px-3 py-2 text-center font-medium">Quantity</th>
+                      <th className="px-3 py-2 text-center font-medium">Rate</th>
+                      <th className="px-3 py-2 text-center font-medium">Discount (%)</th>
+                      <th className="px-3 py-2 text-center font-medium">Tax (%)</th>
+                      <th className="px-3 py-2 text-center font-medium">Amount</th>
+                      <th className="px-3 py-2 text-center font-medium">Remove</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -943,42 +1088,43 @@ const InvoiceForm = () => {
                       <SortableRow key={item.id} id={item.id}>
                         {({ dragHandleProps }) => (
                           <>
-                            <td className="px-6 py-3">
+                            <td className="px-3 py-2">
                               <div className="flex items-center gap-2">
                                 <span
                                   {...dragHandleProps}
                                   title="Drag to reorder"
-                                  className="cursor-grab text-gray-400 hover:text-blue-500"
-                                  style={{ fontSize: 18 }}
+                                  className="cursor-grab text-gray-400 hover:text-blue-500 transition-colors text-sm"
                                 >
                                   &#9776;
                                 </span>
-                                <input
-                                  type="text"
-                                  value={item.name}
-                                  placeholder="Item name"
-                                  onChange={(e) =>
-                                    handleItemChange(idx, 'name', e.target.value)
-                                  }
-                                  className={invisibleInput}
-                                />
-                              </div>
-                              {/* Show SAC field only if item name is filled */}
-                              {item.name && (
-                                <div className="mt-2">
+                                <div className="flex-1">
                                   <input
                                     type="text"
-                                    value={item.sac}
-                                    placeholder="SAC"
+                                    value={item.name}
+                                    placeholder="Item name"
                                     onChange={(e) =>
-                                      handleItemChange(idx, 'sac', e.target.value)
+                                      handleItemChange(idx, 'name', e.target.value)
                                     }
-                                    className={invisibleInput + " text-xs border-b border-blue-200"}
+                                    className={invisibleInput + " font-medium text-xs"}
                                   />
+                                  {/* Show SAC field only if item name is filled */}
+                                  {item.name && (
+                                    <div className="mt-1">
+                                      <input
+                                        type="text"
+                                        value={item.sac}
+                                        placeholder="SAC"
+                                        onChange={(e) =>
+                                          handleItemChange(idx, 'sac', e.target.value)
+                                        }
+                                        className={invisibleInput + " text-xs text-gray-600 border-b border-blue-200"}
+                                      />
+                                    </div>
+                                  )}
                                 </div>
-                              )}
+                              </div>
                             </td>
-                            <td className="px-6 py-3 text-right">
+                            <td className="px-3 py-2 text-center">
                               <input
                                 type="number"
                                 min="1"
@@ -986,37 +1132,40 @@ const InvoiceForm = () => {
                                 onChange={(e) =>
                                   handleItemChange(idx, 'quantity', e.target.value)
                                 }
-                                className={invisibleInput + " text-right"}
+                                className={invisibleInput + " text-center text-xs"}
                               />
                             </td>
-                            <td className="px-6 py-3 text-right">
+                            <td className="px-3 py-2 text-center">
                               <input
                                 type="number"
                                 min="0"
+                                step="0.01"
                                 value={item.rate === "" || isNaN(item.rate) ? "" : item.rate}
                                 onChange={(e) =>
                                   handleItemChange(idx, 'rate', e.target.value)
                                 }
-                                className={invisibleInput + " text-right"}
+                                className={invisibleInput + " text-center text-xs"}
                               />
                             </td>
-                            <td className="px-6 py-3 text-right">
+                            <td className="px-3 py-2 text-center">
                               <input
                                 type="number"
                                 min="0"
+                                max="100"
+                                step="0.01"
                                 value={item.discount === "" || isNaN(item.discount) ? "" : item.discount}
                                 onChange={(e) =>
                                   handleItemChange(idx, 'discount', e.target.value)
                                 }
-                                className={invisibleInput + " text-right"}
+                                className={invisibleInput + " text-center text-xs"}
                               />
                             </td>
-                            <td className="px-6 py-3 text-right">
-                              <div className="flex items-center gap-2">
+                            <td className="px-3 py-2">
+                              <div className="space-y-1">
                                 <select
                                   value={item.taxType || ''}
                                   onChange={e => handleItemChange(idx, 'taxType', e.target.value)}
-                                  className="border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-blue-300 text-xs"
+                                  className="w-full border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-400 text-xs"
                                 >
                                   <option value="">Select Tax</option>
                                   {taxOptions.map(opt => (
@@ -1035,7 +1184,7 @@ const InvoiceForm = () => {
                                     value={item.customTaxRate}
                                     onChange={e => handleItemChange(idx, 'customTaxRate', e.target.value)}
                                     placeholder="Tax %"
-                                    className="w-16 border border-gray-300 rounded px-1 py-1 text-xs"
+                                    className="w-full border border-gray-300 rounded px-2 py-1 text-xs"
                                   />
                                 )}
                               </div>
@@ -1044,16 +1193,16 @@ const InvoiceForm = () => {
                                 const found = taxOptions.find(opt => opt.value === item.taxType);
                                 if (found && found.description) {
                                   return (
-                                    <div className="text-xs text-gray-500 mt-1">{found.description}</div>
+                                    <div className="text-xs text-gray-500 mt-1 italic">{found.description}</div>
                                   );
                                 }
                                 return null;
                               })()}
                               {/* Handle add new tax */}
                               {item.taxType === "add-new-tax" && (
-                                <div className="mt-2 bg-blue-50 p-2 rounded shadow">
+                                <div className="mt-2 p-2 rounded border">
                                   <form
-                                    className="flex items-center gap-2"
+                                    className="space-y-1"
                                     onSubmit={handleAddTaxOption}
                                   >
                                     <input
@@ -1061,7 +1210,7 @@ const InvoiceForm = () => {
                                       placeholder="Tax Label"
                                       value={newTaxLabel}
                                       onChange={e => setNewTaxLabel(e.target.value)}
-                                      className="border border-gray-300 rounded px-2 py-1 text-xs"
+                                      className="w-full border border-gray-300 rounded px-2 py-1 text-xs"
                                       required
                                     />
                                     <input
@@ -1071,41 +1220,44 @@ const InvoiceForm = () => {
                                       placeholder="Rate %"
                                       value={newTaxRate}
                                       onChange={e => setNewTaxRate(e.target.value)}
-                                      className="border border-gray-300 rounded px-2 py-1 text-xs w-16"
+                                      className="w-full border border-gray-300 rounded px-2 py-1 text-xs"
                                       required
                                     />
-                                    <button
-                                      type="submit"
-                                      className="bg-blue-500 text-white px-2 py-1 rounded text-xs"
-                                    >
-                                      Add
-                                    </button>
-                                    <button
-                                      type="button"
-                                      className="text-xs text-gray-500 ml-2"
-                                      onClick={() => {
-                                        setShowAddTax(false);
-                                        setNewTaxLabel('');
-                                        setNewTaxRate('');
-                                        // Reset the taxType for this item
-                                        handleItemChange(idx, 'taxType', '');
-                                      }}
-                                    >
-                                      Cancel
-                                    </button>
+                                    <div className="flex gap-1">
+                                      <button
+                                        type="submit"
+                                        className="flex-1 bg-blue-500 text-white px-2 py-1 rounded text-xs font-medium hover:bg-blue-600 transition"
+                                      >
+                                        Add
+                                      </button>
+                                      <button
+                                        type="button"
+                                        className="flex-1 text-xs text-gray-500 border border-gray-300 rounded px-2 py-1 hover:bg-gray-50 transition"
+                                        onClick={() => {
+                                          setShowAddTax(false);
+                                          setNewTaxLabel('');
+                                          setNewTaxRate('');
+                                          // Reset the taxType for this item
+                                          handleItemChange(idx, 'taxType', '');
+                                        }}
+                                      >
+                                        Cancel
+                                      </button>
+                                    </div>
                                   </form>
                                 </div>
                               )}
                             </td>
-                            <td className="px-6 py-3 text-right font-semibold text-blue-700">
-                              {calculateItemAmount(item).toFixed(2)}
+                            <td className="px-3 py-2 text-center font-medium text-blue-700 text-xs">
+                              ₹{calculateItemAmount(item).toFixed(2)}
                             </td>
-                            <td className="px-6 py-3 text-center">
+                            <td className="px-3 py-2 text-center">
                               <button
                                 type="button"
                                 onClick={() => handleRemoveRow(idx)}
-                                className="text-red-500 font-bold hover:text-red-700 transition"
+                                className="text-red-500 font-bold hover:text-red-700 transition p-1 rounded hover:bg-red-50 text-xs"
                                 title="Remove Item"
+                                disabled={items.length === 1}
                               >
                                 ✖
                               </button>
@@ -1122,81 +1274,98 @@ const InvoiceForm = () => {
           <button
             type="button"
             onClick={handleAddRow}
-            className="mt-4 inline-block text-sm px-5 py-2 border-2 border-blue-400 rounded-lg text-blue-700 font-semibold bg-white hover:bg-blue-50 transition"
+            className="inline-flex items-center px-4 py-2 border-2 border-blue-400 rounded text-blue-700 font-medium hover:bg-blue-50 transition text-xs"
           >
-            + Add New Item
+            <span className="mr-1">+</span>
+            Add New Item
           </button>
         </div>
 
-        {/* Subtotal Section */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
-          <div>
-            <label className="block font-semibold mb-2">Customer Notes</label>
-            <textarea
-              name="notes"
-              rows="4"
-              value={formData.notes}
-              onChange={handleChange}
-              className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-300 shadow-sm"
-            />
+        {/* Summary Section */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+          <div className="space-y-4">
+            <div>
+              <label className="block font-medium mb-2 text-xs text-gray-700">Customer Notes</label>
+              <textarea
+                name="customerNotes"
+                rows="3"
+                value={formData.customerNotes}
+                onChange={handleChange}
+                className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent resize-none text-xs"
+                placeholder="Enter customer notes..."
+              />
+            </div>
+            
+            <div>
+              <label className="block font-medium mb-2 text-xs text-gray-700">
+                Terms & Conditions
+              </label>
+              <textarea
+                name="termsAndConditions"
+                rows="2"
+                value={formData.termsAndConditions}
+                onChange={handleChange}
+                className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent resize-none text-xs"
+                placeholder="Enter terms and conditions..."
+              />
+            </div>
+            
+            <div>
+              <label className="block font-medium mb-2 text-xs text-gray-700">Attach File(s)</label>
+              <input
+                type="file"
+                multiple
+                onChange={(e) =>
+                  setFormData({ ...formData, files: e.target.files })
+                }
+                className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 text-xs"
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                Max 3 files, 10MB each
+              </p>
+            </div>
           </div>
-          <div className="bg-gradient-to-br from-blue-50 to-white rounded-xl p-6 border border-blue-100 shadow space-y-4">
+          
+          <div className="rounded border p-4 space-y-3">
             {/* Show/Hide Summary Toggle Button */}
-            <div className="flex justify-between items-center">
+            <div className="flex justify-between items-center border-b pb-2">
               <button
                 type="button"
-                className="text-blue-500 font-semibold underline hover:text-blue-700 transition"
+                className="text-blue-600 font-medium underline hover:text-blue-800 transition text-xs"
                 onClick={() => setFormData({ ...formData, showSummary: !formData.showSummary })}
               >
                 {formData.showSummary ? "Hide Total Summary" : "Show Total Summary"}
               </button>
             </div>
             
-            {/* Subtotal Details (hidden by default, shown when showSummary is true) */}
+            {/* Summary Details */}
             {formData.showSummary && (
               <>
-                <div className="flex justify-between">
-                  <span className="font-medium">Sub Total</span>
-                  <span className="font-semibold text-blue-900">
+                <div className="flex justify-between items-center py-1">
+                  <span className="font-medium text-gray-700 text-xs">Sub Total</span>
+                  <span className="font-medium text-blue-900 text-xs">
                     ₹ {calculateSubtotal().toFixed(2)}
                   </span>
                 </div>
-                <div className="flex justify-between items-center">
-                  <span className="font-medium">CGST</span>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="number"
-                      name="cgst"
-                      value={cgstRate}
-                      readOnly
-                      className="w-16 text-right border border-gray-300 rounded px-2 py-1 bg-gray-100 text-gray-700 text-sm"
-                    />
-                    <span className="text-sm">%</span>
-                    <span className="font-semibold text-blue-900 min-w-[80px] text-right">
-                      ₹ {calculateCGST().toFixed(2)}
-                    </span>
-                  </div>
+                
+                <div className="flex justify-between items-center py-1">
+                  <span className="font-medium text-gray-700 text-xs">CGST ({cgstRate.toFixed(1)}%)</span>
+                  <span className="font-medium text-blue-900 text-xs">
+                    ₹ {calculateCGST().toFixed(2)}
+                  </span>
                 </div>
-                <div className="flex justify-between items-center">
-                  <span className="font-medium">SGST</span>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="number"
-                      name="sgst"
-                      value={sgstRate}
-                      readOnly
-                      className="w-16 text-right border border-gray-300 rounded px-2 py-1 bg-gray-100 text-gray-700 text-sm"
-                    />
-                    <span className="text-sm">%</span>
-                    <span className="font-semibold text-blue-900 min-w-[80px] text-right">
-                      ₹ {calculateSGST().toFixed(2)}
-                    </span>
-                  </div>
+                
+                <div className="flex justify-between items-center py-1">
+                  <span className="font-medium text-gray-700 text-xs">SGST ({sgstRate.toFixed(1)}%)</span>
+                  <span className="font-medium text-blue-900 text-xs">
+                    ₹ {calculateSGST().toFixed(2)}
+                  </span>
                 </div>
+                
                 {/* TDS/TCS Section */}
-                <div className="flex flex-col gap-2">
-                  <span className="font-medium">TDS / TCS</span>
-                  <div className="flex gap-4 items-center">
+                <div className="border-t pt-3 space-y-2">
+                  <span className="font-medium text-gray-700 block text-xs">TDS / TCS</span>
+                  <div className="flex gap-4">
                     <label className="flex items-center gap-1">
                       <input
                         type="radio"
@@ -1204,8 +1373,9 @@ const InvoiceForm = () => {
                         value="TDS"
                         checked={formData.tdsTcsType === 'TDS'}
                         onChange={handleTdsTcsTypeChange}
+                        className="text-blue-600"
                       />
-                      TDS
+                      <span className="text-xs">TDS</span>
                     </label>
                     <label className="flex items-center gap-1">
                       <input
@@ -1214,17 +1384,19 @@ const InvoiceForm = () => {
                         value="TCS"
                         checked={formData.tdsTcsType === 'TCS'}
                         onChange={handleTdsTcsTypeChange}
+                        className="text-blue-600"
                       />
-                      TCS
+                      <span className="text-xs">TCS</span>
                     </label>
                   </div>
+                  
                   {formData.tdsTcsType === 'TDS' && (
-                    <div className="flex flex-col gap-2">
+                    <div className="space-y-2">
                       <select
                         name="tdsOption"
                         value={formData.tdsOption}
                         onChange={handleTdsOptionChange}
-                        className="border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-blue-300 text-xs"
+                        className="w-full border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-400 text-xs"
                       >
                         <option value="">Select TDS Type</option>
                         {TDS_OPTIONS.map((opt, idx) => (
@@ -1233,24 +1405,19 @@ const InvoiceForm = () => {
                           </option>
                         ))}
                       </select>
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="number"
-                          name="tdsRate"
-                          value={formData.tdsRate}
-                          readOnly
-                          className="w-16 text-right border border-gray-300 rounded px-2 py-1 bg-gray-100 text-gray-700 text-sm"
-                          placeholder="Rate %"
-                        />
-                        <span className="text-gray-500 text-xs">%</span>
-                        <span className="font-semibold text-blue-900 min-w-[80px] text-right">
-                          ₹ {calculateTDS().toFixed(2)}
-                        </span>
-                      </div>
+                      {formData.tdsRate && (
+                        <div className="flex justify-between items-center py-1">
+                          <span className="font-medium text-gray-700 text-xs">TDS ({formData.tdsRate}%)</span>
+                          <span className="font-medium text-red-600 text-xs">
+                            ₹ {calculateTDS().toFixed(2)}
+                          </span>
+                        </div>
+                      )}
                     </div>
                   )}
+                  
                   {formData.tdsTcsType === 'TCS' && (
-                    <div className="flex items-center gap-2">
+                    <div className="space-y-2">
                       <input
                         type="number"
                         name="tcsRate"
@@ -1258,13 +1425,18 @@ const InvoiceForm = () => {
                         onChange={handleTcsRateChange}
                         min="0"
                         max="100"
-                        className="w-16 text-right border border-gray-300 rounded px-2 py-1 text-sm"
-                        placeholder="TCS %"
+                        step="0.01"
+                        className="w-full border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-400 text-xs"
+                        placeholder="TCS Rate %"
                       />
-                      <span className="text-gray-500 text-xs">%</span>
-                      <span className="font-semibold text-blue-900 min-w-[80px] text-right">
-                        ₹ {calculateTCS().toFixed(2)}
-                      </span>
+                      {formData.tcsRate && (
+                        <div className="flex justify-between items-center py-1">
+                          <span className="font-medium text-gray-700 text-xs">TCS ({formData.tcsRate}%)</span>
+                          <span className="font-medium text-green-600 text-xs">
+                            ₹ {calculateTCS().toFixed(2)}
+                          </span>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
@@ -1272,73 +1444,60 @@ const InvoiceForm = () => {
             )}
             
             {/* Total (always visible) */}
-            <div className="flex justify-between font-bold text-lg border-t pt-4">
-              <span>Total</span>
-              <span className="text-blue-700">
+            <div className="flex justify-between items-center font-bold text-lg border-t pt-3">
+              <span className="text-gray-800 text-sm">Total</span>
+              <span className="text-blue-700 text-sm">
                 ₹ {calculateTotal().toFixed(2)}
               </span>
             </div>
           </div>
         </div>
 
-        {/* Terms and Upload */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <label className="block font-semibold mb-2">
-              Terms & Conditions
-            </label>
-            <textarea
-              name="termsAndConditions"
-              rows="3"
-              value={formData.termsAndConditions}
-              onChange={handleChange}
-              className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-300 shadow-sm"
-            />
-          </div>
-          <div>
-            <label className="block font-semibold mb-2">Attach File(s)</label>
-            <input
-              type="file"
-              multiple
-              onChange={(e) =>
-                setFormData({ ...formData, files: e.target.files })
-              }
-              className="w-full border border-gray-300 rounded-lg px-4 py-2"
-            />
-            <p className="text-xs text-gray-500 mt-1">
-              Max 3 files, 10MB each
-            </p>
-          </div>
-        </div>
-
         {/* Footer Buttons */}
-        <div className="flex justify-between pt-8 border-t">
+        <div className="flex flex-col sm:flex-row justify-between items-center gap-3 pt-6 border-t">
           <button
             type="button"
-            className="px-4 py-2 rounded-lg border text-gray-600 hover:bg-gray-100 font-medium disabled:opacity-50"
+            className="w-full sm:w-auto px-4 py-2 rounded border-2 border-gray-400 text-gray-700 hover:bg-gray-50 font-medium disabled:opacity-50 disabled:cursor-not-allowed transition text-xs"
             onClick={handlePrintDownload}
             disabled={isGeneratingPDF}
           >
-            {isGeneratingPDF ? 'Generating PDF...' : 'Print/Download'}
+            {isGeneratingPDF ? (
+              <span className="flex items-center justify-center">
+                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-gray-700" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Generating PDF...
+              </span>
+            ) : (
+              'Print/Download'
+            )}
           </button>
-          <div className="space-x-2">
+          
+          <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+            <button
+              type="button"
+              className="px-4 py-2 rounded border-2 border-gray-400 text-gray-700 hover:bg-gray-50 font-medium transition text-xs"
+              onClick={e => handleSubmit(e, false)}
+            >
+              Save as Draft
+            </button>
             <button
               type="submit"
-              className="px-6 py-2 bg-blue-600 text-white rounded-lg font-semibold shadow hover:bg-blue-700 transition"
+              className="px-6 py-2 bg-blue-600 text-white rounded font-medium hover:bg-blue-700 transition text-xs"
             >
               Save & Send
             </button>
             <button
               type="button"
-              className="px-4 py-2 rounded-lg border text-gray-600 hover:bg-gray-100 font-medium"
+              className="px-4 py-2 rounded border-2 border-gray-400 text-gray-700 hover:bg-gray-50 font-medium transition text-xs"
+              onClick={() => window.history.back()}
             >
               Cancel
             </button>
           </div>
         </div>
-      </form>
-    </div>
+      </div>
+    </form>
   );
-};
-
-export default InvoiceForm;
+}

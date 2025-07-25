@@ -25,6 +25,7 @@ function mapTermsToEnum(term: string): PaymentTerms {
 }
 
 export async function GET(request: NextRequest) {
+  
   try {
     const invoices = await prisma.invoice.findMany({
       include: {
@@ -84,8 +85,9 @@ export async function POST(request: Request) {
       total,
       isDraft,
     } = body;
+    console.log(customerId,invoiceCode,invoiceDate,items.length)
 
-    if (!customerId || !invoiceCode || !invoiceDate || !dueDate || !items?.length) {
+    if (!customerId || !invoiceCode || !invoiceDate  || !items?.length) {
       return NextResponse.json({ success: false, error: "Missing required invoice data" }, { status: 400 });
     }
 

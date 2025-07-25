@@ -44,7 +44,7 @@
     "components/Dashboard/Content/JobList.js",
     "app/bdsales/page.jsx",
     "components/Bdsales/Sidebar.js"
-, "_middlewear.bak", "components/Admin/Content/AddUser.js", "__middlewear.bak", "app/ACmanager/[id]/page.jsx"  ],
+, "_middlewear.bak", "components/Admin/Content/AddUser.js", "__middlewear.bak", "app/ACmanager/[id]/page.jsx", "components/Invoice/Content/invoicelist.js"  ],
   "exclude": [
     "node_modules"
   ]
