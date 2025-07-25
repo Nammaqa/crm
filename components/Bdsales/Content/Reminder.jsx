@@ -4,9 +4,16 @@ import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { toast } from "sonner";
 
+// Define the Spoc and Client interfaces
 interface Spoc {
   id: number;
   name: string;
@@ -16,7 +23,7 @@ interface Spoc {
 interface Client {
   id: number;
   companyName: string;
-  spocs?: Spoc[];
+  spocs: Spoc[]; // Spocs related to the client
 }
 
 interface ReminderFormProps {
@@ -28,30 +35,30 @@ export default function AddReminderForm({
   initialData,
   onSuccess,
 }: ReminderFormProps) {
-  const [clients, setClients] = useState<Client[]>([]);
-  const [selectedClient, setSelectedClient] = useState<Client | null>(null);
+  const [clients, setClients] = useState<Client[]>([]); // List of clients
+  const [selectedClient, setSelectedClient] = useState<Client | null>(null); // Selected client
   const [formData, setFormData] = useState({
     clientId: initialData?.clientId || "",
     companyName: initialData?.companyName || "",
     contactName: initialData?.contactName || "",
     phoneNumber: initialData?.phoneNumber || "",
     followUpDate: initialData?.followUpDateTime
-      ? new Date(initialData.followUpDateTime).toLocaleDateString("en-CA") // format YYYY-MM-DD
+      ? new Date(initialData.followUpDateTime).toISOString().split("T")[0]
       : "",
-    // Default follow-up time to 09:30
-    followUpTime: "09:30",
+    followUpTime: initialData?.followUpDateTime
+      ? new Date(initialData.followUpDateTime).toTimeString().slice(0, 5)
+      : "09:30", // Default time
     notes: initialData?.notes || "",
   });
+
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
 
   useEffect(() => {
-    fetchClients();
-
-    // Debugging log for initialData
-    console.log('Initial data for reminder form:', initialData);
+    fetchClients(); // Fetch clients on mount
   }, []);
 
+  // Fetch clients from API
   const fetchClients = async () => {
     try {
       const baseUrl = process.env.NEXT_PUBLIC_BASEAPIURL;
@@ -61,10 +68,11 @@ export default function AddReminderForm({
         const clientsWithSpocs = data.map((lead: any) => ({
           id: lead.id,
           companyName: lead.companyName,
-          spocs: lead.spocs || [],
+          spocs: lead.spocs || [], // Ensure spocs is an array
         }));
         setClients(clientsWithSpocs);
 
+        // If editing, preselect the client
         if (initialData?.clientId) {
           const client = clientsWithSpocs.find(
             (c: Client) => c.id === initialData.clientId
@@ -79,11 +87,12 @@ export default function AddReminderForm({
     }
   };
 
+  // Handle client selection change
   const handleClientChange = (clientId: string) => {
     const client = clients.find((c) => c.id.toString() === clientId);
     if (client) {
       setSelectedClient(client);
-      const primarySpoc = client.spocs?.[0];
+      const primarySpoc = client.spocs[0]; // Use first SPOC by default
       setFormData((prev) => ({
         ...prev,
         clientId,
@@ -94,38 +103,17 @@ export default function AddReminderForm({
     }
   };
 
+  // Handle form submission
   const handleSubmit = async () => {
     setLoading(true);
     try {
       const baseUrl = process.env.NEXT_PUBLIC_BASEAPIURL;
-
-      // Debugging log for formData
-      console.log('Form data being submitted:', formData);
-
-      // Get the logged-in user's email
-      const userRes = await fetch(`${baseUrl}/api/users/me`, {
-        method: "GET",
-        credentials: "include",
-      });
-
-      const userData = await userRes.json();
-      if (!userRes.ok) {
-        toast.error("Please log in to create reminders");
-        return;
-      }
-
-      const creatorEmail = userData?.data?.wbEmailId || userData?.wbEmailId;
-      if (!creatorEmail) {
-        toast.error("User email not found. Please update your profile.");
-        return;
-      }
-
       const method = initialData ? "PATCH" : "POST";
       const url = initialData
         ? `${baseUrl}/api/reminders/${initialData.id}`
         : `${baseUrl}/api/reminders`;
 
-      // Create date in local timezone (IST)
+      // Creating the date-time for follow-up (converts to UTC)
       const followUpDateTime = new Date(`${formData.followUpDate}T${formData.followUpTime}`);
 
       const reminderRes = await fetch(url, {
@@ -133,38 +121,26 @@ export default function AddReminderForm({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...formData,
-          followUpDateTime: followUpDateTime.toISOString(), // This preserves the correct IST time by converting to UTC
-          creatorEmail,
+          followUpDateTime: followUpDateTime.toISOString(),
         }),
       });
 
       if (reminderRes.ok) {
+        // Schedule the email reminder
         await fetch(`${baseUrl}/api/schedule-reminder`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             clientName: formData.companyName,
             contactName: formData.contactName,
-            followUpDate: followUpDateTime.toLocaleDateString("en-CA"),
-            followUpTime: formData.followUpTime, // Keep default "09:30"
+            followUpDate: formData.followUpDate,
+            followUpTime: formData.followUpTime,
             notes: formData.notes,
             phoneNumber: formData.phoneNumber,
-            creatorEmail,
           }),
         });
 
         setSuccess(true);
-        // Clear the form after success
-        setFormData({
-          clientId: "",
-          companyName: "",
-          contactName: "",
-          phoneNumber: "",
-          followUpDate: "",
-          followUpTime: "09:30", // Default follow-up time
-          notes: "",
-        });
-        setSelectedClient(null); // Clear selected client
         if (onSuccess) onSuccess();
       }
     } catch (error) {
@@ -189,11 +165,11 @@ export default function AddReminderForm({
         </SelectContent>
       </Select>
 
-      {selectedClient?.spocs && selectedClient.spocs.length > 0 && (
+      {selectedClient?.spocs.length > 0 && (
         <Select
           value={formData.contactName}
           onValueChange={(name) => {
-            const spoc = selectedClient.spocs?.find((s) => s.name === name);
+            const spoc = selectedClient.spocs.find((s) => s.name === name);
             setFormData((prev) => ({
               ...prev,
               contactName: name,
@@ -221,13 +197,21 @@ export default function AddReminderForm({
         readOnly
       />
 
-      <Input
-        type="date"
-        value={formData.followUpDate}
-        onChange={(e) => setFormData({ ...formData, followUpDate: e.target.value })}
-        min={new Date().toISOString().split("T")[0]}
-        className="flex-1"
-      />
+      <div className="flex gap-4">
+        <Input
+          type="date"
+          value={formData.followUpDate}
+          onChange={(e) => setFormData({ ...formData, followUpDate: e.target.value })}
+          min={new Date().toISOString().split("T")[0]}
+          className="flex-1"
+        />
+        <Input
+          type="time"
+          value={formData.followUpTime}
+          onChange={(e) => setFormData({ ...formData, followUpTime: e.target.value })}
+          className="w-32"
+        />
+      </div>
 
       <Textarea
         placeholder="Notes (optional)"
