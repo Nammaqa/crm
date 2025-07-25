@@ -5,7 +5,7 @@ import { Suspense } from 'react'
 import Image from "next/image";
 
 // Import section components
-import Overview from "@components/Recruiter/content/Overview";
+import Overview from "@/components/Recruiter/content/Overviewj";
 import RequirementList from "@components/Admin/Content/RequirementList";
 import CandidateForm from "@components/Recruiter/content/CandidateForm";
 import CandidateList from "@components/Recruiter/content/CandidateList";
