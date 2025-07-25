@@ -4,7 +4,7 @@ import { FaPlus, FaTrash, FaEdit, FaCheck, FaTimes, FaSearch, FaChevronDown, FaC
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 
-// Tab and dropdown options
+// Tab and dropdown options (keeping all existing options unchanged)
 const TABS = [
   { key: "otherDetails", label: "Other Details" },
   { key: "address", label: "Address" },
@@ -169,7 +169,7 @@ function SearchableDropdown({ options, value, onChange, placeholder, name }) {
     <div className="relative" ref={ref}>
       <button
         type="button"
-        className="flex items-center justify-between w-full p-2 border rounded bg-white"
+        className="flex items-center justify-between w-full p-2 border rounded bg-white text-sm"
         onClick={() => setOpen((v) => !v)}
         aria-haspopup="listbox"
         aria-expanded={open}
@@ -180,7 +180,7 @@ function SearchableDropdown({ options, value, onChange, placeholder, name }) {
         <FaChevronDown className="ml-2 text-gray-400" />
       </button>
       {open && (
-        <div className="absolute z-10 mt-1 w-full bg-white border rounded shadow-lg max-h-60 overflow-auto">
+        <div className="absolute z-20 mt-1 w-full bg-white border rounded shadow-lg max-h-60 overflow-auto">
           <div className="p-2">
             <input
               type="text"
@@ -198,7 +198,7 @@ function SearchableDropdown({ options, value, onChange, placeholder, name }) {
             {filtered.map((opt) => (
               <li
                 key={opt.value}
-                className={`px-4 py-2 cursor-pointer hover:bg-blue-50 ${
+                className={`px-4 py-2 cursor-pointer hover:bg-blue-50 text-sm ${
                   value === opt.value ? "bg-blue-100 font-semibold" : ""
                 }`}
                 onClick={() => {
@@ -219,7 +219,7 @@ function SearchableDropdown({ options, value, onChange, placeholder, name }) {
   );
 }
 
-// Validation functions
+// Validation functions (keeping all existing validation functions unchanged)
 function validateAddressFields(address) {
   const errors = {};
   if (!address.attention || address.attention.trim() === "") errors.attention = "Attention is required";
@@ -252,48 +252,129 @@ function validateContactPerson(person) {
   return errors;
 }
 
-// GST Modal Component
+// Updated GST Modal Component with blur background and top positioning
 function GSTModal({ open, onClose, gstDetails, onPrefill }) {
   if (!open) return null;
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
-      <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-lg relative">
+    <div 
+      className="fixed inset-0 z-50 flex items-start justify-center p-4 overflow-y-auto"
+      style={{
+        backdropFilter: 'blur(8px)',
+        backgroundColor: 'rgba(255, 255, 255, 0.1)'
+      }}
+    >
+      <div 
+        className="bg-white rounded-lg shadow-2xl p-6 w-full max-w-2xl relative max-h-[90vh] overflow-y-auto mt-16 transform transition-all duration-300 ease-in-out"
+        style={{
+          animation: open ? 'fadeInScale 0.3s ease-out' : 'fadeOutScale 0.3s ease-in'
+        }}
+      >
         <button
-          className="absolute top-2 right-2 text-gray-500 hover:text-gray-700"
+          className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 transition-colors duration-200 p-1 rounded-full hover:bg-gray-100"
           onClick={onClose}
         >
-          <FaTimes />
+          <FaTimes size={18} />
         </button>
-        <h2 className="text-xl font-bold mb-4">GST Details</h2>
+        
+        <h2 className="text-2xl font-bold mb-6 text-gray-800 pr-8">GST Details</h2>
+        
         {gstDetails ? (
-          <div className="space-y-2">
-            <div><span className="font-semibold">GSTIN:</span> {gstDetails.gstin}</div>
-            <div><span className="font-semibold">Legal Name:</span> {gstDetails.legalName}</div>
-            <div><span className="font-semibold">Trade Name:</span> {gstDetails.tradeName}</div>
-            <div><span className="font-semibold">Address:</span> {gstDetails.address}</div>
-            <div><span className="font-semibold">State:</span> {gstDetails.state}</div>
-            <div><span className="font-semibold">Pin Code:</span> {gstDetails.pinCode}</div>
-            <div><span className="font-semibold">Status:</span> {gstDetails.status}</div>
+          <div className="space-y-4 text-sm">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="bg-gray-50 p-3 rounded-lg">
+                <span className="font-semibold text-gray-700">GSTIN:</span>
+                <div className="text-gray-900 mt-1">{gstDetails.gstin}</div>
+              </div>
+              <div className="bg-gray-50 p-3 rounded-lg">
+                <span className="font-semibold text-gray-700">Legal Name:</span>
+                <div className="text-gray-900 mt-1">{gstDetails.legalName}</div>
+              </div>
+              <div className="bg-gray-50 p-3 rounded-lg">
+                <span className="font-semibold text-gray-700">Trade Name:</span>
+                <div className="text-gray-900 mt-1">{gstDetails.tradeName}</div>
+              </div>
+              <div className="bg-gray-50 p-3 rounded-lg">
+                <span className="font-semibold text-gray-700">Status:</span>
+                <div className="text-gray-900 mt-1">
+                  <span className={`px-2 py-1 rounded text-xs font-medium ${
+                    gstDetails.status === 'Active' 
+                      ? 'bg-green-100 text-green-800' 
+                      : 'bg-red-100 text-red-800'
+                  }`}>
+                    {gstDetails.status}
+                  </span>
+                </div>
+              </div>
+            </div>
+            
+            <div className="bg-gray-50 p-3 rounded-lg">
+              <span className="font-semibold text-gray-700">Address:</span>
+              <div className="text-gray-900 mt-1">{gstDetails.address}</div>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="bg-gray-50 p-3 rounded-lg">
+                <span className="font-semibold text-gray-700">State:</span>
+                <div className="text-gray-900 mt-1">{gstDetails.state}</div>
+              </div>
+              <div className="bg-gray-50 p-3 rounded-lg">
+                <span className="font-semibold text-gray-700">Pin Code:</span>
+                <div className="text-gray-900 mt-1">{gstDetails.pinCode}</div>
+              </div>
+            </div>
           </div>
         ) : (
-          <div className="text-red-600">GST details not found or invalid GSTIN.</div>
+          <div className="text-center py-8">
+            <div className="text-red-600 text-lg font-medium">GST details not found or invalid GSTIN.</div>
+            <div className="text-gray-500 text-sm mt-2">Please check the GSTIN and try again.</div>
+          </div>
         )}
-        <div className="flex justify-end gap-2 mt-6">
+        
+        <div className="flex justify-end gap-3 mt-8 pt-4 border-t border-gray-200">
           <button
-            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+            className={`px-6 py-2 rounded-lg text-white transition-all duration-200 text-sm font-medium ${
+              gstDetails 
+                ? 'bg-blue-600 hover:bg-blue-700 hover:shadow-lg transform hover:scale-105' 
+                : 'bg-gray-300 cursor-not-allowed'
+            }`}
             onClick={() => onPrefill(gstDetails)}
             disabled={!gstDetails}
           >
             Prefill Details
           </button>
           <button
-            className="px-4 py-2 bg-gray-400 text-white rounded hover:bg-gray-500"
+            className="px-6 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-all duration-200 text-sm font-medium hover:shadow-lg transform hover:scale-105"
             onClick={onClose}
           >
             Cancel
           </button>
         </div>
       </div>
+      
+      <style jsx>{`
+        @keyframes fadeInScale {
+          from {
+            opacity: 0;
+            transform: scale(0.9) translateY(-20px);
+          }
+          to {
+            opacity: 1;
+            transform: scale(1) translateY(0);
+          }
+        }
+        
+        @keyframes fadeOutScale {
+          from {
+            opacity: 1;
+            transform: scale(1) translateY(0);
+          }
+          to {
+            opacity: 0;
+            transform: scale(0.9) translateY(-20px);
+          }
+        }
+      `}</style>
     </div>
   );
 }
@@ -344,24 +425,24 @@ function CustomerForm({ customer, setCustomer, customerErrors, setCustomerErrors
   };
 
   return (
-    <>
-      <h2 className="text-2xl font-bold text-gray-800 mb-6">New Customer</h2>
+    <div className="mb-8">
+      <h2 className="text-3xl font-bold text-gray-800 mb-8">New Customer</h2>
       
-      <div className="mb-6 flex items-end gap-2">
-        <div className="flex-1">
-          <label className="block text-sm font-medium text-gray-700 mb-1">GST Number</label>
+      <div className="mb-8 flex flex-col sm:flex-row items-end gap-4">
+        <div className="flex-1 w-full">
+          <label className="block text-sm font-medium text-gray-700 mb-2">GST Number</label>
           <Input
             name="gstNumber"
             value={gstNumber}
             onChange={e => setGstNumber(e.target.value.toUpperCase())}
             placeholder="Enter GST Number"
-            className="p-2 border rounded w-full"
+            className="p-3 border rounded w-full text-sm"
             maxLength={15}
           />
         </div>
         <button
           type="button"
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+          className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm whitespace-nowrap w-full sm:w-auto justify-center"
           onClick={onGstCheck}
           disabled={!gstNumber || gstNumber.length !== 15}
           title="Check GST Details"
@@ -370,16 +451,16 @@ function CustomerForm({ customer, setCustomer, customerErrors, setCustomerErrors
         </button>
       </div>
       
-      <form className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-        <div className="md:col-span-2">
-          <label className="block text-sm font-medium text-gray-700 mb-1">Primary Contact</label>
-          <div className="flex gap-2">
+      <form className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-8">
+        <div className="md:col-span-2 lg:col-span-3 xl:col-span-4">
+          <label className="block text-sm font-medium text-gray-700 mb-2">Primary Contact</label>
+          <div className="flex gap-3">
             <select
               name="primarySuffix"
               value={customer.primarySuffix}
               onChange={handleCustomerChange}
-              className="p-2 border rounded"
-              style={{ minWidth: "80px" }}
+              className="p-3 border rounded text-sm"
+              style={{ minWidth: "100px" }}
             >
               {suffixOptions.map((opt) => (
                 <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -390,30 +471,30 @@ function CustomerForm({ customer, setCustomer, customerErrors, setCustomerErrors
               value={customer.primaryName}
               onChange={handleCustomerChange}
               placeholder="Enter Name"
-              className="p-2 border rounded w-full"
+              className="p-3 border rounded w-full text-sm"
             />
           </div>
           {customerErrors.primaryName && (
-            <div className="text-xs text-red-600 mt-1">{customerErrors.primaryName}</div>
+            <div className="text-sm text-red-600 mt-2">{customerErrors.primaryName}</div>
           )}
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Company</label>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Company</label>
           <Input
             name="company"
             value={customer.company}
             onChange={handleCustomerChange}
             placeholder="Company Name"
-            className="p-2 border rounded w-full"
+            className="p-3 border rounded w-full text-sm"
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Display Name</label>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Display Name</label>
           <select
             name="displayName"
             value={customer.displayName}
             onChange={handleCustomerChange}
-            className="p-2 border rounded w-full"
+            className="p-3 border rounded w-full text-sm"
           >
             <option value="">Select Display Name</option>
             {displayNameOptions.map((opt) => (
@@ -422,12 +503,12 @@ function CustomerForm({ customer, setCustomer, customerErrors, setCustomerErrors
           </select>
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Currency</label>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Currency</label>
           <select
             name="currency"
             value={customer.currency}
             onChange={handleCustomerChange}
-            className="p-2 border rounded w-full"
+            className="p-3 border rounded w-full text-sm"
           >
             {currencyOptions.map((opt) => (
               <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -435,37 +516,37 @@ function CustomerForm({ customer, setCustomer, customerErrors, setCustomerErrors
           </select>
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Email ID</label>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Email ID</label>
           <Input
             name="email"
             value={customer.email}
             onChange={handleCustomerChange}
             placeholder="Email"
-            className={`p-2 border rounded w-full ${customerErrors.email ? "border-red-500" : ""}`}
+            className={`p-3 border rounded w-full text-sm ${customerErrors.email ? "border-red-500" : ""}`}
             type="email"
           />
           {customerErrors.email && (
-            <div className="text-xs text-red-600 mt-1">{customerErrors.email}</div>
+            <div className="text-sm text-red-600 mt-2">{customerErrors.email}</div>
           )}
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Phone Number</label>
           <Input
             name="phone"
             value={customer.phone}
             onChange={handleCustomerChange}
             placeholder="10 digit phone number"
-            className={`p-2 border rounded w-full ${customerErrors.phone ? "border-red-500" : ""}`}
+            className={`p-3 border rounded w-full text-sm ${customerErrors.phone ? "border-red-500" : ""}`}
             type="tel"
             maxLength={10}
             pattern="[6-9][0-9]{9}"
           />
           {customerErrors.phone && (
-            <div className="text-xs text-red-600 mt-1">{customerErrors.phone}</div>
+            <div className="text-sm text-red-600 mt-2">{customerErrors.phone}</div>
           )}
         </div>
       </form>
-    </>
+    </div>
   );
 }
 
@@ -652,7 +733,7 @@ function InvoiceOtherDetails({
       <div className="relative" ref={ref}>
         <button
           type="button"
-          className="flex items-center justify-between w-full p-2 border rounded bg-white"
+          className="flex items-center justify-between w-full p-3 border rounded bg-white text-sm"
           onClick={() => setOpen((v) => !v)}
           aria-haspopup="listbox"
           aria-expanded={open}
@@ -670,12 +751,12 @@ function InvoiceOtherDetails({
           <FaChevronDown className="ml-2 text-gray-400" />
         </button>
         {open && (
-          <div className="absolute z-10 mt-1 w-full bg-white border rounded shadow-lg max-h-72 overflow-auto">
+          <div className="absolute z-20 mt-1 w-full bg-white border rounded shadow-lg max-h-72 overflow-auto">
             <ul tabIndex={-1} className="max-h-64 overflow-auto">
               {gstTreatmentOptions.map((opt) => (
                 <li
                   key={opt.value}
-                  className={`px-4 py-2 cursor-pointer hover:bg-blue-50 ${
+                  className={`px-4 py-2 cursor-pointer hover:bg-blue-50 text-sm ${
                     value === opt.value ? "bg-blue-100 font-semibold" : ""
                   }`}
                   onClick={() => {
@@ -697,14 +778,14 @@ function InvoiceOtherDetails({
   }
 
   return (
-    <>
-      <h2 className="text-2xl font-bold text-gray-800 mb-6">Other Information</h2>
+    <div className="mb-8">
+      <h2 className="text-3xl font-bold text-gray-800 mb-8">Other Information</h2>
       
-      <div className="flex border-b mb-6">
+      <div className="flex border-b mb-8 overflow-x-auto">
         {TABS.map((tab) => (
           <button
             key={tab.key}
-            className={`px-6 py-2 font-medium text-sm border-b-2 transition-colors duration-200
+            className={`px-8 py-3 font-medium text-sm border-b-2 transition-colors duration-200 whitespace-nowrap
               ${activeTab === tab.key
                 ? "border-blue-500 text-blue-600"
                 : "border-transparent text-gray-500 hover:text-blue-500"}`}
@@ -717,9 +798,9 @@ function InvoiceOtherDetails({
       </div>
       
       {activeTab === "otherDetails" && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-8">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
               GST Treatment
             </label>
             <GSTTreatmentDropdown
@@ -728,7 +809,7 @@ function InvoiceOtherDetails({
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
               GSTIN/UIN
             </label>
             <Input
@@ -736,12 +817,12 @@ function InvoiceOtherDetails({
               value={otherDetails.gstinUin || ""}
               onChange={handleChange}
               placeholder="Enter GSTIN/UIN"
-              className="p-2 border rounded w-full"
+              className="p-3 border rounded w-full text-sm"
               maxLength={15}
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
               Business Legal Name
             </label>
             <Input
@@ -749,11 +830,11 @@ function InvoiceOtherDetails({
               value={otherDetails.businessLegalName || ""}
               onChange={handleChange}
               placeholder="Enter Business Legal Name"
-              className="p-2 border rounded w-full"
+              className="p-3 border rounded w-full text-sm"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
               Business Trade Name
             </label>
             <Input
@@ -761,11 +842,11 @@ function InvoiceOtherDetails({
               value={otherDetails.businessTradeName || ""}
               onChange={handleChange}
               placeholder="Enter Business Trade Name"
-              className="p-2 border rounded w-full"
+              className="p-3 border rounded w-full text-sm"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
               Place of Supply
             </label>
             <SearchableDropdown
@@ -777,14 +858,14 @@ function InvoiceOtherDetails({
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
               Payment Terms
             </label>
             <select
               name="paymentTerms"
               value={otherDetails.paymentTerms || "NET_30"}
               onChange={handleChange}
-              className="p-2 border rounded w-full"
+              className="p-3 border rounded w-full text-sm"
             >
               {paymentTermsOptions.map((opt) => (
                 <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -792,124 +873,123 @@ function InvoiceOtherDetails({
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">PAN Number</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">PAN Number</label>
             <Input
               name="panNumber"
               value={otherDetails.panNumber || ""}
               onChange={handleChange}
               placeholder="Enter PAN Number"
-              className="p-2 border rounded w-full"
+              className="p-3 border rounded w-full text-sm"
             />
           </div>
         </div>
       )}
-
       {activeTab === "contactPersons" && (
         <div className="mb-8">
           <form
-            className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end mb-4 bg-gray-50 p-4 rounded"
+            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 items-end mb-6 bg-gray-50 p-6 rounded-lg"
             onSubmit={handleAddOrEditContactPerson}
           >
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">Salutation</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Salutation</label>
               <select
                 name="salutation"
                 value={newContact.salutation}
                 onChange={handleNewContactChange}
-                className={`p-2 border rounded w-full ${newContactErrors.salutation ? "border-red-500" : ""}`}
+                className={`p-3 border rounded w-full text-sm ${newContactErrors.salutation ? "border-red-500" : ""}`}
               >
                 {salutationOptions.map((opt) => (
                   <option key={opt.value} value={opt.value}>{opt.label}</option>
                 ))}
               </select>
               {newContactErrors.salutation && (
-                <div className="text-xs text-red-600">{newContactErrors.salutation}</div>
+                <div className="text-sm text-red-600 mt-1">{newContactErrors.salutation}</div>
               )}
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">First Name</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">First Name</label>
               <Input
                 name="firstName"
                 value={newContact.firstName}
                 onChange={handleNewContactChange}
                 placeholder="First Name"
-                className={`p-2 border rounded w-full ${newContactErrors.firstName ? "border-red-500" : ""}`}
+                className={`p-3 border rounded w-full text-sm ${newContactErrors.firstName ? "border-red-500" : ""}`}
               />
               {newContactErrors.firstName && (
-                <div className="text-xs text-red-600">{newContactErrors.firstName}</div>
+                <div className="text-sm text-red-600 mt-1">{newContactErrors.firstName}</div>
               )}
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">Last Name</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Last Name</label>
               <Input
                 name="lastName"
                 value={newContact.lastName}
                 onChange={handleNewContactChange}
                 placeholder="Last Name"
-                className={`p-2 border rounded w-full ${newContactErrors.lastName ? "border-red-500" : ""}`}
+                className={`p-3 border rounded w-full text-sm ${newContactErrors.lastName ? "border-red-500" : ""}`}
               />
               {newContactErrors.lastName && (
-                <div className="text-xs text-red-600">{newContactErrors.lastName}</div>
+                <div className="text-sm text-red-600 mt-1">{newContactErrors.lastName}</div>
               )}
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">Email</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
               <Input
                 name="email"
                 value={newContact.email}
                 onChange={handleNewContactChange}
                 placeholder="Email"
-                className={`p-2 border rounded w-full ${newContactErrors.email ? "border-red-500" : ""}`}
+                className={`p-3 border rounded w-full text-sm ${newContactErrors.email ? "border-red-500" : ""}`}
                 type="email"
               />
               {newContactErrors.email && (
-                <div className="text-xs text-red-600">{newContactErrors.email}</div>
+                <div className="text-sm text-red-600 mt-1">{newContactErrors.email}</div>
               )}
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">Address</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Address</label>
               <Input
                 name="address"
                 value={newContact.address}
                 onChange={handleNewContactChange}
                 placeholder="Address"
-                className="p-2 border rounded w-full"
+                className="p-3 border rounded w-full text-sm"
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">Work Phone</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Work Phone</label>
               <Input
                 name="workPhone"
                 value={newContact.workPhone}
                 onChange={handleNewContactChange}
                 placeholder="Work Phone"
-                className={`p-2 border rounded w-full ${newContactErrors.workPhone ? "border-red-500" : ""}`}
+                className={`p-3 border rounded w-full text-sm ${newContactErrors.workPhone ? "border-red-500" : ""}`}
                 type="tel"
                 maxLength={10}
               />
               {newContactErrors.workPhone && (
-                <div className="text-xs text-red-600">{newContactErrors.workPhone}</div>
+                <div className="text-sm text-red-600 mt-1">{newContactErrors.workPhone}</div>
               )}
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">Mobile</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Mobile</label>
               <Input
                 name="mobile"
                 value={newContact.mobile}
                 onChange={handleNewContactChange}
                 placeholder="Mobile"
-                className={`p-2 border rounded w-full ${newContactErrors.mobile ? "border-red-500" : ""}`}
+                className={`p-3 border rounded w-full text-sm ${newContactErrors.mobile ? "border-red-500" : ""}`}
                 type="tel"
                 maxLength={10}
               />
               {newContactErrors.mobile && (
-                <div className="text-xs text-red-600">{newContactErrors.mobile}</div>
+                <div className="text-sm text-red-600 mt-1">{newContactErrors.mobile}</div>
               )}
             </div>
-            <div className="md:col-span-2 flex gap-2 justify-end mt-2">
+            <div className="xl:col-span-5 flex gap-3 justify-end mt-4">
               <button
                 type="submit"
-                className={`flex items-center gap-2 px-4 py-2 rounded text-white transition ${
+                className={`flex items-center gap-2 px-6 py-3 rounded text-white transition text-sm ${
                   editIndex !== null
                     ? "bg-yellow-600 hover:bg-yellow-700"
                     : "bg-blue-600 hover:bg-blue-700"
@@ -921,7 +1001,7 @@ function InvoiceOtherDetails({
               {editIndex !== null && (
                 <button
                   type="button"
-                  className="flex items-center gap-2 px-4 py-2 rounded bg-gray-400 hover:bg-gray-500 text-white"
+                  className="flex items-center gap-2 px-6 py-3 rounded bg-gray-400 hover:bg-gray-500 text-white text-sm"
                   onClick={handleCancelEdit}
                 >
                   <FaTimes /> Cancel
@@ -931,23 +1011,23 @@ function InvoiceOtherDetails({
           </form>
           
           <div className="overflow-x-auto">
-            <table className="min-w-full table-auto border">
+            <table className="min-w-full table-auto border text-sm">
               <thead>
                 <tr className="bg-gray-100">
-                  <th className="px-3 py-2 border text-left font-semibold">Salutation</th>
-                  <th className="px-3 py-2 border text-left font-semibold">First Name</th>
-                  <th className="px-3 py-2 border text-left font-semibold">Last Name</th>
-                  <th className="px-3 py-2 border text-left font-semibold">Email</th>
-                  <th className="px-3 py-2 border text-left font-semibold">Address</th>
-                  <th className="px-3 py-2 border text-left font-semibold">Work Phone</th>
-                  <th className="px-3 py-2 border text-left font-semibold">Mobile</th>
-                  <th className="px-3 py-2 border text-center font-semibold">Action</th>
+                  <th className="px-4 py-3 border text-left font-semibold">Salutation</th>
+                  <th className="px-4 py-3 border text-left font-semibold">First Name</th>
+                  <th className="px-4 py-3 border text-left font-semibold">Last Name</th>
+                  <th className="px-4 py-3 border text-left font-semibold">Email</th>
+                  <th className="px-4 py-3 border text-left font-semibold">Address</th>
+                  <th className="px-4 py-3 border text-left font-semibold">Work Phone</th>
+                  <th className="px-4 py-3 border text-left font-semibold">Mobile</th>
+                  <th className="px-4 py-3 border text-center font-semibold">Action</th>
                 </tr>
               </thead>
               <tbody>
                 {contactPersons.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="text-center py-4 text-gray-500">
+                    <td colSpan={8} className="text-center py-6 text-gray-500">
                       No contact persons added.
                     </td>
                   </tr>
@@ -956,14 +1036,14 @@ function InvoiceOtherDetails({
                     const actualIdx = (currentPage - 1) * itemsPerPage + idx;
                     return (
                       <tr key={actualIdx} className="hover:bg-gray-50">
-                        <td className="px-3 py-2 border">{person.salutation}</td>
-                        <td className="px-3 py-2 border">{person.firstName}</td>
-                        <td className="px-3 py-2 border">{person.lastName}</td>
-                        <td className="px-3 py-2 border">{person.email}</td>
-                        <td className="px-3 py-2 border">{person.address}</td>
-                        <td className="px-3 py-2 border">{person.workPhone}</td>
-                        <td className="px-3 py-2 border">{person.mobile}</td>
-                        <td className="px-3 py-2 border text-center flex gap-2 justify-center">
+                        <td className="px-4 py-3 border">{person.salutation}</td>
+                        <td className="px-4 py-3 border">{person.firstName}</td>
+                        <td className="px-4 py-3 border">{person.lastName}</td>
+                        <td className="px-4 py-3 border">{person.email}</td>
+                        <td className="px-4 py-3 border">{person.address}</td>
+                        <td className="px-4 py-3 border">{person.workPhone}</td>
+                        <td className="px-4 py-3 border">{person.mobile}</td>
+                        <td className="px-4 py-3 border text-center flex gap-2 justify-center">
                           <button
                             className="text-yellow-600 hover:text-yellow-800"
                             onClick={() => handleEditContactPerson(actualIdx)}
@@ -988,9 +1068,9 @@ function InvoiceOtherDetails({
               </tbody>
             </table>
             {contactPersons.length > itemsPerPage && (
-              <div className="flex justify-center items-center gap-2 mt-4">
+              <div className="flex justify-center items-center gap-3 mt-6">
                 <button
-                  className="px-2 py-1 rounded bg-gray-200 hover:bg-gray-300"
+                  className="px-3 py-2 rounded bg-gray-200 hover:bg-gray-300 text-sm"
                   onClick={() => handlePageChange(currentPage - 1)}
                   disabled={currentPage === 1}
                 >
@@ -999,14 +1079,14 @@ function InvoiceOtherDetails({
                 {Array.from({ length: totalPages }, (_, i) => (
                   <button
                     key={i + 1}
-                    className={`px-3 py-1 rounded ${currentPage === i + 1 ? "bg-blue-500 text-white" : "bg-gray-200 hover:bg-gray-300"}`}
+                    className={`px-4 py-2 rounded text-sm ${currentPage === i + 1 ? "bg-blue-500 text-white" : "bg-gray-200 hover:bg-gray-300"}`}
                     onClick={() => handlePageChange(i + 1)}
                   >
                     {i + 1}
                   </button>
                 ))}
                 <button
-                  className="px-2 py-1 rounded bg-gray-200 hover:bg-gray-300"
+                  className="px-3 py-2 rounded bg-gray-200 hover:bg-gray-300 text-sm"
                   onClick={() => handlePageChange(currentPage + 1)}
                   disabled={currentPage === totalPages}
                 >
@@ -1019,12 +1099,13 @@ function InvoiceOtherDetails({
       )}
 
       {activeTab === "address" && (
-        <div className="space-y-8 mb-8">
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 mb-8">
+          {/* Billing Address */}
           <div className="border rounded-lg p-6 bg-gray-50">
-            <h3 className="text-lg font-semibold text-gray-800 mb-4">Billing Address</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <h3 className="text-xl font-semibold text-gray-800 mb-6">Billing Address</h3>
+            <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Attention<span className="text-red-500">*</span>
                 </label>
                 <Input
@@ -1032,32 +1113,32 @@ function InvoiceOtherDetails({
                   value={otherDetails.attention || ""}
                   onChange={handleChange}
                   placeholder="Enter Attention"
-                  className={`p-2 border rounded w-full ${addressErrors.attention ? "border-red-500" : ""}`}
+                  className={`p-3 border rounded w-full text-sm ${addressErrors.attention ? "border-red-500" : ""}`}
                 />
                 {addressErrors.attention && (
-                  <div className="text-xs text-red-600 mt-1">{addressErrors.attention}</div>
+                  <div className="text-sm text-red-600 mt-1">{addressErrors.attention}</div>
                 )}
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Country/Region<span className="text-red-500">*</span>
                 </label>
                 <select
                   name="country"
                   value={otherDetails.country || ""}
                   onChange={handleChange}
-                  className={`p-2 border rounded w-full ${addressErrors.country ? "border-red-500" : ""}`}
+                  className={`p-3 border rounded w-full text-sm ${addressErrors.country ? "border-red-500" : ""}`}
                 >
                   {countryOptions.map((opt) => (
                     <option key={opt.value} value={opt.value}>{opt.label}</option>
                   ))}
                 </select>
                 {addressErrors.country && (
-                  <div className="text-xs text-red-600 mt-1">{addressErrors.country}</div>
+                  <div className="text-sm text-red-600 mt-1">{addressErrors.country}</div>
                 )}
               </div>
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Address<span className="text-red-500">*</span>
                 </label>
                 <Textarea
@@ -1065,199 +1146,207 @@ function InvoiceOtherDetails({
                   value={otherDetails.address || ""}
                   onChange={handleChange}
                   placeholder="Enter Address"
-                  className={`p-2 border rounded w-full ${addressErrors.address ? "border-red-500" : ""}`}
+                  className={`p-3 border rounded w-full text-sm ${addressErrors.address ? "border-red-500" : ""}`}
                 />
                 {addressErrors.address && (
-                  <div className="text-xs text-red-600 mt-1">{addressErrors.address}</div>
+                  <div className="text-sm text-red-600 mt-1">{addressErrors.address}</div>
                 )}
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  City<span className="text-red-500">*</span>
-                </label>
-                <Input
-                  name="city"
-                  value={otherDetails.city || ""}
-                  onChange={handleChange}
-                  placeholder="Enter City"
-                  className={`p-2 border rounded w-full ${addressErrors.city ? "border-red-500" : ""}`}
-                />
-                {addressErrors.city && (
-                  <div className="text-xs text-red-600 mt-1">{addressErrors.city}</div>
-                )}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    City<span className="text-red-500">*</span>
+                  </label>
+                  <Input
+                    name="city"
+                    value={otherDetails.city || ""}
+                    onChange={handleChange}
+                    placeholder="Enter City"
+                    className={`p-3 border rounded w-full text-sm ${addressErrors.city ? "border-red-500" : ""}`}
+                  />
+                  {addressErrors.city && (
+                    <div className="text-sm text-red-600 mt-1">{addressErrors.city}</div>
+                  )}
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    State<span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    name="state"
+                    value={otherDetails.state || ""}
+                    onChange={handleChange}
+                    className={`p-3 border rounded w-full text-sm ${addressErrors.state ? "border-red-500" : ""}`}
+                  >
+                    {stateOptions.map((opt) => (
+                      <option key={opt.value} value={opt.value}>{opt.label}</option>
+                    ))}
+                  </select>
+                  {addressErrors.state && (
+                    <div className="text-sm text-red-600 mt-1">{addressErrors.state}</div>
+                  )}
+                </div>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Pin Code<span className="text-red-500">*</span>
+                  </label>
+                  <Input
+                    name="pinCode"
+                    value={otherDetails.pinCode || ""}
+                    onChange={handleChange}
+                    placeholder="Enter 6 digit Pin Code"
+                    className={`p-3 border rounded w-full text-sm ${addressErrors.pinCode ? "border-red-500" : ""}`}
+                    maxLength={6}
+                    pattern="\d{6}"
+                  />
+                  {addressErrors.pinCode && (
+                    <div className="text-sm text-red-600 mt-1">{addressErrors.pinCode}</div>
+                  )}
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Phone<span className="text-red-500">*</span>
+                  </label>
+                  <Input
+                    name="phone"
+                    value={otherDetails.phone || ""}
+                    onChange={handleChange}
+                    placeholder="10 digit phone number"
+                    className={`p-3 border rounded w-full text-sm ${addressErrors.phone ? "border-red-500" : ""}`}
+                    maxLength={10}
+                    pattern="[6-9][0-9]{9}"
+                  />
+                  {addressErrors.phone && (
+                    <div className="text-sm text-red-600 mt-1">{addressErrors.phone}</div>
+                  )}
+                </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  State<span className="text-red-500">*</span>
-                </label>
-                <select
-                  name="state"
-                  value={otherDetails.state || ""}
-                  onChange={handleChange}
-                  className={`p-2 border rounded w-full ${addressErrors.state ? "border-red-500" : ""}`}
-                >
-                  {stateOptions.map((opt) => (
-                    <option key={opt.value} value={opt.value}>{opt.label}</option>
-                  ))}
-                </select>
-                {addressErrors.state && (
-                  <div className="text-xs text-red-600 mt-1">{addressErrors.state}</div>
-                )}
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Pin Code<span className="text-red-500">*</span>
-                </label>
-                <Input
-                  name="pinCode"
-                  value={otherDetails.pinCode || ""}
-                  onChange={handleChange}
-                  placeholder="Enter 6 digit Pin Code"
-                  className={`p-2 border rounded w-full ${addressErrors.pinCode ? "border-red-500" : ""}`}
-                  maxLength={6}
-                  pattern="\d{6}"
-                />
-                {addressErrors.pinCode && (
-                  <div className="text-xs text-red-600 mt-1">{addressErrors.pinCode}</div>
-                )}
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Phone<span className="text-red-500">*</span>
-                </label>
-                <Input
-                  name="phone"
-                  value={otherDetails.phone || ""}
-                  onChange={handleChange}
-                  placeholder="10 digit phone number"
-                  className={`p-2 border rounded w-full ${addressErrors.phone ? "border-red-500" : ""}`}
-                  maxLength={10}
-                  pattern="[6-9][0-9]{9}"
-                />
-                {addressErrors.phone && (
-                  <div className="text-xs text-red-600 mt-1">{addressErrors.phone}</div>
-                )}
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Fax Number</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Fax Number</label>
                 <Input
                   name="faxNumber"
                   value={otherDetails.faxNumber || ""}
                   onChange={handleChange}
                   placeholder="Fax Number (6-15 digits)"
-                  className={`p-2 border rounded w-full ${addressErrors.faxNumber ? "border-red-500" : ""}`}
+                  className={`p-3 border rounded w-full text-sm ${addressErrors.faxNumber ? "border-red-500" : ""}`}
                   maxLength={15}
                   pattern="\d{6,15}"
                 />
                 {addressErrors.faxNumber && (
-                  <div className="text-xs text-red-600 mt-1">{addressErrors.faxNumber}</div>
+                  <div className="text-sm text-red-600 mt-1">{addressErrors.faxNumber}</div>
                 )}
               </div>
             </div>
           </div>
-
+          {/* Shipping Address */}
           <div className="border rounded-lg p-6 bg-blue-50">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-800">Shipping Address <span className="text-sm text-gray-500">(Optional)</span></h3>
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-semibold text-gray-800">Shipping Address <span className="text-sm text-gray-500">(Optional)</span></h3>
               <button
                 type="button"
                 onClick={copyBillingToShipping}
-                className="flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors text-sm"
                 title="Copy from Billing Address"
               >
                 <FaCopy size={14} />
                 Copy from Billing
               </button>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Attention</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Attention</label>
                 <Input
                   name="shippingAttention"
                   value={otherDetails.shippingAttention || ""}
                   onChange={handleChange}
                   placeholder="Enter Attention"
-                  className="p-2 border rounded w-full"
+                  className="p-3 border rounded w-full text-sm"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Country/Region</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Country/Region</label>
                 <select
                   name="shippingCountry"
                   value={otherDetails.shippingCountry || ""}
                   onChange={handleChange}
-                  className="p-2 border rounded w-full"
+                  className="p-3 border rounded w-full text-sm"
                 >
                   {countryOptions.map((opt) => (
                     <option key={opt.value} value={opt.value}>{opt.label}</option>
                   ))}
                 </select>
               </div>
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Address</label>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Address</label>
                 <Textarea
                   name="shippingAddress"
                   value={otherDetails.shippingAddress || ""}
                   onChange={handleChange}
                   placeholder="Enter Shipping Address"
-                  className="p-2 border rounded w-full"
+                  className="p-3 border rounded w-full text-sm"
                 />
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">City</label>
-                <Input
-                  name="shippingCity"
-                  value={otherDetails.shippingCity || ""}
-                  onChange={handleChange}
-                  placeholder="Enter City"
-                  className="p-2 border rounded w-full"
-                />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">City</label>
+                  <Input
+                    name="shippingCity"
+                    value={otherDetails.shippingCity || ""}
+                    onChange={handleChange}
+                    placeholder="Enter City"
+                    className="p-3 border rounded w-full text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">State</label>
+                  <select
+                    name="shippingState"
+                    value={otherDetails.shippingState || ""}
+                    onChange={handleChange}
+                    className="p-3 border rounded w-full text-sm"
+                  >
+                    {stateOptions.map((opt) => (
+                      <option key={opt.value} value={opt.value}>{opt.label}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Pin Code</label>
+                  <Input
+                    name="shippingPinCode"
+                    value={otherDetails.shippingPinCode || ""}
+                    onChange={handleChange}
+                    placeholder="Enter 6 digit Pin Code"
+                    className="p-3 border rounded w-full text-sm"
+                    maxLength={6}
+                    pattern="\d{6}"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Phone</label>
+                  <Input
+                    name="shippingPhone"
+                    value={otherDetails.shippingPhone || ""}
+                    onChange={handleChange}
+                    placeholder="10 digit phone number"
+                    className="p-3 border rounded w-full text-sm"
+                    maxLength={10}
+                    pattern="[6-9][0-9]{9}"
+                  />
+                </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">State</label>
-                <select
-                  name="shippingState"
-                  value={otherDetails.shippingState || ""}
-                  onChange={handleChange}
-                  className="p-2 border rounded w-full"
-                >
-                  {stateOptions.map((opt) => (
-                    <option key={opt.value} value={opt.value}>{opt.label}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Pin Code</label>
-                <Input
-                  name="shippingPinCode"
-                  value={otherDetails.shippingPinCode || ""}
-                  onChange={handleChange}
-                  placeholder="Enter 6 digit Pin Code"
-                  className="p-2 border rounded w-full"
-                  maxLength={6}
-                  pattern="\d{6}"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
-                <Input
-                  name="shippingPhone"
-                  value={otherDetails.shippingPhone || ""}
-                  onChange={handleChange}
-                  placeholder="10 digit phone number"
-                  className="p-2 border rounded w-full"
-                  maxLength={10}
-                  pattern="[6-9][0-9]{9}"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Fax Number</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Fax Number</label>
                 <Input
                   name="shippingFax"
                   value={otherDetails.shippingFax || ""}
                   onChange={handleChange}
                   placeholder="Fax Number (6-15 digits)"
-                  className="p-2 border rounded w-full"
+                  className="p-3 border rounded w-full text-sm"
                   maxLength={15}
                   pattern="\d{6,15}"
                 />
@@ -1269,17 +1358,17 @@ function InvoiceOtherDetails({
 
       {activeTab === "remarks" && (
         <div className="mb-8">
-          <label className="block text-sm font-medium text-gray-700 mb-1">Remarks</label>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Remarks</label>
           <Textarea
             name="remarks"
             value={otherDetails.remarks || ""}
             onChange={handleChange}
             placeholder="Enter any remarks"
-            className="p-2 border rounded w-full"
+            className="p-3 border rounded w-full text-sm"
           />
         </div>
       )}
-    </>
+    </div>
   );
 }
 
@@ -1404,7 +1493,6 @@ export default function AddCustomerForm() {
       alert("Please fill all required fields correctly before submitting.");
       return;
     }
-
     try {
       const formData = new FormData();
       formData.append("customer", JSON.stringify(customer));
@@ -1454,63 +1542,61 @@ export default function AddCustomerForm() {
   const handlePrint = () => window.print();
 
   return (
-    <div className="max-w-6xl mx-auto p-6 bg-[#F7F8FA] min-h-screen">
-      <CustomerForm
-        customer={customer}
-        setCustomer={setCustomer}
-        customerErrors={customerErrors}
-        setCustomerErrors={setCustomerErrors}
-        gstNumber={gstNumber}
-        setGstNumber={setGstNumber}
-        onGstCheck={handleGstCheck}
-      />
-      
-      <InvoiceOtherDetails
-        otherDetails={otherDetails}
-        setOtherDetails={setOtherDetails}
-        addressErrors={addressErrors}
-        setAddressErrors={setAddressErrors}
-        contactPersons={contactPersons}
-        setContactPersons={setContactPersons}
-      />
-      
-      <div className="flex gap-2 justify-end mt-6 p-4">
-        <button
-          className={`px-4 py-2 text-white text-sm rounded hover:bg-blue-600 ${
-            isFormValid() ? "bg-blue-500" : "bg-blue-300 cursor-not-allowed"
-          }`}
-          onClick={handleSubmit}
-          type="button"
-          disabled={!isFormValid()}
-        >
-          Add
-        </button>
-        <button
-          className="px-4 py-2 bg-gray-400 text-white text-sm rounded hover:bg-gray-500"
-          onClick={handleCancel}
-          type="button"
-        >
-          Cancel
-        </button>
-        <button
-          onClick={handlePrint}
-          className="px-4 py-2 bg-gray-600 text-white text-sm rounded hover:bg-gray-700 ml-2"
-          type="button"
-        >
-          Print Invoice
-        </button>
+    <div className="min-h-screen bg-[#F7F8FA] p-4 sm:p-6 lg:p-8">
+      <div className="w-full">
+        <CustomerForm
+          customer={customer}
+          setCustomer={setCustomer}
+          customerErrors={customerErrors}
+          setCustomerErrors={setCustomerErrors}
+          gstNumber={gstNumber}
+          setGstNumber={setGstNumber}
+          onGstCheck={handleGstCheck}
+        />
+        
+        <InvoiceOtherDetails
+          otherDetails={otherDetails}
+          setOtherDetails={setOtherDetails}
+          addressErrors={addressErrors}
+          setAddressErrors={setAddressErrors}
+          contactPersons={contactPersons}
+          setContactPersons={setContactPersons}
+        />
+        
+        <div className="flex flex-col sm:flex-row gap-4 justify-end mt-8 p-6 bg-white rounded-lg shadow-md">
+          <button
+            className={`px-8 py-3 text-white text-sm font-medium rounded hover:bg-blue-600 transition-colors ${
+              isFormValid() ? "bg-blue-500" : "bg-blue-300 cursor-not-allowed"
+            }`}
+            onClick={handleSubmit}
+            type="button"
+            disabled={!isFormValid()}
+          >
+            Add Customer
+          </button>
+          <button
+            className="px-8 py-3 bg-gray-400 text-white text-sm font-medium rounded hover:bg-gray-500 transition-colors"
+            onClick={handleCancel}
+            type="button"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handlePrint}
+            className="px-8 py-3 bg-gray-600 text-white text-sm font-medium rounded hover:bg-gray-700 transition-colors"
+            type="button"
+          >
+            Print Invoice
+          </button>
+        </div>
+        
+        <GSTModal
+          open={gstModalOpen}
+          onClose={() => setGstModalOpen(false)}
+          gstDetails={gstDetails}
+          onPrefill={handleGstPrefill}
+        />
       </div>
-      
-      <GSTModal
-        open={gstModalOpen}
-        onClose={() => setGstModalOpen(false)}
-        gstDetails={gstDetails}
-        onPrefill={handleGstPrefill}
-      />
     </div>
   );
 }
-
-
-
-

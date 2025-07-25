@@ -336,6 +336,7 @@ model Invoice {
   pan               String?
   taxDeducted       Boolean?
   paymentReceivedOn DateTime?
+  invoiceTemplate String?
   amountReceived    Float?
  paymentDocuments String[]
  paymentId      String?
