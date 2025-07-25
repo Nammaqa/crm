@@ -146,6 +146,9 @@ export default function Overview() {
     fetchLeadStats();
     fetchReminders();
 
+    // Debugging log for reminders
+    console.log('Reminders fetched:', reminders);
+
     // Refresh stats and reminders every 5 minutes
     const interval = setInterval(() => {
       fetchLeadStats();
