@@ -108,6 +108,7 @@ export default function ExpensesPremium() {
   const [filterMonth, setFilterMonth] = useState('');
   const [filterYear, setFilterYear] = useState('');
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
+  const [formErrors, setFormErrors] = useState({});
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
@@ -130,69 +131,78 @@ export default function ExpensesPremium() {
   const handleChange = (e) => {
     const { name, value, files } = e.target;
     if (name === 'attachment' && files?.length > 0) {
-      setFile(files[0]);
+      const selectedFile = files[0];
+      // Validate file type and size (max 5MB)
+      if (!['image/jpeg', 'image/png', 'application/pdf'].includes(selectedFile.type)) {
+        setFormErrors((prev) => ({ ...prev, attachment: 'Only PDF, JPG, or PNG files are allowed.' }));
+        setFile(null);
+        return;
+      }
+      if (selectedFile.size > 5 * 1024 * 1024) {
+        setFormErrors((prev) => ({ ...prev, attachment: 'File size must be less than 5MB.' }));
+        setFile(null);
+        return;
+      }
+      setFormErrors((prev) => ({ ...prev, attachment: undefined }));
+      setFile(selectedFile);
     } else {
       setForm({ ...form, [name]: value });
+      setFormErrors((prev) => ({ ...prev, [name]: undefined }));
     }
   };
 
-  const uploadFile = async () => {
-    if (!file) return form.attachment;
-    setUploading(true);
-    const data = new FormData();
-    data.append('file', file);
-    try {
-      const res = await fetch('/api/Expences/upload', { method: 'POST', body: data });
-      if (res.ok) {
-        const { url } = await res.json();
-        return url;
-      }
-      throw new Error('Upload failed');
-    } catch (err) {
-      handleSnackbarOpen('File upload failed', 'error');
-      return '';
-    } finally {
-      setUploading(false);
-    }
-  };
+
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    let attachmentUrl = form.attachment;
-
-    if (file) {
-      attachmentUrl = await uploadFile();
-      if (!attachmentUrl) return;
+    // Client-side validation
+    const errors = {};
+    if (!form.date) errors.date = 'Date is required.';
+    if (!form.item) errors.item = 'Item is required.';
+    if (!form.amount) errors.amount = 'Amount is required.';
+    else if (isNaN(parseFloat(form.amount)) || parseFloat(form.amount) <= 0) errors.amount = 'Amount must be a positive number.';
+    if (file && !['image/jpeg', 'image/png', 'application/pdf'].includes(file.type)) errors.attachment = 'Only PDF, JPG, or PNG files are allowed.';
+    if (file && file.size > 5 * 1024 * 1024) errors.attachment = 'File size must be less than 5MB.';
+    setFormErrors(errors);
+    if (Object.keys(errors).length > 0) {
+      handleSnackbarOpen('Please fix the errors in the form.', 'error');
+      return;
     }
-
-    const payload = {
-      ...form,
-      amount: parseFloat(form.amount),
-      attachment: attachmentUrl,
-    };
-
+    setUploading(true);
     try {
+      const formData = new FormData();
+      formData.append('date', form.date);
+      formData.append('item', form.item);
+      formData.append('description', form.description);
+      formData.append('amount', form.amount);
+      if (file) {
+        formData.append('attachment', file);
+      } else if (form.attachment) {
+        formData.append('existingAttachment', form.attachment);
+      }
+      if (editingId) {
+        formData.append('id', editingId);
+      }
       const url = '/api/Expences';
       const method = editingId ? 'PUT' : 'POST';
-      const body = JSON.stringify(editingId ? { ...payload, id: editingId } : payload);
-
       const res = await fetch(url, {
         method,
-        headers: { 'Content-Type': 'application/json' },
-        body,
+        body: formData,
       });
-
-      if (!res.ok) throw new Error('Request failed');
-
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData?.error || 'Request failed');
+      }
       handleSnackbarOpen(
         editingId ? 'Expense updated successfully' : 'Expense added successfully',
         'success'
       );
-
       resetForm();
       fetchExpenses();
     } catch (err) {
-      handleSnackbarOpen('Failed to save expense', 'error');
+      handleSnackbarOpen(err.message || 'Failed to save expense', 'error');
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -238,6 +248,7 @@ export default function ExpensesPremium() {
     });
     setFile(null);
     setEditingId(null);
+    setFormErrors({});
   };
 
   const handleSnackbarOpen = (message, severity) => {
@@ -352,7 +363,8 @@ export default function ExpensesPremium() {
                   onChange={handleChange}
                   required
                   InputLabelProps={{ shrink: true }}
-                  // Icons removed as requested
+                  error={!!formErrors.date}
+                  helperText={formErrors.date}
                 />
               </Grid>
 
@@ -364,6 +376,8 @@ export default function ExpensesPremium() {
                   value={form.item}
                   onChange={handleChange}
                   required
+                  error={!!formErrors.item}
+                  helperText={formErrors.item}
                 />
               </Grid>
 
@@ -376,6 +390,8 @@ export default function ExpensesPremium() {
                   value={form.amount}
                   onChange={handleChange}
                   required
+                  error={!!formErrors.amount}
+                  helperText={formErrors.amount}
                 />
               </Grid>
 
@@ -407,6 +423,11 @@ export default function ExpensesPremium() {
                     accept="image/*,application/pdf"
                   />
                 </Button>
+                {formErrors.attachment && (
+                  <Typography color="error" variant="caption" sx={{ mt: 1, display: 'block' }}>
+                    {formErrors.attachment}
+                  </Typography>
+                )}
               </Grid>
 
               <Grid item xs={12} sm={6} md={4}>
@@ -657,7 +678,7 @@ export default function ExpensesPremium() {
         <DialogTitle sx={{ fontWeight: 700 }}>Confirm Deletion</DialogTitle>
         <DialogContent>
           <DialogContentText>
-            Are you sure you want to permanently delete this expense record? This action cannot be undone.
+            Are you sure you want to permanently delete this expense record? 
           </DialogContentText>
         </DialogContent>
         <DialogActions>
