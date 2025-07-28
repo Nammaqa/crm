@@ -25,43 +25,75 @@ import {
   Paper,
   Alert,
   useMediaQuery,
+  Chip,
+  Avatar,
+  Divider,
+  Grid,
+  MenuItem,
+  Select,
+  FormControl,
+  InputLabel
 } from '@mui/material';
-import { Add, Edit, Delete, AttachFile, Cancel, MonetizationOn, CloudUpload } from '@mui/icons-material';
+import {
+  Add,
+  Edit,
+  Delete,
+  Cancel,
+  PictureAsPdf,
+  Image,
+} from '@mui/icons-material';
 import { styled, useTheme } from '@mui/material/styles';
+import { format, parseISO } from 'date-fns';
 
+// Custom styled components
 const MainContainer = styled(Box)(({ theme }) => ({
-  maxWidth: 1400,
+  maxWidth: 1600,
   margin: '32px auto',
   padding: theme.spacing(4),
   [theme.breakpoints.down('md')]: {
-    maxWidth: '98vw',
-    padding: theme.spacing(1),
+    padding: theme.spacing(2),
   },
 }));
 
 const StyledCard = styled(Card)(({ theme }) => ({
   marginBottom: theme.spacing(4),
-  boxShadow: theme.shadows[8],
-  borderRadius: theme.spacing(2),
-  background: 'rgba(245,248,252,0.96)',
+  borderRadius: theme.shape.borderRadius * 2,
+  boxShadow: theme.shadows[2],
+  background: theme.palette.background.paper,
+  border: `1px solid ${theme.palette.divider}`,
 }));
 
 const ShadowedPaper = styled(Paper)(({ theme }) => ({
   marginTop: theme.spacing(3),
-  borderRadius: theme.spacing(2),
-  boxShadow: theme.shadows[2],
+  borderRadius: theme.shape.borderRadius * 2,
+  boxShadow: theme.shadows[1],
+  overflow: 'hidden',
 }));
 
-const AmountAdornment = () => (
-  <InputAdornment position="start">
-    <MonetizationOn color="action" sx={{ opacity: 0.7 }} />
-  </InputAdornment>
-);
+const AmountCell = styled(TableCell)(({ theme }) => ({
+  fontWeight: 700,
+  color: theme.palette.success.dark,
+}));
+
+const ActionCell = styled(TableCell)(({ theme }) => ({
+  minWidth: 120,
+}));
+
+const FilePreviewLink = styled('a')(({ theme }) => ({
+  display: 'flex',
+  alignItems: 'center',
+  gap: theme.spacing(1),
+  textDecoration: 'none',
+  color: theme.palette.secondary.main,
+  '&:hover': {
+    textDecoration: 'underline',
+  },
+}));
 
 export default function ExpensesPremium() {
   const [expenses, setExpenses] = useState([]);
   const [form, setForm] = useState({
-    date: '',
+    date: format(new Date(), 'yyyy-MM-dd'),
     item: '',
     description: '',
     amount: '',
@@ -71,14 +103,16 @@ export default function ExpensesPremium() {
   const [editingId, setEditingId] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
+  const [searchTerm, setSearchTerm] = useState('');
   const [deleteDialog, setDeleteDialog] = useState({ open: false, id: null });
+  const [filterMonth, setFilterMonth] = useState('');
+  const [filterYear, setFilterYear] = useState('');
+  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
   useEffect(() => {
     fetchExpenses();
-    // eslint-disable-next-line
   }, []);
 
   const fetchExpenses = async () => {
@@ -88,14 +122,14 @@ export default function ExpensesPremium() {
       const data = await res.json();
       setExpenses(data);
     } catch (err) {
-      setSnackbar({ open: true, message: 'Failed to load expenses.', severity: 'error' });
+      handleSnackbarOpen('Failed to load expenses', 'error');
     }
     setLoading(false);
   };
 
   const handleChange = (e) => {
     const { name, value, files } = e.target;
-    if (name === 'attachment' && files.length > 0) {
+    if (name === 'attachment' && files?.length > 0) {
       setFile(files[0]);
     } else {
       setForm({ ...form, [name]: value });
@@ -107,45 +141,58 @@ export default function ExpensesPremium() {
     setUploading(true);
     const data = new FormData();
     data.append('file', file);
-    const res = await fetch('/api/Expences/upload', { method: 'POST', body: data });
-    setUploading(false);
-    if (res.ok) {
-      const { url } = await res.json();
-      return url;
+    try {
+      const res = await fetch('/api/Expences/upload', { method: 'POST', body: data });
+      if (res.ok) {
+        const { url } = await res.json();
+        return url;
+      }
+      throw new Error('Upload failed');
+    } catch (err) {
+      handleSnackbarOpen('File upload failed', 'error');
+      return '';
+    } finally {
+      setUploading(false);
     }
-    setSnackbar({ open: true, message: 'File upload failed.', severity: 'error' });
-    return '';
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     let attachmentUrl = form.attachment;
+
     if (file) {
       attachmentUrl = await uploadFile();
+      if (!attachmentUrl) return;
     }
-    const payload = { ...form, attachment: attachmentUrl };
+
+    const payload = {
+      ...form,
+      amount: parseFloat(form.amount),
+      attachment: attachmentUrl,
+    };
+
     try {
-      if (editingId) {
-        await fetch('/api/Expences', {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ ...payload, id: editingId }),
-        });
-        setSnackbar({ open: true, message: 'Expense updated!', severity: 'success' });
-      } else {
-        await fetch('/api/Expences', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
-        });
-        setSnackbar({ open: true, message: 'Expense added!', severity: 'success' });
-      }
-      setForm({ date: '', item: '', description: '', amount: '', attachment: '' });
-      setFile(null);
-      setEditingId(null);
+      const url = '/api/Expences';
+      const method = editingId ? 'PUT' : 'POST';
+      const body = JSON.stringify(editingId ? { ...payload, id: editingId } : payload);
+
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body,
+      });
+
+      if (!res.ok) throw new Error('Request failed');
+
+      handleSnackbarOpen(
+        editingId ? 'Expense updated successfully' : 'Expense added successfully',
+        'success'
+      );
+
+      resetForm();
       fetchExpenses();
     } catch (err) {
-      setSnackbar({ open: true, message: 'Failed to save expense.', severity: 'error' });
+      handleSnackbarOpen('Failed to save expense', 'error');
     }
   };
 
@@ -154,11 +201,12 @@ export default function ExpensesPremium() {
       date: exp.date.slice(0, 10),
       item: exp.item,
       description: exp.description || '',
-      amount: exp.amount,
+      amount: exp.amount.toString(),
       attachment: exp.attachment || '',
     });
     setFile(null);
     setEditingId(exp.id);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleDelete = (id) => {
@@ -172,233 +220,425 @@ export default function ExpensesPremium() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id: deleteDialog.id }),
       });
-      setSnackbar({ open: true, message: 'Expense deleted!', severity: 'success' });
+      handleSnackbarOpen('Expense deleted successfully', 'success');
       fetchExpenses();
     } catch (err) {
-      setSnackbar({ open: true, message: 'Failed to delete expense.', severity: 'error' });
+      handleSnackbarOpen('Failed to delete expense', 'error');
     }
     setDeleteDialog({ open: false, id: null });
   };
 
-  const handleCancelEdit = () => {
-    setEditingId(null);
-    setForm({ date: '', item: '', description: '', amount: '', attachment: '' });
+  const resetForm = () => {
+    setForm({
+      date: format(new Date(), 'yyyy-MM-dd'),
+      item: '',
+      description: '',
+      amount: '',
+      attachment: '',
+    });
     setFile(null);
+    setEditingId(null);
   };
+
+  const handleSnackbarOpen = (message, severity) => {
+    setSnackbar({ open: true, message, severity });
+  };
+
+  const handleSnackbarClose = () => {
+    setSnackbar({ ...snackbar, open: false });
+  };
+
+  // Filter expenses based on search term and filterMonth / filterYear
+  const filteredExpenses = expenses.filter((exp) => {
+    const expDate = new Date(exp.date);
+    const monthMatch = filterMonth ? expDate.getMonth() + 1 === parseInt(filterMonth) : true;
+    const yearMatch = filterYear ? expDate.getFullYear() === parseInt(filterYear) : true;
+
+    const searchMatch =
+      exp.item.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (exp.description && exp.description.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      exp.amount.toString().includes(searchTerm);
+
+    return monthMatch && yearMatch && searchMatch;
+  });
+
+  // Unique years from expenses for filter dropdown
+  const years = Array.from(new Set(expenses.map(exp => new Date(exp.date).getFullYear()))).sort((a, b) => b - a);
+
+  // Month options
+  const monthOptions = [
+    { value: '', label: 'All Months' },
+    { value: '1', label: 'January' },
+    { value: '2', label: 'February' },
+    { value: '3', label: 'March' },
+    { value: '4', label: 'April' },
+    { value: '5', label: 'May' },
+    { value: '6', label: 'June' },
+    { value: '7', label: 'July' },
+    { value: '8', label: 'August' },
+    { value: '9', label: 'September' },
+    { value: '10', label: 'October' },
+    { value: '11', label: 'November' },
+    { value: '12', label: 'December' },
+  ];
 
   const renderFilePreview = () => {
     if (file) {
       return (
-        <Tooltip title={file.name}>
-          <Typography variant="body2" color="primary">
-            Selected: {file.name}
-          </Typography>
-        </Tooltip>
+        <Chip
+          label={file.name}
+          onDelete={() => setFile(null)}
+          deleteIcon={<Cancel />}
+          variant="outlined"
+          avatar={
+            file.type.includes('pdf') ? (
+              <Avatar><PictureAsPdf /></Avatar>
+            ) : (
+              <Avatar><Image /></Avatar>
+            )
+          }
+        />
       );
     } else if (form.attachment) {
       const isPdf = form.attachment.toLowerCase().endsWith('.pdf');
       return (
-        <Tooltip title="View existing attachment">
-          <a
-            href={form.attachment}
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{ textDecoration: 'underline', color: '#3469ed', fontSize: 14, display: 'flex', alignItems: 'center', gap: 4 }}
-          >
-            {isPdf ? (
-              <>
-                <AttachFile fontSize="small" color="action" />
-                PDF Attachment
-              </>
-            ) : (
-              <>
-                <AttachFile fontSize="small" color="action" />
-                Image Attachment
-              </>
-            )}
-          </a>
-        </Tooltip>
+        <FilePreviewLink href={form.attachment} target="_blank" rel="noopener noreferrer">
+          {isPdf ? <PictureAsPdf fontSize="small" /> : <Image fontSize="small" />}
+          <Typography variant="body2">
+            {isPdf ? 'View PDF' : 'View Image'}
+          </Typography>
+        </FilePreviewLink>
       );
     }
     return null;
   };
 
+  const totalAmount = filteredExpenses.reduce((sum, exp) => sum + parseFloat(exp.amount), 0);
+
   return (
     <MainContainer>
-      <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1, mb: 1, flexWrap: 'wrap' }}>
-        <Typography variant="h2" fontWeight={800} color={theme.palette.primary.dark} sx={{ letterSpacing: 1 }}>
-        Expenses
+      {/* Header Section */}
+      <Box sx={{ mb: 4 }}>
+        <Typography variant="h4" fontWeight={700} gutterBottom>
+          Expense Management
         </Typography>
-        <Typography variant="subtitle1" color="text.secondary" sx={{ fontWeight: 500 }}>
-        
-        </Typography>
+        {/* <Typography variant="body1" color="text.secondary">
+          Track and manage all business expenses in one place
+        </Typography> */}
       </Box>
+
+      {/* Form Section */}
       <StyledCard>
-        <CardContent sx={{ py: isMobile ? 2 : 4 }}>
-          <form onSubmit={handleSubmit} style={{ display: 'flex', flexWrap: 'wrap', gap: 20 }}>
-            <TextField
-              label="Date"
-              type="date"
-              name="date"
-              value={form.date}
-              onChange={handleChange}
-              required
-              InputLabelProps={{ shrink: true }}
-              sx={{ flex: 1, minWidth: 150 }}
-              size="small"
-            />
-            <TextField
-              label="Item"
-              name="item"
-              value={form.item}
-              onChange={handleChange}
-              required
-              sx={{ flex: 2, minWidth: 170 }}
-              size="small"
-            />
-            <TextField
-              label="Description"
-              name="description"
-              value={form.description}
-              onChange={handleChange}
-              sx={{ flex: 3, minWidth: 220 }}
-              size="small"
-            />
-            <TextField
-              label="Amount"
-              name="amount"
-              type="number"
-              value={form.amount}
-              onChange={handleChange}
-              required
-              // InputProps={{ startAdornment: <AmountAdornment /> }}
-              sx={{ flex: 1, minWidth: 120 }}
-              size="small"
-            />
-            <Box sx={{ flex: 2, minWidth: 180, display: 'flex', flexDirection: 'column', alignItems: 'start', gap: 1 }}>
-              <Button
-                variant={file ? 'contained' : 'outlined'}
-                component="label"
-                startIcon={<CloudUpload />}
-                sx={{ width: '100%', mb: file || form.attachment ? 1 : 0, whiteSpace: 'nowrap' }}
-                color="secondary"
-              >
-                {file
-                  ? 'Change File'
-                  : form.attachment
-                  ? 'Change '
-                  : 'Upload '
-                }
-                <input
-                  type="file"
-                  name="attachment"
-                  hidden
+        <CardContent>
+          <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            {/* Uncomment below to display title with icon */}
+            {/* {editingId ? <Edit color="primary" /> : <Add color="primary" />} */}
+            {/* {editingId ? 'Edit Expense' : 'Add New Expense'} */}
+          </Typography>
+
+          <Box
+            component="form"
+            onSubmit={handleSubmit}
+            sx={{ mt: 2 }}
+          >
+            <Grid container spacing={2}>
+              <Grid item xs={12} sm={6} md={3}>
+                <TextField
+                  fullWidth
+                  label="Date"
+                  type="date"
+                  name="date"
+                  value={form.date}
                   onChange={handleChange}
-                  accept="image/*,application/pdf"
+                  required
+                  InputLabelProps={{ shrink: true }}
+                  // Icons removed as requested
                 />
-              </Button>
-              {renderFilePreview()}
-            </Box>
-            <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', ml: 'auto' }}>
-              <Button
-                type="submit"
-                variant="contained"
-                color={editingId ? 'secondary' : 'primary'}
-                startIcon={editingId ? <Edit /> : <Add />}
-                disabled={uploading || loading}
-                sx={{ minWidth: 120, fontWeight: 600 }}
-                size="large"
-              >
-                {uploading ? 'Uploading...' : editingId ? 'Update' : 'Add'}
-              </Button>
-              {editingId && (
-                <Tooltip title="Cancel Edit">
-                  <IconButton color="error" onClick={handleCancelEdit}>
-                    <Cancel />
-                  </IconButton>
-                </Tooltip>
-              )}
-            </Box>
-          </form>
-          {(uploading || loading) && <LinearProgress sx={{ mt: 2 }} />}
+              </Grid>
+
+              <Grid item xs={12} sm={6} md={3}>
+                <TextField
+                  fullWidth
+                  label="Item"
+                  name="item"
+                  value={form.item}
+                  onChange={handleChange}
+                  required
+                />
+              </Grid>
+
+              <Grid item xs={12} sm={6} md={2}>
+                <TextField
+                  fullWidth
+                  label="Amount"
+                  name="amount"
+                  type="number"
+                  value={form.amount}
+                  onChange={handleChange}
+                  required
+                />
+              </Grid>
+
+              <Grid item xs={12} sm={6} md={4}>
+                <TextField
+                  id="outlined-multiline-flexible"
+                  label="Description"
+                  multiline
+                  maxRows={4}
+                  name="description"
+                  value={form.description}
+                  onChange={handleChange}
+                />
+              </Grid>
+
+              <Grid item xs={12} sm={6} md={4}>
+                <Button
+                  fullWidth
+                  variant={file || form.attachment ? 'contained' : 'outlined'}
+                  component="label"
+                  color={file ? 'primary' : 'default'}
+                >
+                  {file ? 'Change File' : form.attachment ? 'Replace Attachment' : 'Upload Attachment'}
+                  <input
+                    type="file"
+                    name="attachment"
+                    hidden
+                    onChange={handleChange}
+                    accept="image/*,application/pdf"
+                  />
+                </Button>
+              </Grid>
+
+              <Grid item xs={12} sm={6} md={4}>
+                <Box sx={{ display: 'flex', alignItems: 'center', height: '100%', gap: 1 }}>
+                  {renderFilePreview()}
+                </Box>
+              </Grid>
+
+              <Grid item xs={12} sm={6} md={4}>
+                <Box sx={{ display: 'flex', gap: 2 }}>
+                  <Button
+                    type="submit"
+                    variant="contained"
+                    color="primary"
+                    size="large"
+                    fullWidth
+                    disabled={uploading || loading}
+                    startIcon={editingId ? <Edit /> : <Add />}
+                  >
+                    {uploading ? 'Uploading...' : editingId ? 'Update' : 'Add Expense'}
+                  </Button>
+
+                  {editingId && (
+                    <Button
+                      variant="outlined"
+                      color="error"
+                      onClick={resetForm}
+                      size="large"
+                      fullWidth
+                      startIcon={<Cancel />}
+                    >
+                      Cancel
+                    </Button>
+                  )}
+                </Box>
+              </Grid>
+            </Grid>
+
+            {(uploading || loading) && <LinearProgress sx={{ mt: 2 }} />}
+          </Box>
         </CardContent>
       </StyledCard>
+
+      {/* Filter Section */}
+      <Box sx={{ mb: 2, display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center' }}>
+        <FormControl sx={{ minWidth: 140 }} size="small">
+          <InputLabel id="filter-month-label">Filter by Month</InputLabel>
+          <Select
+            labelId="filter-month-label"
+            id="filter-month"
+            value={filterMonth}
+            label="Filter by Month"
+            onChange={(e) => setFilterMonth(e.target.value)}
+          >
+            {monthOptions.map((m) => (
+              <MenuItem key={m.value} value={m.value}>
+                {m.label}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+        <FormControl sx={{ minWidth: 140 }} size="small">
+          <InputLabel id="filter-year-label">Filter by Year</InputLabel>
+          <Select
+            labelId="filter-year-label"
+            id="filter-year"
+            value={filterYear}
+            label="Filter by Year"
+            onChange={(e) => setFilterYear(e.target.value)}
+            disabled={years.length === 0}
+          >
+            <MenuItem value="">All Years</MenuItem>
+            {years.map((y) => (
+              <MenuItem key={y} value={y}>
+                {y}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+      </Box>
+
+      {/* Expenses Table Section */}
       <ShadowedPaper>
-        <TableContainer sx={{ maxHeight: 600, borderRadius: 2 }}>
+        <Box sx={{ p: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: isMobile ? 'wrap' : 'nowrap', gap: 1 }}>
+          <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            Expense Records
+          </Typography>
+
+          <TextField
+            variant="outlined"
+            placeholder="Search expenses..."
+            size="small"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            InputProps={{
+              startAdornment: null, // removed icon
+            }}
+            sx={{ width: isMobile ? '100%' : 300 }}
+          />
+        </Box>
+
+        <Divider />
+
+        <Box sx={{ p: 2, bgcolor: theme.palette.grey[100], display: 'flex', justifyContent: 'flex-end' }}>
+          <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+            Total: {totalAmount.toLocaleString(undefined, {
+              style: 'currency',
+              currency: 'INR',
+              minimumFractionDigits: 2,
+            })}
+          </Typography>
+        </Box>
+
+        <TableContainer sx={{ maxHeight: 600 }}>
           <Table stickyHeader aria-label="expenses table">
             <TableHead>
-              <TableRow sx={{ background: theme.palette.background.paper }}>
+              <TableRow>
                 <TableCell sx={{ fontWeight: 700 }}>Date</TableCell>
                 <TableCell sx={{ fontWeight: 700 }}>Item</TableCell>
-                <TableCell sx={{ fontWeight: 700, minWidth: 120 }}>Description</TableCell>
-                <TableCell align="right" sx={{ fontWeight: 700, minWidth: 95 }}>Amount</TableCell>
+                <TableCell sx={{ fontWeight: 700 }}>Description</TableCell>
+                <TableCell align="right" sx={{ fontWeight: 700 }}>Amount</TableCell>
                 <TableCell sx={{ fontWeight: 700 }}>Attachment</TableCell>
-                <TableCell align="center" sx={{ fontWeight: 700 }}>Action</TableCell>
+                <ActionCell align="center" sx={{ fontWeight: 700 }}>Actions</ActionCell>
               </TableRow>
             </TableHead>
+
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={6} align="center"><LinearProgress sx={{ width: '100%' }} /></TableCell>
-                </TableRow>
-              ) : expenses.length === 0 ? (
-                <TableRow>
                   <TableCell colSpan={6} align="center">
-                    <Typography color="text.secondary">No expenses found.</Typography>
+                    <LinearProgress sx={{ width: '100%' }} />
+                  </TableCell>
+                </TableRow>
+              ) : filteredExpenses.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={6} align="center" sx={{ py: 4 }}>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
+                      <Typography color="text.secondary" sx={{ fontSize: 60, mb: 1 }}>
+                        📄
+                      </Typography>
+                      <Typography color="text.secondary">
+                        {searchTerm || filterMonth || filterYear ? 'No matching expenses found' : 'No expenses recorded yet'}
+                      </Typography>
+                      {(searchTerm || filterMonth || filterYear) && (
+                        <Button onClick={() => {
+                          setSearchTerm('');
+                          setFilterMonth('');
+                          setFilterYear('');
+                        }} variant="text">
+                          Clear filters
+                        </Button>
+                      )}
+                    </Box>
                   </TableCell>
                 </TableRow>
               ) : (
-                expenses.map((exp, idx) => (
+                filteredExpenses.map((exp) => (
                   <TableRow
                     key={exp.id}
+                    hover
                     sx={{
-                      backgroundColor: idx % 2 === 0 ? theme.palette.grey[100] : '#fff',
-                      '&:hover': { backgroundColor: 'rgba(52,105,237,0.07)' },
-                      transition: 'background 0.2s'
+                      '&:last-child td, &:last-child th': { border: 0 },
+                      '&:hover': { backgroundColor: theme.palette.action.hover },
                     }}
                   >
                     <TableCell>
-                      <b>{exp.date.slice(0, 10)}</b>
+                      <Typography variant="body2">
+                        {format(parseISO(exp.date), 'MMM dd, yyyy')}
+                      </Typography>
                     </TableCell>
+
                     <TableCell>
-                      <Typography fontWeight={600} color="primary">
+                      <Typography fontWeight={600}>
                         {exp.item}
                       </Typography>
                     </TableCell>
+
                     <TableCell>
-                      <Typography>{exp.description || <span style={{ color: '#bbb' }}>—</span>}</Typography>
+                      <Typography variant="body2" color="text.secondary" sx={{ whiteSpace: 'pre-line' }}>
+                        {exp.description || '—'}
+                      </Typography>
                     </TableCell>
-                    <TableCell align="right" sx={{ fontWeight: 700, color: theme.palette.success.main }}>
-                      {Number(exp.amount).toLocaleString(undefined, {
+
+                    <AmountCell align="right">
+                      {parseFloat(exp.amount).toLocaleString(undefined, {
                         style: 'currency',
                         currency: 'INR',
-                        // minimumFractionDigits: 2,
+                        minimumFractionDigits: 2,
                       })}
-                    </TableCell>
+                    </AmountCell>
+
                     <TableCell>
                       {exp.attachment ? (
-                        <Tooltip title="View Attachment">
-                          <a href={exp.attachment} target="_blank" rel="noopener noreferrer">
-                            <AttachFile fontSize="small" sx={{ color: theme.palette.secondary.main }} />
-                            <span style={{ fontSize: 13, verticalAlign: 1 }}>View</span>
-                          </a>
-                        </Tooltip>
+                        <FilePreviewLink href={exp.attachment} target="_blank" rel="noopener noreferrer">
+                          {exp.attachment.toLowerCase().endsWith('.pdf') ? (
+                            <PictureAsPdf fontSize="small" />
+                          ) : (
+                            <Image fontSize="small" />
+                          )}
+                          <Typography variant="body2">
+                            View
+                          </Typography>
+                        </FilePreviewLink>
                       ) : (
-                        <Typography color="text.disabled">—</Typography>
+                        <Typography variant="body2" color="text.disabled">
+                          None
+                        </Typography>
                       )}
                     </TableCell>
-                    <TableCell align="center">
+
+                    <ActionCell align="center">
                       <Tooltip title="Edit">
-                        <IconButton color="primary" onClick={() => handleEdit(exp)}>
-                          <Edit />
+                        <IconButton
+                          color="primary"
+                          onClick={() => handleEdit(exp)}
+                          size="small"
+                          sx={{ mr: 1 }}
+                        >
+                          <Edit fontSize="small" />
                         </IconButton>
                       </Tooltip>
+
                       <Tooltip title="Delete">
-                        <IconButton color="error" onClick={() => handleDelete(exp.id)}>
-                          <Delete />
+                        <IconButton
+                          color="error"
+                          onClick={() => handleDelete(exp.id)}
+                          size="small"
+                        >
+                          <Delete fontSize="small" />
                         </IconButton>
                       </Tooltip>
-                    </TableCell>
+                    </ActionCell>
                   </TableRow>
                 ))
               )}
@@ -411,21 +651,29 @@ export default function ExpensesPremium() {
       <Dialog
         open={deleteDialog.open}
         onClose={() => setDeleteDialog({ open: false, id: null })}
+        maxWidth="xs"
+        fullWidth
       >
-        <DialogTitle fontWeight={700}>Delete Expense</DialogTitle>
+        <DialogTitle sx={{ fontWeight: 700 }}>Confirm Deletion</DialogTitle>
         <DialogContent>
           <DialogContentText>
-            Are you sure you want to <b>delete</b> this expense? This action cannot be undone.
+            Are you sure you want to permanently delete this expense record? This action cannot be undone.
           </DialogContentText>
         </DialogContent>
         <DialogActions>
           <Button
             onClick={() => setDeleteDialog({ open: false, id: null })}
             variant="outlined"
+            color="inherit"
           >
             Cancel
           </Button>
-          <Button color="error" variant="contained" onClick={confirmDelete}>
+          <Button
+            color="error"
+            variant="contained"
+            onClick={confirmDelete}
+            autoFocus
+          >
             Delete
           </Button>
         </DialogActions>
@@ -434,16 +682,16 @@ export default function ExpensesPremium() {
       {/* Snackbar for feedback */}
       <Snackbar
         open={snackbar.open}
-        autoHideDuration={3500}
-        onClose={() => setSnackbar({ ...snackbar, open: false })}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+        autoHideDuration={5000}
+        onClose={handleSnackbarClose}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
       >
         <Alert
-          onClose={() => setSnackbar({ ...snackbar, open: false })}
+          onClose={handleSnackbarClose}
           severity={snackbar.severity}
           elevation={6}
           variant="filled"
-          sx={{ width: '100%', fontWeight: 600, fontSize: 16 }}
+          sx={{ width: '100%' }}
         >
           {snackbar.message}
         </Alert>
