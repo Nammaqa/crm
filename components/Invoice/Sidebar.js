@@ -18,6 +18,8 @@ import NewInvoice      from "@components/Admin/Content/NewInvoice";
 import AddCustomerForm from "@components/Admin/Content/Invoice";
 import Invoicelist from "@components/Invoice/Content/invoicelist";
 import Expenses from "@components/Invoice/Content/expenses";
+import Paymentlist from "@components/Invoice/Content/paymentlist";
+
 
 // ──────────────────────────────────────────────────────────────
 // Dummy Settings section (kept for reference)
@@ -52,6 +54,7 @@ const sections = [
   { id: "new-invoice",   label: "Invoice",        icon: <FaFileInvoice size={18} />, content: <NewInvoice /> },
   { id: "invoice-list",  label: "Invoice List",   icon: <FaFileInvoice size={18} />, content: <Invoicelist /> },
   { id: "expenses",      label: "Expenses",       icon: <FaFileInvoice size={18} />, content: <Expenses /> },
+  { id: "payment-list",  label: "Payments Received", icon: <FaFileInvoice size={18} />, content: <Paymentlist /> },
   // { id: "settings",   label: "Settings",       icon: <FaCog        size={18} />, content: <SettingsSection /> },
 ];
 
