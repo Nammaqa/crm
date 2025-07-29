@@ -138,6 +138,7 @@ function numberToWords(num) {
   const lakhs = Math.floor(num / 100000);
   num %= 100000;
   const thousandsValue = Math.floor(num / 1000);
+  
   num %= 1000;
   const hundreds = num;
 
@@ -480,25 +481,283 @@ export default function InvoiceForm() {
     return total;
   };
 
-  // --- API Submission ---
+  // --- PDF Generation Utility ---
+  // Returns { doc, pdfBuffer }
+  const generatePDF = async () => {
+    const { jsPDF } = await import('jspdf');
+    const autoTable = (await import('jspdf-autotable')).default;
+    // Create landscape PDF (297mm x 210mm) with compression
+    const doc = new jsPDF({ orientation: 'l', unit: 'mm', format: 'a4', compress: true });
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    // Load the Wizzybox logo
+    let logoBase64 = null;
+    try {
+      logoBase64 = await getImageAsBase64('/Wizzybox Logo.png');
+    } catch (error) {}
+    // Load the background template image
+    let backgroundBase64 = null;
+    try {
+      backgroundBase64 = await getImageAsBase64('/template.jpg');
+    } catch (error) {}
+    // Colors matching template
+    const primaryColor = [0, 0, 0];
+    const lightGray = [245, 245, 245];
+    const borderColor = [0, 0, 0];
+    // Add Zoho branding at top (matching template exactly)
+    doc.setFontSize(8);
+    doc.setTextColor(100, 100, 100);
+    // Add Wizzybox logo - STANDARD SIZE: Reduced to standard dimensions
+    let logoYPosition = 18;
+    if (logoBase64) {
+      try {
+        doc.addImage(logoBase64, 'PNG', 14, logoYPosition, 60,19); 
+        logoYPosition += 25;
+      } catch (error) {
+        doc.setFontSize(12);
+        doc.setTextColor(0, 0, 0);
+        doc.text('WIZZYBOX', 14, logoYPosition + 10);
+        logoYPosition += 15;
+      }
+    } else {
+      doc.setFontSize(12);
+      doc.setTextColor(0, 0, 0);
+      doc.text('WIZZYBOX', 14, logoYPosition + 10);
+      logoYPosition += 15;
+    }
+    // Header - Company Details
+    doc.setFontSize(12); 
+    doc.setFont(undefined, 'bold');
+    doc.setTextColor(0, 0, 0);
+    doc.text(formData.companyName, 14, logoYPosition + 5);
+    doc.setFontSize(9);
+    doc.setFont(undefined, 'normal');
+    const companyAddressLines = formData.companyAddress.split('\n');
+    let yPos = logoYPosition + 12;
+    companyAddressLines.forEach(line => {
+      doc.text(line, 14, yPos);
+      yPos += 4;
+    });
+    doc.text(`GSTIN ${formData.companyGSTIN}`, 14, yPos);
+    doc.text(formData.companyEmail, 14, yPos + 4);
+    doc.text(formData.companyWebsite, 14, yPos + 8);
+    // TAX INVOICE Header - Right side
+    doc.setFontSize(30);
+    doc.setFont(undefined, 'bold');
+    doc.setTextColor(0, 0, 0);
+    doc.text('TAX INVOICE', 280, 35, { align: 'right' });
+    // Invoice Number - Right side
+    doc.setFontSize(10);
+    doc.setFont(undefined, 'normal');
+    doc.text(`Invoice# ${formData.invoiceNumber || 'WB-IN106'}`, 280, 45, { align: 'right' });
+    // Customer Details Section
+    const selectedCustomer = customers.find(c => c.id === Number(formData.customerId));
+    // Bill To Section
+    doc.setFontSize(11);
+    doc.setFont(undefined, 'bold');
+    doc.text('Bill To', 14, 80);
+    doc.setFontSize(9);
+    doc.setFont(undefined, 'normal');
+    if (selectedCustomer) {
+      const customerName = selectedCustomer.displayName || selectedCustomer.companyName || selectedCustomer.emailAddress;
+      doc.text(customerName, 14, 88);
+      let customerAddressY = 93;
+      if (selectedCustomer.billingAddress) {
+        doc.text(selectedCustomer.billingAddress, 14, customerAddressY);
+        customerAddressY += 4;
+      }
+      if (selectedCustomer.billingCity) {
+        doc.text(selectedCustomer.billingCity, 14, customerAddressY);
+        customerAddressY += 4;
+      }
+      if (selectedCustomer.billingPinCode && selectedCustomer.billingState) {
+        doc.text(`${selectedCustomer.billingPinCode} ${selectedCustomer.billingState}`, 14, customerAddressY);
+        customerAddressY += 4;
+      }
+      if (selectedCustomer.billingCountry) {
+        doc.text(selectedCustomer.billingCountry, 14, customerAddressY);
+        customerAddressY += 4;
+      }
+      if (formData.gstNumber) {
+        doc.text(`GSTIN ${formData.gstNumber}`, 14, customerAddressY + 4);
+      }
+    }
+    // Ship To Section
+    doc.setFontSize(11);
+    doc.setFont(undefined, 'bold');
+    doc.text('Ship To', 150, 80);
+    doc.setFontSize(9);
+    doc.setFont(undefined, 'normal');
+    if (formData.gstNumber) {
+      doc.text(`GSTIN ${formData.gstNumber}`, 150, 88);
+    }
+    if (formData.placeOfSupply) {
+      doc.text(`Place Of Supply: ${formData.placeOfSupply}`, 150, 93);
+    }
+    // Invoice Details Table - WITHOUT GRID
+    const invoiceDetailsY = 120;
+    const tableWidth = 270;
+    const colWidth = tableWidth / 4;
+    const rowHeight = 8;
+    doc.setFillColor(59, 61, 57);
+    doc.rect(14, invoiceDetailsY - 6, tableWidth, rowHeight, 'F');
+    doc.setFont(undefined, 'bold');
+    doc.setFontSize(9);
+    doc.setTextColor(255, 255, 255);
+    doc.text('Invoice Date', 16, invoiceDetailsY - 1, { align: 'left' });
+    doc.text('Terms', 16 + colWidth, invoiceDetailsY - 1, { align: 'left' });
+    doc.text('Due Date', 16 + 2*colWidth, invoiceDetailsY - 1, { align: 'left' });
+    doc.text('PO Number', 16 + 3*colWidth, invoiceDetailsY - 1, { align: 'left' });
+    doc.setFont(undefined, 'normal');
+    doc.setTextColor(0, 0, 0);
+    doc.text(formatDisplayDate(formData.invoiceDate), 16, invoiceDetailsY + 7, { align: 'left' });
+    doc.text(formData.terms || 'Due on Receipt', 16 + colWidth, invoiceDetailsY + 7, { align: 'left' });
+    doc.text(formatDisplayDate(formData.dueDate), 16 + 2*colWidth, invoiceDetailsY + 7, { align: 'left' });
+    doc.text(formData.poNumber || 'NA', 16 + 3*colWidth, invoiceDetailsY + 7, { align: 'left' });
+    // Items Table
+    const itemTableY = invoiceDetailsY + 25;
+    const itemRows = items.map((item, idx) => {
+      const baseAmount = (parseFloat(item.quantity) || 0) * (parseFloat(item.rate) || 0);
+      const discountedAmount = baseAmount - (baseAmount * (parseFloat(item.discount) || 0) / 100);
+      const cgstAmount = (discountedAmount * cgstRate) / 100;
+      const sgstAmount = (discountedAmount * sgstRate) / 100;
+      return [
+        (idx + 1).toString(),
+        item.name || '',
+        item.sac || '998313',
+        parseFloat(item.quantity || 1).toFixed(2),
+        parseFloat(item.rate || 0).toFixed(2).replace(/\.00$/, '.00'),
+        cgstAmount.toFixed(2),
+        `${cgstRate.toFixed(0)}%`,
+        sgstAmount.toFixed(2),
+        `${sgstRate.toFixed(0)}%`,
+        discountedAmount.toFixed(2)
+      ];
+    });
+    autoTable(doc, {
+      startY: itemTableY,
+      head: [['#', 'Item & Description', 'HSN/SAC', 'Qty', 'Rate', 'CGST', '', 'SGST', '', 'Amount']],
+      body: itemRows,
+      theme: 'plain',
+      headStyles: { 
+        fillColor: [59, 61, 57],
+        textColor: [255, 255, 255],
+        fontSize: 9,
+        fontStyle: 'bold',
+        lineWidth: 0,
+        halign: 'center',
+        valign: 'middle'
+      },
+      bodyStyles: { 
+        fontSize: 9,
+        cellPadding: { top: 3, right: 3, bottom: 3, left: 3 },
+        lineWidth: 0,
+        valign: 'middle'
+      },
+      styles: {
+        lineWidth: 0,
+      },
+      columnStyles: {
+        0: { halign: 'center', cellWidth: 15 },
+        1: { cellWidth: 70, halign: 'left' },
+        2: { halign: 'center', cellWidth: 25 },
+        3: { halign: 'right', cellWidth: 20 },
+        4: { halign: 'right', cellWidth: 30 },
+        5: { halign: 'right', cellWidth: 25 },
+        6: { halign: 'center', cellWidth: 15 },
+        7: { halign: 'right', cellWidth: 25 },
+        8: { halign: 'center', cellWidth: 15 },
+        9: { halign: 'right', cellWidth: 30 }
+      },
+      margin: { left: 14 },
+      tableLineWidth: 0,
+      tableLineColor: [255, 255, 255]
+    });
+    let finalY = doc.lastAutoTable.finalY || itemTableY + 50;
+    finalY += 10;
+    const totalInWords = numberToWords(Math.floor(calculateTotal()));
+    doc.setFontSize(9);
+    doc.setFont(undefined, 'bold');
+    doc.text('Total In Words:', 14, finalY + 15, { align: 'left' });
+    doc.setFont(undefined, 'normal');
+    const wordsText = `Indian Rupee ${totalInWords} Only`;
+    doc.text(wordsText, 14, finalY + 22, { align: 'left' });
+    if (formData.customerNotes) {
+      doc.setFontSize(9);
+      doc.text(formData.customerNotes, 14, finalY + 35, { align: 'left' });
+    }
+    doc.addPage();
+    if (backgroundBase64) {
+      try {
+        doc.addImage(backgroundBase64, 'JPEG', 0, 0, pageWidth, pageHeight);
+      } catch (error) {}
+    }
+    const summaryStartY = 40;
+    const summaryData = [
+      ['Sub Total', `${calculateSubtotal().toFixed(2)}`],
+      [`CGST${cgstRate.toFixed(0)} (${cgstRate.toFixed(0)}%)`, `${calculateCGST().toFixed(2)}`],
+      [`SGST${sgstRate.toFixed(0)} (${sgstRate.toFixed(0)}%)`, `${calculateSGST().toFixed(2)}`],
+      ['Total', `₹${calculateTotal().toFixed(2)}`],
+      ['Balance Due', `₹${calculateTotal().toFixed(2)}`]
+    ];
+    if (formData.tdsTcsType === 'TDS' && formData.tdsRate) {
+      summaryData.splice(-2, 0, [`TDS (${formData.tdsRate}%)`, `${calculateTDS().toFixed(2)}`]);
+    }
+    if (formData.tdsTcsType === 'TCS' && formData.tcsRate) {
+      summaryData.splice(-2, 0, [`TCS (${formData.tcsRate}%)`, `${calculateTCS().toFixed(2)}`]);
+    }
+    autoTable(doc, {
+      startY: summaryStartY,
+      body: summaryData,
+      theme: 'plain',
+      styles: { 
+        fontSize: 9,
+        cellPadding: { top: 2, right: 3, bottom: 2, left: 3 },
+        lineWidth: 0
+      },
+      columnStyles: {
+        0: { fontStyle: 'bold', cellWidth: 60, halign: 'left' },
+        1: { halign: 'right', cellWidth: 50 }
+      },
+      margin: { left: 150 }
+    });
+    // Return both doc and buffer (use 'arraybuffer' with compression)
+    // Also try to reduce image quality if possible
+    const pdfArrayBuffer = doc.output('arraybuffer');
+    return { doc, pdfBuffer: Buffer.from(pdfArrayBuffer) };
+  };
+
   const handleSubmit = async (e, send = false) => {
     e.preventDefault();
     if (!formData.customerId || !formData.invoiceNumber || !formData.invoiceDate || !formData.dueDate || items.length === 0) {
       alert("Fill all required fields");
       return;
     }
-    const payload = {
-      customerId: Number(formData.customerId),
-      invoiceCode: formData.invoiceNumber,
-      invoiceDate: formData.invoiceDate,
-      terms: formData.terms,
-      dueDate: formData.dueDate,
-      notes: formData.customerNotes,
-      gstTreatment: formData.gstTreatment,
-      gstNumber: formData.gstNumber,
-      placeOfSupply: formData.placeOfSupply,
-      poNumber: formData.poNumber,
-      items: items.map(i => ({
+    try {
+      let pdfBase64 = null;
+      // Always generate PDF for both draft and send
+      try {
+        const { pdfBuffer } = await generatePDF();
+        if (pdfBuffer) {
+          pdfBase64 = Buffer.from(pdfBuffer).toString('base64');
+        }
+      } catch (error) {
+        console.error('Error generating PDF:', error);
+      }
+      const submitFormData = new FormData();
+      submitFormData.append('customerId', formData.customerId.toString());
+      submitFormData.append('invoiceCode', formData.invoiceNumber);
+      submitFormData.append('invoiceDate', formData.invoiceDate);
+      submitFormData.append('terms', formData.terms);
+      submitFormData.append('dueDate', formData.dueDate);
+      submitFormData.append('poNumber', formData.poNumber || '');
+      submitFormData.append('notes', formData.customerNotes || '');
+      submitFormData.append('gstTreatment', formData.gstTreatment || '');
+      submitFormData.append('gstNumber', formData.gstNumber || '');
+      submitFormData.append('placeOfSupply', formData.placeOfSupply || '');
+      submitFormData.append('total', calculateTotal().toString());
+      submitFormData.append('isDraft', (!send).toString());
+      const itemsData = items.map(i => ({
         name: i.name,
         description: i.description,
         quantity: i.quantity,
@@ -508,27 +767,33 @@ export default function InvoiceForm() {
         customTaxRate: i.customTaxRate,
         sac: i.sac,
         amount: calculateItemAmount(i),
-      })),
-      total: calculateTotal(),
-      discount: calculateTotalDiscount(),
-      gstRate,
-      isDraft: !send,
-    };
-
-    try {
+        gstPercentage: getTaxRateForItem(i),
+      }));
+      submitFormData.append('items', JSON.stringify(itemsData));
+      // Always attach invoiceTemplate
+      if (pdfBase64) {
+        submitFormData.append('invoiceTemplate', pdfBase64);
+      }
+      if (formData.files && formData.files.length > 0) {
+        Array.from(formData.files).forEach((file) => {
+          submitFormData.append('files', file);
+        });
+      }
       const res = await fetch("/api/invoice", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        body: submitFormData,
       });
       const data = await res.json();
       if (data.success) {
-        alert(send ? "Invoice sent!" : "Saved as draft.");
-        // Optionally reset form or redirect
+        const url = data.data?.invoiceTemplate;
+        alert(
+          (send ? "Invoice saved!" : "Invoice saved as draft.")
+        );
       } else {
         alert("Failed to save invoice: " + (data.error || "Unknown error"));
       }
     } catch (err) {
+      console.error("Error saving invoice:", err);
       alert("Failed to save invoice. Please try again.");
     }
   };
@@ -536,316 +801,7 @@ export default function InvoiceForm() {
   const handlePrintDownload = async () => {
     setIsGeneratingPDF(true);
     try {
-      const { jsPDF } = await import('jspdf');
-      const autoTable = (await import('jspdf-autotable')).default;
-      
-      // Create landscape PDF (297mm x 210mm)
-      const doc = new jsPDF('l', 'mm', 'a4');
-
-      // Get page dimensions
-      const pageWidth = doc.internal.pageSize.getWidth();
-      const pageHeight = doc.internal.pageSize.getHeight();
-
-      // Load the Wizzybox logo
-      let logoBase64 = null;
-      try {
-        logoBase64 = await getImageAsBase64('/Wizzybox Logo.png');
-      } catch (error) {
-        console.log('Could not load Wizzybox logo image');
-      }
-
-      // Load the background template image
-      let backgroundBase64 = null;
-      try {
-        backgroundBase64 = await getImageAsBase64('/template.jpg');
-      } catch (error) {
-        console.log('Could not load template background image');
-      }
-
-      // Colors matching template
-      const primaryColor = [0, 0, 0];
-      const lightGray = [245, 245, 245];
-      const borderColor = [0, 0, 0];
-
-      // Add Zoho branding at top (matching template exactly)
-      doc.setFontSize(8);
-      doc.setTextColor(100, 100, 100);
-
-      // Add Wizzybox logo - STANDARD SIZE: Reduced to standard dimensions
-      let logoYPosition = 18;
-      if (logoBase64) {
-        try {
-          // UPDATED: Standard logo size - 50x20 (width x height in mm)
-          doc.addImage(logoBase64, 'PNG', 14, logoYPosition, 60,19); 
-          logoYPosition += 25; // Adjusted spacing after logo
-        } catch (error) {
-          console.log('Error adding logo to PDF');
-          // Fallback text if logo fails to load
-          doc.setFontSize(12);
-          doc.setTextColor(0, 0, 0);
-          doc.text('WIZZYBOX', 14, logoYPosition + 10);
-          logoYPosition += 15;
-        }
-      } else {
-        // Fallback text if logo is not available
-        doc.setFontSize(12);
-        doc.setTextColor(0, 0, 0);
-        doc.text('WIZZYBOX', 14, logoYPosition + 10);
-        logoYPosition += 15;
-      }
-
-      // Header - Company Details with proper text alignment
-      doc.setFontSize(12); 
-      doc.setFont(undefined, 'bold');
-      doc.setTextColor(0, 0, 0);
-      doc.text(formData.companyName, 14, logoYPosition + 5);
-      
-      doc.setFontSize(9);
-      doc.setFont(undefined, 'normal');
-      const companyAddressLines = formData.companyAddress.split('\n');
-      let yPos = logoYPosition + 12;
-      companyAddressLines.forEach(line => {
-        doc.text(line, 14, yPos);
-        yPos += 4;
-      });
-      
-      doc.text(`GSTIN ${formData.companyGSTIN}`, 14, yPos);
-      doc.text(formData.companyEmail, 14, yPos + 4);
-      doc.text(formData.companyWebsite, 14, yPos + 8);
-
-      // TAX INVOICE Header - Right side with proper alignment
-      doc.setFontSize(30);
-      doc.setFont(undefined, 'bold');
-      doc.setTextColor(0, 0, 0);
-      doc.text('TAX INVOICE', 280, 35, { align: 'right' });
-
-      // Invoice Number - Right side
-      doc.setFontSize(10);
-      doc.setFont(undefined, 'normal');
-      doc.text(`Invoice# ${formData.invoiceNumber || 'WB-IN106'}`, 280, 45, { align: 'right' });
-
-      // Customer Details Section
-      const selectedCustomer = customers.find(c => c.id === Number(formData.customerId));
-      
-      // Bill To Section with proper alignment
-      doc.setFontSize(11);
-      doc.setFont(undefined, 'bold');
-      doc.text('Bill To', 14, 80);
-      
-      doc.setFontSize(9);
-      doc.setFont(undefined, 'normal');
-      if (selectedCustomer) {
-        const customerName = selectedCustomer.displayName || selectedCustomer.companyName || selectedCustomer.emailAddress;
-        doc.text(customerName, 14, 88);
-        
-        // Customer billing address - properly formatted and aligned
-        let customerAddressY = 93;
-        
-        // Address line 1
-        if (selectedCustomer.billingAddress) {
-          doc.text(selectedCustomer.billingAddress, 14, customerAddressY);
-          customerAddressY += 4;
-        }
-        
-        // City, state, pincode on separate lines
-        if (selectedCustomer.billingCity) {
-          doc.text(selectedCustomer.billingCity, 14, customerAddressY);
-          customerAddressY += 4;
-        }
-        
-        if (selectedCustomer.billingPinCode && selectedCustomer.billingState) {
-          doc.text(`${selectedCustomer.billingPinCode} ${selectedCustomer.billingState}`, 14, customerAddressY);
-          customerAddressY += 4;
-        }
-        
-        if (selectedCustomer.billingCountry) {
-          doc.text(selectedCustomer.billingCountry, 14, customerAddressY);
-          customerAddressY += 4;
-        }
-        
-        if (formData.gstNumber) {
-          doc.text(`GSTIN ${formData.gstNumber}`, 14, customerAddressY + 4);
-        }
-      }
-
-      // Ship To Section - with proper alignment
-      doc.setFontSize(11);
-      doc.setFont(undefined, 'bold');
-      doc.text('Ship To', 150, 80);
-      
-      doc.setFontSize(9);
-      doc.setFont(undefined, 'normal');
-      if (formData.gstNumber) {
-        doc.text(`GSTIN ${formData.gstNumber}`, 150, 88);
-      }
-      if (formData.placeOfSupply) {
-        doc.text(`Place Of Supply: ${formData.placeOfSupply}`, 150, 93);
-      }
-
-      // Invoice Details Table - WITHOUT GRID
-      const invoiceDetailsY = 120;
-      
-      // Table dimensions - No borders needed
-      const tableWidth = 270;
-      const colWidth = tableWidth / 4;
-      const rowHeight = 8;
-      
-      // Draw header row background with the template color (#3b3d39)
-      doc.setFillColor(59, 61, 57);
-      doc.rect(14, invoiceDetailsY - 6, tableWidth, rowHeight, 'F');
-
-      // Header text with proper alignment
-      doc.setFont(undefined, 'bold');
-      doc.setFontSize(9);
-      doc.setTextColor(255, 255, 255); // White text for contrast
-      doc.text('Invoice Date', 16, invoiceDetailsY - 1, { align: 'left' });
-      doc.text('Terms', 16 + colWidth, invoiceDetailsY - 1, { align: 'left' });
-      doc.text('Due Date', 16 + 2*colWidth, invoiceDetailsY - 1, { align: 'left' });
-      doc.text('PO Number', 16 + 3*colWidth, invoiceDetailsY - 1, { align: 'left' });
-
-      // Data text with proper alignment
-      doc.setFont(undefined, 'normal');
-      doc.setTextColor(0, 0, 0);
-      doc.text(formatDisplayDate(formData.invoiceDate), 16, invoiceDetailsY + 7, { align: 'left' });
-      doc.text(formData.terms || 'Due on Receipt', 16 + colWidth, invoiceDetailsY + 7, { align: 'left' });
-      doc.text(formatDisplayDate(formData.dueDate), 16 + 2*colWidth, invoiceDetailsY + 7, { align: 'left' });
-      doc.text(formData.poNumber || 'NA', 16 + 3*colWidth, invoiceDetailsY + 7, { align: 'left' });
-
-      // Items Table - NO GRID, only header row with background
-      const itemTableY = invoiceDetailsY + 25;
-      
-      // Prepare items data for table
-      const itemRows = items.map((item, idx) => {
-        const baseAmount = (parseFloat(item.quantity) || 0) * (parseFloat(item.rate) || 0);
-        const discountedAmount = baseAmount - (baseAmount * (parseFloat(item.discount) || 0) / 100);
-        const cgstAmount = (discountedAmount * cgstRate) / 100;
-        const sgstAmount = (discountedAmount * sgstRate) / 100;
-        
-        return [
-          (idx + 1).toString(),
-          item.name || '',
-          item.sac || '998313',
-          parseFloat(item.quantity || 1).toFixed(2),
-          parseFloat(item.rate || 0).toFixed(2).replace(/\.00$/, '.00'),
-          cgstAmount.toFixed(2),
-          `${cgstRate.toFixed(0)}%`,
-          sgstAmount.toFixed(2),
-          `${sgstRate.toFixed(0)}%`,
-          discountedAmount.toFixed(2)
-        ];
-      });
-
-      // Items table WITHOUT GRID - only header background, no table borders
-      autoTable(doc, {
-        startY: itemTableY,
-        head: [['#', 'Item & Description', 'HSN/SAC', 'Qty', 'Rate', 'CGST', '', 'SGST', '', 'Amount']],
-        body: itemRows,
-        theme: 'plain',
-        headStyles: { 
-          fillColor: [59, 61, 57],
-          textColor: [255, 255, 255],
-          fontSize: 9,
-          fontStyle: 'bold',
-          lineWidth: 0, // No borders
-          halign: 'center',
-          valign: 'middle'
-        },
-        bodyStyles: { 
-          fontSize: 9,
-          cellPadding: { top: 3, right: 3, bottom: 3, left: 3 },
-          lineWidth: 0, // No borders
-          valign: 'middle'
-        },
-        styles: {
-          lineWidth: 0, // No grid lines anywhere
-        },
-        columnStyles: {
-          0: { halign: 'center', cellWidth: 15 },
-          1: { cellWidth: 70, halign: 'left' },
-          2: { halign: 'center', cellWidth: 25 },
-          3: { halign: 'right', cellWidth: 20 },
-          4: { halign: 'right', cellWidth: 30 },
-          5: { halign: 'right', cellWidth: 25 },
-          6: { halign: 'center', cellWidth: 15 },
-          7: { halign: 'right', cellWidth: 25 },
-          8: { halign: 'center', cellWidth: 15 },
-          9: { halign: 'right', cellWidth: 30 }
-        },
-        margin: { left: 14 },
-        tableLineWidth: 0, // Remove all table lines
-        tableLineColor: [255, 255, 255] // Make lines invisible
-      });
-
-      let finalY = doc.lastAutoTable.finalY || itemTableY + 50;
-
-      // Add spacing before Total In Words section
-      finalY += 10;
-
-      // Total in Words section - positioned properly as per PDF reference
-      const totalInWords = numberToWords(Math.floor(calculateTotal()));
-      doc.setFontSize(9);
-      doc.setFont(undefined, 'bold');
-      doc.text('Total In Words:', 14, finalY + 15, { align: 'left' });
-      doc.setFont(undefined, 'normal');
-      // Split the words into multiple lines if too long
-      const wordsText = `Indian Rupee ${totalInWords} Only`;
-      doc.text(wordsText, 14, finalY + 22, { align: 'left' });
-
-      // Thanks message - positioned after Total In Words
-      if (formData.customerNotes) {
-        doc.setFontSize(9);
-        doc.text(formData.customerNotes, 14, finalY + 35, { align: 'left' });
-      }
-
-      // Add new page for payment details and summary WITH BACKGROUND
-      doc.addPage();
-
-      // **NEW: Add background image to second page**
-      if (backgroundBase64) {
-        try {
-          // Add background image covering the entire second page
-          doc.addImage(backgroundBase64, 'JPEG', 0, 0, pageWidth, pageHeight);
-        } catch (error) {
-          console.log('Error adding background image to second page');
-        }
-      }
-
-      // MOVED TO SECOND PAGE: Complete Summary section 
-      const summaryStartY = 40;
-      const summaryData = [
-        ['Sub Total', `${calculateSubtotal().toFixed(2)}`],
-        [`CGST${cgstRate.toFixed(0)} (${cgstRate.toFixed(0)}%)`, `${calculateCGST().toFixed(2)}`],
-        [`SGST${sgstRate.toFixed(0)} (${sgstRate.toFixed(0)}%)`, `${calculateSGST().toFixed(2)}`],
-        ['Total', `₹${calculateTotal().toFixed(2)}`],
-        ['Balance Due', `₹${calculateTotal().toFixed(2)}`]
-      ];
-
-      // Add TDS/TCS if applicable
-      if (formData.tdsTcsType === 'TDS' && formData.tdsRate) {
-        summaryData.splice(-2, 0, [`TDS (${formData.tdsRate}%)`, `${calculateTDS().toFixed(2)}`]);
-      }
-      if (formData.tdsTcsType === 'TCS' && formData.tcsRate) {
-        summaryData.splice(-2, 0, [`TCS (${formData.tcsRate}%)`, `${calculateTCS().toFixed(2)}`]);
-      }
-
-      // MOVED: Summary table WITHOUT GRID - positioned at top right of second page
-      autoTable(doc, {
-        startY: summaryStartY,
-        body: summaryData,
-        theme: 'plain',
-        styles: { 
-          fontSize: 9,
-          cellPadding: { top: 2, right: 3, bottom: 2, left: 3 },
-          lineWidth: 0 // No borders
-        },
-        columnStyles: {
-          0: { fontStyle: 'bold', cellWidth: 60, halign: 'left' },
-          1: { halign: 'right', cellWidth: 50 }
-        },
-        margin: { left: 150 } // Position on right side
-      });
-
-      // Save the PDF
+      const { doc } = await generatePDF();
       doc.save(`Invoice_${formData.invoiceNumber || 'Draft'}.pdf`);
     } catch (error) {
       console.error('Error generating PDF:', error);
@@ -900,10 +856,7 @@ export default function InvoiceForm() {
   };
 
   return (
-    <form
-      onSubmit={e => handleSubmit(e, true)}
-      className="w-full px-2 min-h-screen"
-    >
+    <div className="w-full px-2 min-h-screen">
       <div className="max-w-screen-2xl mx-auto px-4 py-6 space-y-6 text-gray-800 my-4">
         <div className="flex items-center justify-between border-b pb-4">
           <h2 className="text-xl font-bold text-gray-800">
@@ -913,591 +866,594 @@ export default function InvoiceForm() {
             Professional Invoice Template
           </div>
         </div>
+        
+        <form
+          onSubmit={e => handleSubmit(e, true)}
+          className="space-y-10"
+        >
+          {/* Invoice Details */}
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div>
+                <label className="block font-medium text-xs mb-1 text-gray-700">
+                  Customer Name<span className="text-red-500">*</span>
+                </label>
+                <select
+                  name="customerId"
+                  required
+                  value={formData.customerId}
+                  onChange={handleChange}
+                  className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent text-xs text-gray-800"
+                  disabled={customerLoading}
+                >
+                  <option value="">Select Customer</option>
+                  {customers.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.displayName || c.companyName || c.emailAddress}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              
+              <div>
+                <label className="block font-medium text-xs mb-1 text-gray-700">Invoice #</label>
+                <input
+                  type="text"
+                  name="invoiceNumber"
+                  value={formData.invoiceNumber}
+                  onChange={handleChange}
+                  className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent text-xs text-gray-800"
+                  required
+                />
+              </div>
+            </div>
 
-        {/* Invoice Details */}
-        <div className="space-y-4">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div>
-              <label className="block font-medium text-xs mb-1 text-gray-700">
-                Customer Name<span className="text-red-500">*</span>
-              </label>
-              <select
-                name="customerId"
-                required
-                value={formData.customerId}
-                onChange={handleChange}
-                className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent text-xs text-gray-800"
-                disabled={customerLoading}
-              >
-                <option value="">Select Customer</option>
-                {customers.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.displayName || c.companyName || c.emailAddress}
-                  </option>
-                ))}
-              </select>
+            {formData.customerId && (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-3 border rounded">
+                <div>
+                  <label className="block font-medium text-xs mb-1 text-gray-700">GST Treatment</label>
+                  <input
+                    type="text"
+                    name="gstTreatment"
+                    value={formData.gstTreatment || ''}
+                    onChange={handleChange}
+                    className="w-full border border-gray-300 rounded px-3 py-1 text-xs text-gray-700"
+                    readOnly
+                  />
+                </div>
+                <div>
+                  <label className="block font-medium text-xs mb-1 text-gray-700">GST Number</label>
+                  <input
+                    type="text"
+                    name="gstNumber"
+                    value={formData.gstNumber || ''}
+                    onChange={handleChange}
+                    className="w-full border border-gray-300 rounded px-3 py-1 text-xs text-gray-700"
+                    readOnly
+                  />
+                </div>
+                <div>
+                  <label className="block font-medium text-xs mb-1 text-gray-700">Place of Supply</label>
+                  <input
+                    type="text"
+                    name="placeOfSupply"
+                    value={formData.placeOfSupply}
+                    onChange={handleChange}
+                    placeholder="Enter Place of Supply"
+                    className="w-full border border-gray-300 rounded px-3 py-1 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent text-xs"
+                  />
+                </div>
+              </div>
+            )}
+            
+            <div className="grid md:grid-cols-3 gap-4">
+              <div>
+                <label className="block font-medium text-xs mb-1 text-gray-700">
+                  Invoice Date
+                </label>
+                <input
+                  type="date"
+                  name="invoiceDate"
+                  value={formData.invoiceDate}
+                  onChange={handleChange}
+                  className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent text-xs text-gray-800"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block font-medium text-xs mb-1 text-gray-700">Terms</label>
+                <select
+                  name="terms"
+                  value={formData.terms}
+                  onChange={handleChange}
+                  className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent text-xs text-gray-800"
+                >
+                  {paymentTermsOptions.map(opt => (
+                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block font-medium text-xs mb-1 text-gray-700">Due Date</label>
+                <input
+                  type="date"
+                  name="dueDate"
+                  value={formData.dueDate}
+                  onChange={handleChange}
+                  className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent text-xs text-gray-800"
+                  readOnly={!!formData.terms}
+                  required
+                />
+              </div>
             </div>
             
-            <div>
-              <label className="block font-medium text-xs mb-1 text-gray-700">Invoice #</label>
-              <input
-                type="text"
-                name="invoiceNumber"
-                value={formData.invoiceNumber}
-                onChange={handleChange}
-                className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent text-xs text-gray-800"
-                required
-              />
+            <div className="grid md:grid-cols-2 gap-4">
+              <div>
+                <label className="block font-medium text-xs mb-1 text-gray-700">PO Number</label>
+                <input
+                  type="text"
+                  name="poNumber"
+                  value={formData.poNumber}
+                  onChange={handleChange}
+                  placeholder="Enter PO Number"
+                  className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent text-xs"
+                />
+              </div>
+              <div>
+                <label className="block font-medium text-xs mb-1 text-gray-700">Ship To</label>
+                <input
+                  type="text"
+                  name="shipTo"
+                  value={formData.shipTo}
+                  onChange={handleChange}
+                  placeholder="Enter Ship To Address"
+                  className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent text-xs"
+                />
+              </div>
             </div>
           </div>
 
-          {formData.customerId && (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-3 border rounded">
-              <div>
-                <label className="block font-medium text-xs mb-1 text-gray-700">GST Treatment</label>
-                <input
-                  type="text"
-                  name="gstTreatment"
-                  value={formData.gstTreatment || ''}
-                  onChange={handleChange}
-                  className="w-full border border-gray-300 rounded px-3 py-1 text-xs text-gray-700"
-                  readOnly
-                />
-              </div>
-              <div>
-                <label className="block font-medium text-xs mb-1 text-gray-700">GST Number</label>
-                <input
-                  type="text"
-                  name="gstNumber"
-                  value={formData.gstNumber || ''}
-                  onChange={handleChange}
-                  className="w-full border border-gray-300 rounded px-3 py-1 text-xs text-gray-700"
-                  readOnly
-                />
-              </div>
-              <div>
-                <label className="block font-medium text-xs mb-1 text-gray-700">Place of Supply</label>
-                <input
-                  type="text"
-                  name="placeOfSupply"
-                  value={formData.placeOfSupply}
-                  onChange={handleChange}
-                  placeholder="Enter Place of Supply"
-                  className="w-full border border-gray-300 rounded px-3 py-1 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent text-xs"
-                />
-              </div>
-            </div>
-          )}
-          
-          <div className="grid md:grid-cols-3 gap-4">
-            <div>
-              <label className="block font-medium text-xs mb-1 text-gray-700">
-                Invoice Date
-              </label>
-              <input
-                type="date"
-                name="invoiceDate"
-                value={formData.invoiceDate}
-                onChange={handleChange}
-                className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent text-xs text-gray-800"
-                required
-              />
-            </div>
-            <div>
-              <label className="block font-medium text-xs mb-1 text-gray-700">Terms</label>
-              <select
-                name="terms"
-                value={formData.terms}
-                onChange={handleChange}
-                className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent text-xs text-gray-800"
+          {/* Items Table */}
+          <div className="space-y-3">
+            <h3 className="text-lg font-medium text-gray-800">
+              Item Details
+            </h3>
+            <div className="overflow-x-auto rounded border">
+              <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragEnd={handleDragEnd}
               >
-                {paymentTermsOptions.map(opt => (
-                  <option key={opt.value} value={opt.value}>{opt.label}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="block font-medium text-xs mb-1 text-gray-700">Due Date</label>
-              <input
-                type="date"
-                name="dueDate"
-                value={formData.dueDate}
-                onChange={handleChange}
-                className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent text-xs text-gray-800"
-                readOnly={!!formData.terms}
-                required
-              />
-            </div>
-          </div>
-          
-          <div className="grid md:grid-cols-2 gap-4">
-            <div>
-              <label className="block font-medium text-xs mb-1 text-gray-700">PO Number</label>
-              <input
-                type="text"
-                name="poNumber"
-                value={formData.poNumber}
-                onChange={handleChange}
-                placeholder="Enter PO Number"
-                className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent text-xs"
-              />
-            </div>
-            <div>
-              <label className="block font-medium text-xs mb-1 text-gray-700">Ship To</label>
-              <input
-                type="text"
-                name="shipTo"
-                value={formData.shipTo}
-                onChange={handleChange}
-                placeholder="Enter Ship To Address"
-                className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent text-xs"
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Items Table */}
-        <div className="space-y-3">
-          <h3 className="text-lg font-medium text-gray-800">
-            Item Details
-          </h3>
-          <div className="overflow-x-auto rounded border">
-            <DndContext
-              sensors={sensors}
-              collisionDetection={closestCenter}
-              onDragEnd={handleDragEnd}
-            >
-              <SortableContext
-                items={items.map(i => i.id)}
-                strategy={verticalListSortingStrategy}
-              >
-                <table className="w-full text-xs">
-                  <thead>
-                    <tr className="border-b">
-                      <th className="px-3 py-2 text-left font-medium">Item</th>
-                      <th className="px-3 py-2 text-center font-medium">Quantity</th>
-                      <th className="px-3 py-2 text-center font-medium">Rate</th>
-                      <th className="px-3 py-2 text-center font-medium">Discount (%)</th>
-                      <th className="px-3 py-2 text-center font-medium">Tax (%)</th>
-                      <th className="px-3 py-2 text-center font-medium">Amount</th>
-                      <th className="px-3 py-2 text-center font-medium">Remove</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {items.map((item, idx) => (
-                      <SortableRow key={item.id} id={item.id}>
-                        {({ dragHandleProps }) => (
-                          <>
-                            <td className="px-3 py-2">
-                              <div className="flex items-center gap-2">
-                                <span
-                                  {...dragHandleProps}
-                                  title="Drag to reorder"
-                                  className="cursor-grab text-gray-400 hover:text-blue-500 transition-colors text-sm"
-                                >
-                                  &#9776;
-                                </span>
-                                <div className="flex-1">
-                                  <input
-                                    type="text"
-                                    value={item.name}
-                                    placeholder="Item name"
-                                    onChange={(e) =>
-                                      handleItemChange(idx, 'name', e.target.value)
-                                    }
-                                    className={invisibleInput + " font-medium text-xs"}
-                                  />
-                                  {/* Show SAC field only if item name is filled */}
-                                  {item.name && (
-                                    <div className="mt-1">
-                                      <input
-                                        type="text"
-                                        value={item.sac}
-                                        placeholder="SAC"
-                                        onChange={(e) =>
-                                          handleItemChange(idx, 'sac', e.target.value)
-                                        }
-                                        className={invisibleInput + " text-xs text-gray-600 border-b border-blue-200"}
-                                      />
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-                            </td>
-                            <td className="px-3 py-2 text-center">
-                              <input
-                                type="number"
-                                min="1"
-                                value={item.quantity === "" || isNaN(item.quantity) ? "" : item.quantity}
-                                onChange={(e) =>
-                                  handleItemChange(idx, 'quantity', e.target.value)
-                                }
-                                className={invisibleInput + " text-center text-xs"}
-                              />
-                            </td>
-                            <td className="px-3 py-2 text-center">
-                              <input
-                                type="number"
-                                min="0"
-                                step="0.01"
-                                value={item.rate === "" || isNaN(item.rate) ? "" : item.rate}
-                                onChange={(e) =>
-                                  handleItemChange(idx, 'rate', e.target.value)
-                                }
-                                className={invisibleInput + " text-center text-xs"}
-                              />
-                            </td>
-                            <td className="px-3 py-2 text-center">
-                              <input
-                                type="number"
-                                min="0"
-                                max="100"
-                                step="0.01"
-                                value={item.discount === "" || isNaN(item.discount) ? "" : item.discount}
-                                onChange={(e) =>
-                                  handleItemChange(idx, 'discount', e.target.value)
-                                }
-                                className={invisibleInput + " text-center text-xs"}
-                              />
-                            </td>
-                            <td className="px-3 py-2">
-                              <div className="space-y-1">
-                                <select
-                                  value={item.taxType || ''}
-                                  onChange={e => handleItemChange(idx, 'taxType', e.target.value)}
-                                  className="w-full border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-400 text-xs"
-                                >
-                                  <option value="">Select Tax</option>
-                                  {taxOptions.map(opt => (
-                                    <option key={opt.value} value={opt.value}>
-                                      {opt.label}
-                                    </option>
-                                  ))}
-                                  <option value="add-new-tax">+ Add New Tax</option>
-                                </select>
-                                {/* If custom tax, show input */}
-                                {item.taxType && item.taxType.startsWith('custom-') && (
-                                  <input
-                                    type="number"
-                                    min="0"
-                                    max="100"
-                                    value={item.customTaxRate}
-                                    onChange={e => handleItemChange(idx, 'customTaxRate', e.target.value)}
-                                    placeholder="Tax %"
-                                    className="w-full border border-gray-300 rounded px-2 py-1 text-xs"
-                                  />
-                                )}
-                              </div>
-                              {/* Show description for special tax types */}
-                              {(() => {
-                                const found = taxOptions.find(opt => opt.value === item.taxType);
-                                if (found && found.description) {
-                                  return (
-                                    <div className="text-xs text-gray-500 mt-1 italic">{found.description}</div>
-                                  );
-                                }
-                                return null;
-                              })()}
-                              {/* Handle add new tax */}
-                              {item.taxType === "add-new-tax" && (
-                                <div className="mt-2 p-2 rounded border">
-                                  <form
-                                    className="space-y-1"
-                                    onSubmit={handleAddTaxOption}
+                <SortableContext
+                  items={items.map(i => i.id)}
+                  strategy={verticalListSortingStrategy}
+                >
+                  <table className="w-full text-xs">
+                    <thead>
+                      <tr className="border-b">
+                        <th className="px-3 py-2 text-left font-medium">Item</th>
+                        <th className="px-3 py-2 text-center font-medium">Quantity</th>
+                        <th className="px-3 py-2 text-center font-medium">Rate</th>
+                        <th className="px-3 py-2 text-center font-medium">Discount (%)</th>
+                        <th className="px-3 py-2 text-center font-medium">Tax (%)</th>
+                        <th className="px-3 py-2 text-center font-medium">Amount</th>
+                        <th className="px-3 py-2 text-center font-medium">Remove</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {items.map((item, idx) => (
+                        <SortableRow key={item.id} id={item.id}>
+                          {({ dragHandleProps }) => (
+                            <>
+                              <td className="px-3 py-2">
+                                <div className="flex items-center gap-2">
+                                  <span
+                                    {...dragHandleProps}
+                                    title="Drag to reorder"
+                                    className="cursor-grab text-gray-400 hover:text-blue-500 transition-colors text-sm"
                                   >
+                                    &#9776;
+                                  </span>
+                                  <div className="flex-1">
                                     <input
                                       type="text"
-                                      placeholder="Tax Label"
-                                      value={newTaxLabel}
-                                      onChange={e => setNewTaxLabel(e.target.value)}
-                                      className="w-full border border-gray-300 rounded px-2 py-1 text-xs"
-                                      required
+                                      value={item.name}
+                                      placeholder="Item name"
+                                      onChange={(e) =>
+                                        handleItemChange(idx, 'name', e.target.value)
+                                      }
+                                      className={invisibleInput + " font-medium text-xs"}
                                     />
+                                    {/* Show SAC field only if item name is filled */}
+                                    {item.name && (
+                                      <div className="mt-1">
+                                        <input
+                                          type="text"
+                                          value={item.sac}
+                                          placeholder="SAC"
+                                          onChange={(e) =>
+                                            handleItemChange(idx, 'sac', e.target.value)
+                                          }
+                                          className={invisibleInput + " text-xs text-gray-600 border-b border-blue-200"}
+                                        />
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              </td>
+                              <td className="px-3 py-2 text-center">
+                                <input
+                                  type="number"
+                                  min="1"
+                                  value={item.quantity === "" || isNaN(item.quantity) ? "" : item.quantity}
+                                  onChange={(e) =>
+                                    handleItemChange(idx, 'quantity', e.target.value)
+                                  }
+                                  className={invisibleInput + " text-center text-xs"}
+                                />
+                              </td>
+                              <td className="px-3 py-2 text-center">
+                                <input
+                                  type="number"
+                                  min="0"
+                                  step="0.01"
+                                  value={item.rate === "" || isNaN(item.rate) ? "" : item.rate}
+                                  onChange={(e) =>
+                                    handleItemChange(idx, 'rate', e.target.value)
+                                  }
+                                  className={invisibleInput + " text-center text-xs"}
+                                />
+                              </td>
+                              <td className="px-3 py-2 text-center">
+                                <input
+                                  type="number"
+                                  min="0"
+                                  max="100"
+                                  step="0.01"
+                                  value={item.discount === "" || isNaN(item.discount) ? "" : item.discount}
+                                  onChange={(e) =>
+                                    handleItemChange(idx, 'discount', e.target.value)
+                                  }
+                                  className={invisibleInput + " text-center text-xs"}
+                                />
+                              </td>
+                              <td className="px-3 py-2">
+                                <div className="space-y-1">
+                                  <select
+                                    value={item.taxType || ''}
+                                    onChange={e => handleItemChange(idx, 'taxType', e.target.value)}
+                                    className="w-full border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-400 text-xs"
+                                  >
+                                    <option value="">Select Tax</option>
+                                    {taxOptions.map(opt => (
+                                      <option key={opt.value} value={opt.value}>
+                                        {opt.label}
+                                      </option>
+                                    ))}
+                                    <option value="add-new-tax">+ Add New Tax</option>
+                                  </select>
+                                  {/* If custom tax, show input */}
+                                  {item.taxType && item.taxType.startsWith('custom-') && (
                                     <input
                                       type="number"
                                       min="0"
                                       max="100"
-                                      placeholder="Rate %"
-                                      value={newTaxRate}
-                                      onChange={e => setNewTaxRate(e.target.value)}
+                                      value={item.customTaxRate}
+                                      onChange={e => handleItemChange(idx, 'customTaxRate', e.target.value)}
+                                      placeholder="Tax %"
                                       className="w-full border border-gray-300 rounded px-2 py-1 text-xs"
-                                      required
                                     />
-                                    <div className="flex gap-1">
-                                      <button
-                                        type="submit"
-                                        className="flex-1 bg-blue-500 text-white px-2 py-1 rounded text-xs font-medium hover:bg-blue-600 transition"
-                                      >
-                                        Add
-                                      </button>
-                                      <button
-                                        type="button"
-                                        className="flex-1 text-xs text-gray-500 border border-gray-300 rounded px-2 py-1 hover:bg-gray-50 transition"
-                                        onClick={() => {
-                                          setShowAddTax(false);
-                                          setNewTaxLabel('');
-                                          setNewTaxRate('');
-                                          // Reset the taxType for this item
-                                          handleItemChange(idx, 'taxType', '');
-                                        }}
-                                      >
-                                        Cancel
-                                      </button>
-                                    </div>
-                                  </form>
+                                  )}
                                 </div>
-                              )}
-                            </td>
-                            <td className="px-3 py-2 text-center font-medium text-blue-700 text-xs">
-                              ₹{calculateItemAmount(item).toFixed(2)}
-                            </td>
-                            <td className="px-3 py-2 text-center">
-                              <button
-                                type="button"
-                                onClick={() => handleRemoveRow(idx)}
-                                className="text-red-500 font-bold hover:text-red-700 transition p-1 rounded hover:bg-red-50 text-xs"
-                                title="Remove Item"
-                                disabled={items.length === 1}
-                              >
-                                ✖
-                              </button>
-                            </td>
-                          </>
-                        )}
-                      </SortableRow>
-                    ))}
-                  </tbody>
-                </table>
-              </SortableContext>
-            </DndContext>
+                                {/* Show description for special tax types */}
+                                {(() => {
+                                  const found = taxOptions.find(opt => opt.value === item.taxType);
+                                  if (found && found.description) {
+                                    return (
+                                      <div className="text-xs text-gray-500 mt-1 italic">{found.description}</div>
+                                    );
+                                  }
+                                  return null;
+                                })()}
+                                {/* Handle add new tax */}
+                                {item.taxType === "add-new-tax" && (
+                                  <div className="mt-2 p-2 rounded border">
+                                    <div className="space-y-1">
+                                      <input
+                                        type="text"
+                                        placeholder="Tax Label"
+                                        value={newTaxLabel}
+                                        onChange={e => setNewTaxLabel(e.target.value)}
+                                        className="w-full border border-gray-300 rounded px-2 py-1 text-xs"
+                                        required
+                                      />
+                                      <input
+                                        type="number"
+                                        min="0"
+                                        max="100"
+                                        placeholder="Rate %"
+                                        value={newTaxRate}
+                                        onChange={e => setNewTaxRate(e.target.value)}
+                                        className="w-full border border-gray-300 rounded px-2 py-1 text-xs"
+                                        required
+                                      />
+                                      <div className="flex gap-1">
+                                        <button
+                                          type="button"
+                                          onClick={handleAddTaxOption}
+                                          className="flex-1 bg-blue-500 text-white px-2 py-1 rounded text-xs font-medium hover:bg-blue-600 transition"
+                                        >
+                                          Add
+                                        </button>
+                                        <button
+                                          type="button"
+                                          className="flex-1 text-xs text-gray-500 border border-gray-300 rounded px-2 py-1 hover:bg-gray-50 transition"
+                                          onClick={() => {
+                                            setShowAddTax(false);
+                                            setNewTaxLabel('');
+                                            setNewTaxRate('');
+                                            // Reset the taxType for this item
+                                            handleItemChange(idx, 'taxType', '');
+                                          }}
+                                        >
+                                          Cancel
+                                        </button>
+                                      </div>
+                                    </div>
+                                  </div>
+                                )}
+                              </td>
+                              <td className="px-3 py-2 text-center font-medium text-blue-700 text-xs">
+                                ₹{calculateItemAmount(item).toFixed(2)}
+                              </td>
+                              <td className="px-3 py-2 text-center">
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemoveRow(idx)}
+                                  className="text-red-500 font-bold hover:text-red-700 transition p-1 rounded hover:bg-red-50 text-xs"
+                                  title="Remove Item"
+                                  disabled={items.length === 1}
+                                >
+                                  ✖
+                                </button>
+                              </td>
+                            </>
+                          )}
+                        </SortableRow>
+                      ))}
+                    </tbody>
+                  </table>
+                </SortableContext>
+              </DndContext>
+            </div>
+            <button
+              type="button"
+              onClick={handleAddRow}
+              className="inline-flex items-center px-4 py-2 border-2 border-blue-400 rounded text-blue-700 font-medium hover:bg-blue-50 transition text-xs"
+            >
+              <span className="mr-1">+</span>
+              Add New Item
+            </button>
           </div>
-          <button
-            type="button"
-            onClick={handleAddRow}
-            className="inline-flex items-center px-4 py-2 border-2 border-blue-400 rounded text-blue-700 font-medium hover:bg-blue-50 transition text-xs"
-          >
-            <span className="mr-1">+</span>
-            Add New Item
-          </button>
-        </div>
 
-        {/* Summary Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
-          <div className="space-y-4">
-            <div>
-              <label className="block font-medium mb-2 text-xs text-gray-700">Customer Notes</label>
-              <textarea
-                name="customerNotes"
-                rows="3"
-                value={formData.customerNotes}
-                onChange={handleChange}
-                className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent resize-none text-xs"
-                placeholder="Enter customer notes..."
-              />
+          {/* Summary Section */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+            <div className="space-y-4">
+              <div>
+                <label className="block font-medium mb-2 text-xs text-gray-700">Customer Notes</label>
+                <textarea
+                  name="customerNotes"
+                  rows="3"
+                  value={formData.customerNotes}
+                  onChange={handleChange}
+                  className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent resize-none text-xs"
+                  placeholder="Enter customer notes..."
+                />
+              </div>
+              
+              <div>
+                <label className="block font-medium mb-2 text-xs text-gray-700">
+                  Terms & Conditions
+                </label>
+                <textarea
+                  name="termsAndConditions"
+                  rows="2"
+                  value={formData.termsAndConditions}
+                  onChange={handleChange}
+                  className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent resize-none text-xs"
+                  placeholder="Enter terms and conditions..."
+                />
+              </div>
+              
+              <div>
+                <label className="block font-medium mb-2 text-xs text-gray-700">Attach File(s)</label>
+                <input
+                  type="file"
+                  multiple
+                  onChange={(e) =>
+                    setFormData({ ...formData, files: e.target.files })
+                  }
+                  className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 text-xs"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Max 3 files, 10MB each
+                </p>
+              </div>
             </div>
             
-            <div>
-              <label className="block font-medium mb-2 text-xs text-gray-700">
-                Terms & Conditions
-              </label>
-              <textarea
-                name="termsAndConditions"
-                rows="2"
-                value={formData.termsAndConditions}
-                onChange={handleChange}
-                className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent resize-none text-xs"
-                placeholder="Enter terms and conditions..."
-              />
-            </div>
-            
-            <div>
-              <label className="block font-medium mb-2 text-xs text-gray-700">Attach File(s)</label>
-              <input
-                type="file"
-                multiple
-                onChange={(e) =>
-                  setFormData({ ...formData, files: e.target.files })
-                }
-                className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 text-xs"
-              />
-              <p className="text-xs text-gray-500 mt-1">
-                Max 3 files, 10MB each
-              </p>
-            </div>
-          </div>
-          
-          <div className="rounded border p-4 space-y-3">
-            {/* Show/Hide Summary Toggle Button */}
-            <div className="flex justify-between items-center border-b pb-2">
-              <button
-                type="button"
-                className="text-blue-600 font-medium underline hover:text-blue-800 transition text-xs"
-                onClick={() => setFormData({ ...formData, showSummary: !formData.showSummary })}
-              >
-                {formData.showSummary ? "Hide Total Summary" : "Show Total Summary"}
-              </button>
-            </div>
-            
-            {/* Summary Details */}
-            {formData.showSummary && (
-              <>
-                <div className="flex justify-between items-center py-1">
-                  <span className="font-medium text-gray-700 text-xs">Sub Total</span>
-                  <span className="font-medium text-blue-900 text-xs">
-                    ₹ {calculateSubtotal().toFixed(2)}
-                  </span>
-                </div>
-                
-                <div className="flex justify-between items-center py-1">
-                  <span className="font-medium text-gray-700 text-xs">CGST ({cgstRate.toFixed(1)}%)</span>
-                  <span className="font-medium text-blue-900 text-xs">
-                    ₹ {calculateCGST().toFixed(2)}
-                  </span>
-                </div>
-                
-                <div className="flex justify-between items-center py-1">
-                  <span className="font-medium text-gray-700 text-xs">SGST ({sgstRate.toFixed(1)}%)</span>
-                  <span className="font-medium text-blue-900 text-xs">
-                    ₹ {calculateSGST().toFixed(2)}
-                  </span>
-                </div>
-                
-                {/* TDS/TCS Section */}
-                <div className="border-t pt-3 space-y-2">
-                  <span className="font-medium text-gray-700 block text-xs">TDS / TCS</span>
-                  <div className="flex gap-4">
-                    <label className="flex items-center gap-1">
-                      <input
-                        type="radio"
-                        name="tdsTcsType"
-                        value="TDS"
-                        checked={formData.tdsTcsType === 'TDS'}
-                        onChange={handleTdsTcsTypeChange}
-                        className="text-blue-600"
-                      />
-                      <span className="text-xs">TDS</span>
-                    </label>
-                    <label className="flex items-center gap-1">
-                      <input
-                        type="radio"
-                        name="tdsTcsType"
-                        value="TCS"
-                        checked={formData.tdsTcsType === 'TCS'}
-                        onChange={handleTdsTcsTypeChange}
-                        className="text-blue-600"
-                      />
-                      <span className="text-xs">TCS</span>
-                    </label>
+            <div className="rounded border p-4 space-y-3">
+              {/* Show/Hide Summary Toggle Button */}
+              <div className="flex justify-between items-center border-b pb-2">
+                <button
+                  type="button"
+                  className="text-blue-600 font-medium underline hover:text-blue-800 transition text-xs"
+                  onClick={() => setFormData({ ...formData, showSummary: !formData.showSummary })}
+                >
+                  {formData.showSummary ? "Hide Total Summary" : "Show Total Summary"}
+                </button>
+              </div>
+              
+              {/* Summary Details (hidden by default, shown when showSummary is true) */}
+              {formData.showSummary && (
+                <>
+                  <div className="flex justify-between items-center py-1">
+                    <span className="font-medium text-gray-700 text-xs">Sub Total</span>
+                    <span className="font-medium text-blue-900 text-xs">
+                      ₹ {calculateSubtotal().toFixed(2)}
+                    </span>
                   </div>
                   
-                  {formData.tdsTcsType === 'TDS' && (
-                    <div className="space-y-2">
-                      <select
-                        name="tdsOption"
-                        value={formData.tdsOption}
-                        onChange={handleTdsOptionChange}
-                        className="w-full border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-400 text-xs"
-                      >
-                        <option value="">Select TDS Type</option>
-                        {TDS_OPTIONS.map((opt, idx) => (
-                          <option key={idx} value={opt.label}>
-                            {opt.label}
-                          </option>
-                        ))}
-                      </select>
-                      {formData.tdsRate && (
-                        <div className="flex justify-between items-center py-1">
-                          <span className="font-medium text-gray-700 text-xs">TDS ({formData.tdsRate}%)</span>
-                          <span className="font-medium text-red-600 text-xs">
-                            ₹ {calculateTDS().toFixed(2)}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  )}
+                  <div className="flex justify-between items-center py-1">
+                    <span className="font-medium text-gray-700 text-xs">CGST ({cgstRate.toFixed(1)}%)</span>
+                    <span className="font-medium text-blue-900 text-xs">
+                      ₹ {calculateCGST().toFixed(2)}
+                    </span>
+                  </div>
                   
-                  {formData.tdsTcsType === 'TCS' && (
-                    <div className="space-y-2">
-                      <input
-                        type="number"
-                        name="tcsRate"
-                        value={formData.tcsRate}
-                        onChange={handleTcsRateChange}
-                        min="0"
-                        max="100"
-                        step="0.01"
-                        className="w-full border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-400 text-xs"
-                        placeholder="TCS Rate %"
-                      />
-                      {formData.tcsRate && (
-                        <div className="flex justify-between items-center py-1">
-                          <span className="font-medium text-gray-700 text-xs">TCS ({formData.tcsRate}%)</span>
-                          <span className="font-medium text-green-600 text-xs">
-                            ₹ {calculateTCS().toFixed(2)}
-                          </span>
-                        </div>
-                      )}
+                  <div className="flex justify-between items-center py-1">
+                    <span className="font-medium text-gray-700 text-xs">SGST ({sgstRate.toFixed(1)}%)</span>
+                    <span className="font-medium text-blue-900 text-xs">
+                      ₹ {calculateSGST().toFixed(2)}
+                    </span>
+                  </div>
+                  
+                  {/* TDS/TCS Section */}
+                  <div className="border-t pt-3 space-y-2">
+                    <span className="font-medium text-gray-700 block text-xs">TDS / TCS</span>
+                    <div className="flex gap-4">
+                      <label className="flex items-center gap-1">
+                        <input
+                          type="radio"
+                          name="tdsTcsType"
+                          value="TDS"
+                          checked={formData.tdsTcsType === 'TDS'}
+                          onChange={handleTdsTcsTypeChange}
+                          className="text-blue-600"
+                        />
+                        <span className="text-xs">TDS</span>
+                      </label>
+                      <label className="flex items-center gap-1">
+                        <input
+                          type="radio"
+                          name="tdsTcsType"
+                          value="TCS"
+                          checked={formData.tdsTcsType === 'TCS'}
+                          onChange={handleTdsTcsTypeChange}
+                          className="text-blue-600"
+                        />
+                        <span className="text-xs">TCS</span>
+                      </label>
                     </div>
-                  )}
-                </div>
-              </>
-            )}
-            
-            {/* Total (always visible) */}
-            <div className="flex justify-between items-center font-bold text-lg border-t pt-3">
-              <span className="text-gray-800 text-sm">Total</span>
-              <span className="text-blue-700 text-sm">
-                ₹ {calculateTotal().toFixed(2)}
-              </span>
+                    
+                    {formData.tdsTcsType === 'TDS' && (
+                      <div className="space-y-2">
+                        <select
+                          name="tdsOption"
+                          value={formData.tdsOption}
+                          onChange={handleTdsOptionChange}
+                          className="w-full border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-400 text-xs"
+                        >
+                          <option value="">Select TDS Type</option>
+                          {TDS_OPTIONS.map((opt, idx) => (
+                            <option key={idx} value={opt.label}>
+                              {opt.label}
+                            </option>
+                          ))}
+                        </select>
+                        {formData.tdsRate && (
+                          <div className="flex justify-between items-center py-1">
+                            <span className="font-medium text-gray-700 text-xs">TDS ({formData.tdsRate}%)</span>
+                            <span className="font-medium text-red-600 text-xs">
+                              ₹ {calculateTDS().toFixed(2)}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    
+                    {formData.tdsTcsType === 'TCS' && (
+                      <div className="space-y-2">
+                        <input
+                          type="number"
+                          name="tcsRate"
+                          value={formData.tcsRate}
+                          onChange={handleTcsRateChange}
+                          min="0"
+                          max="100"
+                          step="0.01"
+                          className="w-full border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-400 text-xs"
+                          placeholder="TCS Rate %"
+                        />
+                        {formData.tcsRate && (
+                          <div className="flex justify-between items-center py-1">
+                            <span className="font-medium text-gray-700 text-xs">TCS ({formData.tcsRate}%)</span>
+                            <span className="font-medium text-green-600 text-xs">
+                              ₹ {calculateTCS().toFixed(2)}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
+              
+              {/* Total (always visible) */}
+              <div className="flex justify-between items-center font-bold text-lg border-t pt-3">
+                <span className="text-gray-800 text-sm">Total</span>
+                <span className="text-blue-700 text-sm">
+                  ₹ {calculateTotal().toFixed(2)}
+                </span>
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* Footer Buttons */}
-        <div className="flex flex-col sm:flex-row justify-between items-center gap-3 pt-6 border-t">
-          <button
-            type="button"
-            className="w-full sm:w-auto px-4 py-2 rounded border-2 border-gray-400 text-gray-700 hover:bg-gray-50 font-medium disabled:opacity-50 disabled:cursor-not-allowed transition text-xs"
-            onClick={handlePrintDownload}
-            disabled={isGeneratingPDF}
-          >
-            {isGeneratingPDF ? (
-              <span className="flex items-center justify-center">
-                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-gray-700" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                Generating PDF...
-              </span>
-            ) : (
-              'Print/Download'
-            )}
-          </button>
-          
-          <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+          {/* Footer Buttons */}
+          <div className="flex flex-col sm:flex-row justify-between items-center gap-3 pt-6 border-t">
             <button
               type="button"
-              className="px-4 py-2 rounded border-2 border-gray-400 text-gray-700 hover:bg-gray-50 font-medium transition text-xs"
-              onClick={e => handleSubmit(e, false)}
+              className="w-full sm:w-auto px-4 py-2 rounded border-2 border-gray-400 text-gray-700 hover:bg-gray-50 font-medium disabled:opacity-50 disabled:cursor-not-allowed transition text-xs"
+              onClick={handlePrintDownload}
+              disabled={isGeneratingPDF}
             >
-              Save as Draft
+              {isGeneratingPDF ? (
+                <span className="flex items-center justify-center">
+                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-gray-700" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Generating PDF...
+                </span>
+              ) : (
+                'Print/Download'
+              )}
             </button>
-            <button
-              type="submit"
-              className="px-6 py-2 bg-blue-600 text-white rounded font-medium hover:bg-blue-700 transition text-xs"
-            >
-              Save & Send
-            </button>
-            <button
-              type="button"
-              className="px-4 py-2 rounded border-2 border-gray-400 text-gray-700 hover:bg-gray-50 font-medium transition text-xs"
-              onClick={() => window.history.back()}
-            >
-              Cancel
-            </button>
+            
+            <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+              {/* <button
+                type="button"
+                className="px-4 py-2 rounded border-2 border-gray-400 text-gray-700 hover:bg-gray-50 font-medium transition text-xs"
+                onClick={e => handleSubmit(e, false)}
+              >
+                Save as Draft
+              </button> */}
+              <button
+                type="submit"
+                className="px-6 py-2 bg-blue-600 text-white rounded font-medium hover:bg-blue-700 transition text-xs"
+              >
+                Save as Draft
+              </button>
+              <button
+                type="button"
+                className="px-4 py-2 rounded border-2 border-gray-400 text-gray-700 hover:bg-gray-50 font-medium transition text-xs"
+                onClick={() => window.history.back()}
+              >
+                Cancel
+              </button>
+            </div>
           </div>
-        </div>
+        </form>
       </div>
-    </form>
+    </div>
   );
 }

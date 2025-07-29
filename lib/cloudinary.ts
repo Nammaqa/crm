@@ -18,6 +18,18 @@ export async function uploadImagetoCloudinary(file: Buffer, folderName?: string)
   });
 }
 
+// Upload PDF to Cloudinary (for invoice templates)
+export async function uploadPDFtoCloudinary(file: Buffer, folderName?: string) {
+  const uploadOptions: Record<string, unknown> = { resource_type: 'raw' };
+  if (folderName) uploadOptions.folder = folderName;
+  uploadOptions.format = "pdf";
+  return new Promise<string | undefined>((resolve, reject) => {
+    cloudinary.uploader.upload_stream(uploadOptions, (err, result) => {
+      if (err) reject(err);
+      else resolve((result as { secure_url?: string })?.secure_url);
+    }).end(file);
+  });
+}
 
 // Upload video to Cloudinary
 export async function uploadVideoToCloudinary(file: Buffer, folderName?: string) {
