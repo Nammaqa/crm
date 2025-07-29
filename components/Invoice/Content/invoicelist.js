@@ -34,6 +34,8 @@ import { format } from "date-fns";
 import Link from "next/link";
 import { Tooltip } from 'react-tooltip';
 import { motion, AnimatePresence } from "framer-motion";
+import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
 
 const statusColors = {
   Paid: "text-green-700 bg-green-50 border-green-200",
@@ -43,6 +45,7 @@ const statusColors = {
   Sent: "text-blue-700 bg-blue-50 border-blue-200",
   Overdue: "text-red-800 bg-red-100 border-red-300",
   PartiallyPaid: "text-purple-700 bg-purple-50 border-purple-200",
+  Refunded: "text-indigo-700 bg-indigo-50 border-indigo-200",
 };
 
 const statusIcons = {
@@ -53,6 +56,7 @@ const statusIcons = {
   Sent: <FiMail className="inline mr-1.5 text-xs" />,
   Overdue: <FiClock className="inline mr-1.5 text-xs" />,
   PartiallyPaid: <FiCheckCircle className="inline mr-1.5 text-xs" />,
+  Refunded: <FiDollarSign className="inline mr-1.5 text-xs" />,
 };
 
 const paymentMethodIcons = {
@@ -137,20 +141,22 @@ function ActionMenu({ invoiceId, onAction }) {
 }
 
 function ReceivedPaymentsTab({ invoice, onAction }) {
+  const [selectedOption, setSelectedOption] = useState('recordPayment'); // 'recordPayment' or 'writeOff'
   const [formData, setFormData] = useState({
-    paymentFor: `INV-${invoice?.invoiceCode || ''}`,
     customerName: invoice?.customer?.displayName || '',
     paymentNumber: '',
     amountReceived: '',
     taxDeducted: 'No',
+    withheldAmount: '',
     paymentDate: format(new Date(), 'yyyy-MM-dd'),
     paymentReceivedOn: '',
     notes: '',
-    pan: '',
     bankCharges: '',
-    paymentMode: 'Cash',
+    paymentMode: 'Bank Transfer',
     reference: '',
-    attachments: []
+    attachments: [], // For paymentDocuments
+    writeOffDate: format(new Date(), 'yyyy-MM-dd'),
+    reason: '',
   });
 
   const handleInputChange = (field, value) => {
@@ -177,13 +183,53 @@ function ReceivedPaymentsTab({ invoice, onAction }) {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    onAction('recordPayment', invoice.id, formData);
+    if (selectedOption === 'recordPayment') {
+      onAction('recordPayment', invoice.id, formData);
+    } else {
+      onAction('writeOff', invoice.id, formData);
+    }
+    // Reset form after submit
+    setFormData({
+      customerName: invoice?.customer?.displayName || '',
+      paymentNumber: '',
+      amountReceived: '',
+      taxDeducted: 'No',
+      withheldAmount: '',
+      paymentDate: format(new Date(), 'yyyy-MM-dd'),
+      paymentReceivedOn: '',
+      notes: '',
+      bankCharges: '',
+      paymentMode: 'Bank Transfer',
+      reference: '',
+      attachments: [],
+      writeOffDate: format(new Date(), 'yyyy-MM-dd'),
+      reason: '',
+    });
   };
 
+  const handleCancel = () => {
+    // Clear fields
+    setFormData({
+      customerName: invoice?.customer?.displayName || '',
+      paymentNumber: '',
+      amountReceived: '',
+      taxDeducted: 'No',
+      withheldAmount: '',
+      paymentDate: format(new Date(), 'yyyy-MM-dd'),
+      paymentReceivedOn: '',
+      notes: '',
+      bankCharges: '',
+      paymentMode: 'Bank Transfer',
+      reference: '',
+      attachments: [],
+      writeOffDate: format(new Date(), 'yyyy-MM-dd'),
+      reason: '',
+    });
+  };
   return (
     <div className="p-4 dark:bg-gray-800 rounded-lg">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Record Payment</h3>
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Payments</h3>
         <div className="flex items-center space-x-2">
           <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusColors[invoice.status] || statusColors.Draft}`}>
             {statusIcons[invoice.status]}
@@ -195,236 +241,286 @@ function ReceivedPaymentsTab({ invoice, onAction }) {
         </div>
       </div>
 
+      {/* Options: Record Payment or Write Off */}
+      <div className="mb-6">
+        <div className="flex space-x-4">
+          <label className="flex items-center space-x-2">
+            <input
+              type="radio"
+              name="paymentOption"
+              value="recordPayment"
+              checked={selectedOption === 'recordPayment'}
+              onChange={() => setSelectedOption('recordPayment')}
+              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-gray-600 dark:bg-gray-700"
+            />
+            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Record Payment</span>
+          </label>
+          <label className="flex items-center space-x-2">
+            <input
+              type="radio"
+              name="paymentOption"
+              value="writeOff"
+              checked={selectedOption === 'writeOff'}
+              onChange={() => setSelectedOption('writeOff')}
+              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-gray-600 dark:bg-gray-700"
+            />
+            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Write Off</span>
+          </label>
+        </div>
+      </div>
+
       <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="space-y-1">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              Payment for
-            </label>
-            <input
-              type="text"
-              value={formData.paymentFor}
-              className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white transition-all duration-200"
-              readOnly
-            />
-          </div>
-          <div className="space-y-1">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              Customer Name*
-            </label>
-            <input
-              type="text"
-              value={formData.customerName}
-              onChange={(e) => handleInputChange('customerName', e.target.value)}
-              className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white transition-all duration-200"
-              required
-            />
-          </div>
-          <div className="space-y-1">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              Payment #*
-            </label>
-            <input
-              type="text"
-              value={formData.paymentNumber}
-              onChange={(e) => handleInputChange('paymentNumber', e.target.value)}
-              className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white transition-all duration-200"
-              required
-            />
-          </div>
-          <div className="space-y-1">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              Amount Received*
-            </label>
-            <div className="relative">
-              <span className="absolute left-3 top-2.5 text-gray-500 dark:text-gray-400">₹</span>
+        {selectedOption === 'recordPayment' && (
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Customer Name*
+                </label>
+                <input
+                  type="text"
+                  value={formData.customerName}
+                  onChange={(e) => handleInputChange('customerName', e.target.value)}
+                  className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white transition-all duration-200"
+                  required
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Payment #*
+                </label>
+                <input
+                  type="text"
+                  value={formData.paymentNumber}
+                  onChange={(e) => handleInputChange('paymentNumber', e.target.value)}
+                  className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white transition-all duration-200"
+                  required
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Amount Received*
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3 top-2.5 text-gray-500 dark:text-gray-400">₹</span>
+                  <input
+                    type="number"
+                    value={formData.amountReceived}
+                    onChange={(e) => handleInputChange('amountReceived', e.target.value)}
+                    className="w-full pl-8 pr-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white transition-all duration-200"
+                    step="0.01"
+                    required
+                  />
+                </div>
+              </div>
+              <div className="space-y-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Bank Charges (if any)
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3 top-2.5 text-gray-500 dark:text-gray-400">₹</span>
+                  <input
+                    type="number"
+                    value={formData.bankCharges}
+                    onChange={(e) => handleInputChange('bankCharges', e.target.value)}
+                    className="w-full pl-8 pr-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white transition-all duration-200"
+                    step="0.01"
+                  />
+                </div>
+              </div>
+              <div className="space-y-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Payment Date*
+                </label>
+                <input
+                  type="date"
+                  value={formData.paymentDate}
+                  onChange={(e) => handleInputChange('paymentDate', e.target.value)}
+                  className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white transition-all duration-200"
+                  required
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Payment Received On
+                </label>
+                <input
+                  type="text"
+                  value={formData.paymentReceivedOn}
+                  onChange={(e) => handleInputChange('paymentReceivedOn', e.target.value)}
+                  className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white transition-all duration-200"
+                  placeholder="Bank account, Cash, etc."
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Payment Mode
+                </label>
+                <select
+                  value={formData.paymentMode}
+                  onChange={(e) => handleInputChange('paymentMode', e.target.value)}
+                  className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white transition-all duration-200"
+                >
+                  <option value="Bank Transfer">Bank Transfer</option>
+                  <option value="Cash">Cash</option>
+                  <option value="Cheque">Cheque</option>
+                  <option value="Credit Card">Credit Card</option>
+                  <option value="UPI">UPI</option>
+                </select>
+              </div>
+              <div className="space-y-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Reference Number
+                </label>
+                <input
+                  type="text"
+                  value={formData.reference}
+                  onChange={(e) => handleInputChange('reference', e.target.value)}
+                  className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white transition-all duration-200"
+                  placeholder="Transaction ID, Cheque number, etc."
+                />
+              </div>
+            </div>
+            <div className="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Tax deducted?
+              </label>
+              <div className="space-y-2">
+                <label className="flex items-center space-x-2">
+                  <input
+                    type="radio"
+                    name="taxDeducted"
+                    value="No"
+                    checked={formData.taxDeducted === 'No'}
+                    onChange={(e) => handleInputChange('taxDeducted', e.target.value)}
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-gray-600 dark:bg-gray-700"
+                  />
+                  <span className="text-sm text-gray-700 dark:text-gray-300">No Tax deducted</span>
+                </label>
+                <label className="flex items-center space-x-2">
+                  <input
+                    type="radio"
+                    name="taxDeducted"
+                    value="Yes"
+                    checked={formData.taxDeducted === 'Yes'}
+                    onChange={(e) => handleInputChange('taxDeducted', e.target.value)}
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-gray-600 dark:bg-gray-700"
+                  />
+                  <span className="text-sm text-gray-700 dark:text-gray-300">Yes, TDS</span>
+                </label>
+              </div>
+              {formData.taxDeducted === 'Yes' && (
+                <div className="mt-4 space-y-1">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Withheld Amount*
+                  </label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-2.5 text-gray-500 dark:text-gray-400">₹</span>
+                    <input
+                      type="number"
+                      value={formData.withheldAmount}
+                      onChange={(e) => handleInputChange('withheldAmount', e.target.value)}
+                      className="w-full pl-8 pr-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white transition-all duration-200"
+                      step="0.01"
+                      required
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="space-y-1">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                Notes
+              </label>
+              <textarea
+                value={formData.notes}
+                onChange={(e) => handleInputChange('notes', e.target.value)}
+                rows={3}
+                className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white transition-all duration-200"
+                placeholder="Additional notes..."
+              />
+            </div>
+
+            <div className="space-y-1">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                Attachments
+              </label>
+              <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-4 bg-gray-50 dark:bg-gray-700 transition-all duration-200 hover:border-blue-500">
+                <input
+                  type="file"
+                  onChange={handleFileUpload}
+                  className="hidden"
+                  id="file-upload"
+                  multiple
+                />
+                <label
+                  htmlFor="file-upload"
+                  className="cursor-pointer flex flex-col items-center justify-center text-center text-gray-700 dark:text-gray-300 p-4"
+                >
+                  <FiPaperclip className="mb-2 text-xl text-blue-500" />
+                  <span className="text-sm font-medium">Drag & drop files here or click to browse</span>
+                  <span className="text-xs text-gray-500 dark:text-gray-400 mt-1">Supports: PDF, JPG, PNG (Max 5MB each)</span>
+                </label>
+                {formData.attachments.length > 0 && (
+                  <div className="mt-3 space-y-2">
+                    {formData.attachments.map((file, index) => (
+                      <div key={index} className="flex items-center justify-between bg-white dark:bg-gray-600 px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-500 shadow-sm">
+                        <div className="flex items-center space-x-2">
+                          <FiFileText className="text-gray-500 dark:text-gray-300" />
+                          <span className="text-sm text-gray-900 dark:text-white truncate max-w-xs">{file.name}</span>
+                          <span className="text-xs text-gray-500 dark:text-gray-400">{(file.size / 1024).toFixed(1)}KB</span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => removeAttachment(index)}
+                          className="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 transition-colors duration-200"
+                        >
+                          <FiX className="text-sm" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </>
+        )}
+        {selectedOption === 'writeOff' && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-1">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                Write Off Date*
+              </label>
               <input
-                type="number"
-                value={formData.amountReceived}
-                onChange={(e) => handleInputChange('amountReceived', e.target.value)}
-                className="w-full pl-8 pr-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white transition-all duration-200"
-                step="0.01"
+                type="date"
+                value={formData.writeOffDate}
+                onChange={(e) => handleInputChange('writeOffDate', e.target.value)}
+                className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white transition-all duration-200"
+                required
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                Reason*
+              </label>
+              <textarea
+                value={formData.reason}
+                onChange={(e) => handleInputChange('reason', e.target.value)}
+                rows={3}
+                className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white transition-all duration-200"
+                placeholder="Reason for write off..."
                 required
               />
             </div>
           </div>
-          <div className="space-y-1">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              Payment Date*
-            </label>
-            <input
-              type="date"
-              value={formData.paymentDate}
-              onChange={(e) => handleInputChange('paymentDate', e.target.value)}
-              className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white transition-all duration-200"
-              required
-            />
-          </div>
-          <div className="space-y-1">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              Payment Received On
-            </label>
-            <input
-              type="text"
-              value={formData.paymentReceivedOn}
-              onChange={(e) => handleInputChange('paymentReceivedOn', e.target.value)}
-              className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white transition-all duration-200"
-              placeholder="Bank account, Cash, etc."
-            />
-          </div>
-        </div>
-
-        <div className="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg">
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            Tax deducted?
-          </label>
-          <div className="space-y-2">
-            <label className="flex items-center space-x-2">
-              <input
-                type="radio"
-                name="taxDeducted"
-                value="No"
-                checked={formData.taxDeducted === 'No'}
-                onChange={(e) => handleInputChange('taxDeducted', e.target.value)}
-                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-gray-600 dark:bg-gray-700"
-              />
-              <span className="text-sm text-gray-700 dark:text-gray-300">No Tax deducted</span>
-            </label>
-            <label className="flex items-center space-x-2">
-              <input
-                type="radio"
-                name="taxDeducted"
-                value="Yes"
-                checked={formData.taxDeducted === 'Yes'}
-                onChange={(e) => handleInputChange('taxDeducted', e.target.value)}
-                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-gray-600 dark:bg-gray-700"
-              />
-              <span className="text-sm text-gray-700 dark:text-gray-300">Yes, TDS (Income Tax)</span>
-            </label>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="space-y-1">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              PAN
-            </label>
-            <input
-              type="text"
-              value={formData.pan}
-              onChange={(e) => handleInputChange('pan', e.target.value)}
-              className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white transition-all duration-200"
-              placeholder="Enter PAN number"
-            />
-          </div>
-          <div className="space-y-1">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              Bank Charges (if any)
-            </label>
-            <div className="relative">
-              <span className="absolute left-3 top-2.5 text-gray-500 dark:text-gray-400">₹</span>
-              <input
-                type="number"
-                value={formData.bankCharges}
-                onChange={(e) => handleInputChange('bankCharges', e.target.value)}
-                className="w-full pl-8 pr-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white transition-all duration-200"
-                step="0.01"
-              />
-            </div>
-          </div>
-          <div className="space-y-1">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              Payment Mode
-            </label>
-            <select
-              value={formData.paymentMode}
-              onChange={(e) => handleInputChange('paymentMode', e.target.value)}
-              className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white transition-all duration-200"
-            >
-              <option value="Cash">Cash</option>
-              <option value="Bank Transfer">Bank Transfer</option>
-              <option value="Cheque">Cheque</option>
-              <option value="Credit Card">Credit Card</option>
-              <option value="Debit Card">Debit Card</option>
-              <option value="UPI">UPI</option>
-              <option value="Other">Other</option>
-            </select>
-          </div>
-          <div className="space-y-1">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              Reference#
-            </label>
-            <input
-              type="text"
-              value={formData.reference}
-              onChange={(e) => handleInputChange('reference', e.target.value)}
-              className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white transition-all duration-200"
-              placeholder="Transaction ID, Cheque number, etc."
-            />
-          </div>
-        </div>
-
-        <div className="space-y-1">
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-            Notes
-          </label>
-          <textarea
-            value={formData.notes}
-            onChange={(e) => handleInputChange('notes', e.target.value)}
-            rows={3}
-            className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white transition-all duration-200"
-            placeholder="Additional notes..."
-          />
-        </div>
-
-        <div className="space-y-1">
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-            Attachments
-          </label>
-          <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-4 bg-gray-50 dark:bg-gray-700 transition-all duration-200 hover:border-blue-500">
-            <input
-              type="file"
-              onChange={handleFileUpload}
-              className="hidden"
-              id="file-upload"
-              multiple
-            />
-            <label
-              htmlFor="file-upload"
-              className="cursor-pointer flex flex-col items-center justify-center text-center text-gray-700 dark:text-gray-300 p-4"
-            >
-              <FiPaperclip className="mb-2 text-xl text-blue-500" />
-              <span className="text-sm font-medium">Drag & drop files here or click to browse</span>
-              <span className="text-xs text-gray-500 dark:text-gray-400 mt-1">Supports: PDF, JPG, PNG (Max 5MB each)</span>
-            </label>
-            {formData.attachments.length > 0 && (
-              <div className="mt-3 space-y-2">
-                {formData.attachments.map((file, index) => (
-                  <div key={index} className="flex items-center justify-between bg-white dark:bg-gray-600 px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-500 shadow-sm">
-                    <div className="flex items-center space-x-2">
-                      <FiFileText className="text-gray-500 dark:text-gray-300" />
-                      <span className="text-sm text-gray-900 dark:text-white truncate max-w-xs">{file.name}</span>
-                      <span className="text-xs text-gray-500 dark:text-gray-400">{(file.size / 1024).toFixed(1)}KB</span>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => removeAttachment(index)}
-                      className="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 transition-colors duration-200"
-                    >
-                      <FiX className="text-sm" />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
+        )}
 
         <div className="flex justify-end space-x-3 pt-2">
           <button
             type="button"
             className="px-4 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200 shadow-sm"
-            onClick={() => {}}
+            onClick={handleCancel}
           >
             Cancel
           </button>
@@ -432,7 +528,7 @@ function ReceivedPaymentsTab({ invoice, onAction }) {
             type="submit"
             className="px-4 py-2 text-sm bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-md hover:shadow-lg"
           >
-            Record Payment
+            Submit
           </button>
         </div>
       </form>
@@ -440,30 +536,178 @@ function ReceivedPaymentsTab({ invoice, onAction }) {
   );
 }
 
+function InvoicePDFTab({ invoice, onPrint, onDownload }) {
+  if (!invoice?.invoiceTemplate) {
+    return (
+      <div className="p-4 text-center">
+        <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-8">
+          <FiFileText className="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500" />
+          <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-white">No PDF Available</h3>
+          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+            This invoice doesn't have a PDF template generated yet.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="p-4 h-full flex flex-col">
+      <div className="flex justify-end space-x-2 mb-4">
+        <button
+          onClick={onPrint}
+          className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400 transition-colors duration-200 flex items-center"
+          title="Print PDF"
+        >
+          <FiPrinter className="text-lg mr-1" /> Print
+        </button>
+        <button
+          onClick={onDownload}
+          className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400 transition-colors duration-200 flex items-center"
+          title="Download PDF"
+        >
+          <FiDownload className="text-lg mr-1" /> Download
+        </button>
+      </div>
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border dark:border-gray-700 flex-1">
+        <iframe 
+          id="invoice-iframe"
+          src={`data:application/pdf;base64,${invoice.invoiceTemplate}`}
+          className="w-full h-full min-h-[600px] rounded-lg"
+          frameBorder="0"
+          title="Invoice PDF"
+        >
+          <p className="text-center p-4 text-gray-500 dark:text-gray-400">
+            Your browser does not support PDFs. Please download the PDF to view it.
+          </p>
+        </iframe>
+      </div>
+    </div>
+  );
+}
+
 function InvoiceDetailPanel({ invoice, onClose, onAction }) {
   const [activeTab, setActiveTab] = useState('overview');
   const [isPrintView, setIsPrintView] = useState(false);
+  const [currentStatus, setCurrentStatus] = useState(invoice.status);
+  const [localInvoice, setLocalInvoice] = useState(invoice); // Local state to update invoice
 
-  if (!invoice) return null;
+  useEffect(() => {
+    setLocalInvoice(invoice);
+    setCurrentStatus(invoice.status);
+  }, [invoice]);
 
-  const subtotal = useMemo(() => invoice.Item.reduce((sum, item) => sum + item.amount, 0), [invoice.Item]);
-  const gst = useMemo(() => invoice.Item.reduce((sum, item) => sum + (item.amount * (item.GstPercentage || 0)) / 100, 0), [invoice.Item]);
-  const total = subtotal + gst;
-  const balanceDue = total - (invoice.paidAmount || 0);
+  if (!localInvoice) return null;
+
+  const subtotal = useMemo(() => localInvoice.Item.reduce((sum, item) => sum + item.amount, 0), [localInvoice.Item]);
+  const cgst = useMemo(() => localInvoice.Item.reduce((sum, item) => sum + (item.amount * (item.GstPercentage || 9)) / 200, 0), [localInvoice.Item]); // Half of GST for CGST
+  const sgst = useMemo(() => localInvoice.Item.reduce((sum, item) => sum + (item.amount * (item.GstPercentage || 9)) / 200, 0), [localInvoice.Item]); // Half of GST for SGST
+  const total = subtotal + cgst + sgst;
+  const balanceDue = total - (localInvoice.paidAmount || 0);
 
   const tabs = [
     { id: 'overview', label: 'Overview', icon: <FiEye className="mr-1" /> },
     { id: 'edit', label: 'Edit', icon: <FiEdit className="mr-1" /> },
     { id: 'payments', label: 'Payments', icon: <FiDollarSign className="mr-1" /> },
+    { id: 'invoice', label: 'Invoice', icon: <FiFileText className="mr-1" /> },
     { id: 'clone', label: 'Clone', icon: <FiCopy className="mr-1" /> },
   ];
 
   const handlePrint = () => {
+    const previousTab = activeTab;
+    setActiveTab('overview');
     setIsPrintView(true);
     setTimeout(() => {
       window.print();
       setIsPrintView(false);
+      setActiveTab(previousTab);
     }, 300);
+  };
+
+  const handleDownload = () => {
+    const previousTab = activeTab;
+    setActiveTab('overview');
+    setTimeout(() => {
+      const input = document.getElementById('overview-content');
+      if (input) {
+        html2canvas(input, { scale: 2, useCORS: true, logging: true }).then((canvas) => {
+          const imgData = canvas.toDataURL('image/png');
+          const pdf = new jsPDF('p', 'mm', 'a4');
+          const width = pdf.internal.pageSize.getWidth();
+          const height = pdf.internal.pageSize.getHeight();
+          const canvasRatio = canvas.height / canvas.width;
+          let pdfHeight = width * canvasRatio;
+          let heightLeft = pdfHeight;
+          let positionY = 0;
+
+          pdf.addImage(imgData, 'PNG', 0, positionY, width, pdfHeight);
+          heightLeft -= height;
+
+          while (heightLeft > 0) {
+            positionY = heightLeft - pdfHeight;
+            pdf.addPage();
+            pdf.addImage(imgData, 'PNG', 0, positionY, width, pdfHeight);
+            heightLeft -= height;
+          }
+
+          pdf.save(`Invoice_${localInvoice.invoiceCode}.pdf`);
+        });
+      }
+      setActiveTab(previousTab);
+    }, 500); // Delay to ensure rendering
+  };
+
+  const handleStatusChange = (newStatus) => {
+    setCurrentStatus(newStatus);
+    setLocalInvoice(prev => ({ ...prev, status: newStatus }));
+    onAction('changeStatus', localInvoice.id, newStatus);
+  };
+
+  // Helper function to convert number to words (Indian format)
+  const numberToWords = (num) => {
+    const ones = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine'];
+    const teens = ['Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen', 'Seventeen', 'Eighteen', 'Nineteen'];
+    const tens = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
+    const thousands = ['', 'Thousand', 'Lakh', 'Crore'];
+
+    if (num === 0) return 'Zero';
+
+    const convert = (n) => {
+      if (n < 10) return ones[n];
+      if (n < 20) return teens[n - 10];
+      if (n < 100) return tens[Math.floor(n / 10)] + (n % 10 !== 0 ? ' ' + ones[n % 10] : '');
+      if (n < 1000) return ones[Math.floor(n / 100)] + ' Hundred' + (n % 100 !== 0 ? ' ' + convert(n % 100) : '');
+      return '';
+    };
+    let result = '';
+    let place = 0;
+    
+    while (num > 0) {
+      if (place === 0) {
+        const chunk = num % 1000;
+        if (chunk !== 0) {
+          result = convert(chunk) + (thousands[place] ? ' ' + thousands[place] : '') + (result ? ' ' + result : '');
+        }
+        num = Math.floor(num / 1000);
+        place++;
+      } else if (place === 1) {
+        const chunk = num % 100;
+        if (chunk !== 0) {
+          result = convert(chunk) + ' ' + thousands[place] + (result ? ' ' + result : '');
+        }
+        num = Math.floor(num / 100);
+        place++;
+      } else {
+        const chunk = num % 100;
+        if (chunk !== 0) {
+          result = convert(chunk) + ' ' + thousands[place] + (result ? ' ' + result : '');
+        }
+        num = Math.floor(num / 100);
+        place++;
+      }
+    }
+    
+    return result.trim();
   };
 
   return (
@@ -472,18 +716,26 @@ function InvoiceDetailPanel({ invoice, onClose, onAction }) {
       <div className={`flex justify-between items-center px-4 py-3 border-b bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-700 ${isPrintView ? 'hidden' : ''}`}>
         <div>
           <h2 className="text-lg font-bold text-gray-900 dark:text-white">
-            Invoice #{invoice.invoiceCode}
+            Invoice #{localInvoice.invoiceCode}
           </h2>
           <div className="flex items-center mt-1">
-            <span
-              className={`inline-flex items-center px-2.5 py-0.5 rounded-full border text-xs font-medium shadow-sm ${statusColors[invoice.status] || statusColors.Draft}`}
+            <select
+              value={currentStatus}
+              onChange={(e) => handleStatusChange(e.target.value)}
+              className={`inline-flex items-center px-2.5 py-0.5 rounded-full border text-xs font-medium shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ${statusColors[currentStatus] || statusColors.Draft}`}
             >
-              {statusIcons[invoice.status]}
-              {invoice.status}
-            </span>
+              <option value="Draft">Draft</option>
+              <option value="Pending">Pending</option>
+              <option value="Sent">Sent</option>
+              <option value="PartiallyPaid">Partially Paid</option>
+              <option value="Overdue">Overdue</option>
+              <option value="Cancelled">Cancelled</option>
+              <option value="Refunded">Refunded</option>
+              <option value="Paid">Paid</option>
+            </select>
             <span className="ml-2 text-xs text-gray-500 dark:text-gray-400">
-              {invoice.invoiceDate
-                ? format(new Date(invoice.invoiceDate), "dd MMM yyyy")
+              {localInvoice.invoiceDate
+                ? format(new Date(localInvoice.invoiceDate), "dd MMM yyyy")
                 : "-"}
             </span>
           </div>
@@ -497,6 +749,7 @@ function InvoiceDetailPanel({ invoice, onClose, onAction }) {
             <FiPrinter className="text-lg" />
           </button>
           <button
+            onClick={handleDownload}
             className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400 transition-colors duration-200"
             title="Download"
           >
@@ -511,7 +764,6 @@ function InvoiceDetailPanel({ invoice, onClose, onAction }) {
           </button>
         </div>
       </div>
-
       {/* Tabs */}
       <div className={`border-b dark:border-gray-700 ${isPrintView ? 'hidden' : ''}`}>
         <nav className="flex space-x-4 px-4 overflow-x-auto">
@@ -534,204 +786,225 @@ function InvoiceDetailPanel({ invoice, onClose, onAction }) {
       {/* Tab Content */}
       {activeTab === 'overview' && (
         <div className="animate-fadeIn p-4 print:p-0">
-          {/* Invoice Template */}
-          <div className="max-w-4xl mx-auto">
-            {/* Invoice Header */}
-            <div className="flex justify-between items-start mb-6">
+          {/* Invoice Template - WB-IN106 Style */}
+          <div id="overview-content" className="max-w-4xl mx-auto bg-white dark:bg-gray-800 print:bg-white">
+            {/* Header with Zoho Branding */}
+            <div className="text-right text-xs text-gray-500 mb-2 print:block hidden">
+              <p>Crafted with ease using</p>
+              <p>Visit <span className="text-blue-600">zoho.com/invoice</span> to create truly professional invoices</p>
+            </div>
+
+            {/* Company Header with Logo */}
+            <div className="mb-6">
+              <div className="flex items-start">
+                <div className="text-left">
+                  <h1 className="text-xl font-bold text-gray-900 dark:text-white mb-1">Wizzybox Private Limited</h1>
+                  <div className="text-sm text-gray-700 dark:text-gray-300 space-y-0.5">
+                    <p>Bengaluru Karnataka 560056</p>
+                    <p>India</p>
+                    <p><span className="font-medium">GSTIN</span> 29AADCW7843F1ZY</p>
+                    <p>contactus@wizzybox.com</p>
+                    <p>www.wizzybox.com</p>
+                  </div>
+                </div>
+                <img 
+                  src="/Wizzybox Logo.png" 
+                  alt="Wizzybox Logo" 
+                  className="w-34 h-auto ml-auto print:w-24" 
+                />
+              </div>
+            </div>
+            {/* TAX INVOICE Header */}
+            <div className="mb-6">
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">TAX INVOICE</h2>
+              <div className="text-sm text-gray-700 dark:text-gray-300">
+                <p><span className="font-medium">Invoice#</span> {localInvoice.invoiceCode}</p>
+              </div>
+            </div>
+
+            {/* Bill To and Ship To Section */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-6">
+              {/* Bill To */}
               <div>
-                <div className="flex items-center mb-2">
-                  <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center mr-3">
-                    <FiFileText className="text-white text-xl" />
-                  </div>
-                  <div>
-                    <h1 className="text-xl font-bold text-gray-900 dark:text-white">TAX INVOICE</h1>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">From your company name</p>
-                  </div>
-                </div>
-                <div className="text-xs text-gray-500 dark:text-gray-400">
-                  <p>123 Business Street, Suite 456</p>
-                  <p>New York, NY 10001, USA</p>
-                  <p>GSTIN: 22AAAAA0000A1Z5</p>
-                </div>
-              </div>
-              <div className="text-right">
-                <div className="mb-2">
-                  <span className="inline-block px-3 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded-full text-xs font-medium">
-                    #{invoice.invoiceCode}
-                  </span>
-                </div>
-                <div className="text-xs text-gray-700 dark:text-gray-300 space-y-1">
-                  <div>
-                    <span className="font-medium">Invoice Date:</span> {format(new Date(invoice.invoiceDate), "dd/MM/yyyy")}
-                  </div>
-                  <div>
-                    <span className="font-medium">Due Date:</span> {format(new Date(invoice.dueDate), "dd/MM/yyyy")}
-                  </div>
-                  <div>
-                    <span className="font-medium">Terms:</span> Due on Receipt
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Bill To Section */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-              <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
-                <h3 className="font-bold mb-2 text-sm text-gray-900 dark:text-white">Bill To</h3>
-                <div className="space-y-1">
-                  <p className="font-medium text-sm text-gray-900 dark:text-white">{invoice.customer?.displayName}</p>
-                  {invoice.customer?.companyName && (
-                    <p className="text-xs text-gray-600 dark:text-gray-400">{invoice.customer.companyName}</p>
+                <h3 className="font-bold mb-3 text-sm text-gray-900 dark:text-white">Bill To</h3>
+                <div className="text-sm text-gray-700 dark:text-gray-300 space-y-1">
+                  <p className="font-medium">{localInvoice.customer?.displayName || localInvoice.customer?.companyName}</p>
+                  {localInvoice.customer?.companyName && localInvoice.customer?.displayName !== localInvoice.customer?.companyName && (
+                    <p className="font-medium">{localInvoice.customer.companyName}</p>
                   )}
-                  <p className="text-xs text-gray-600 dark:text-gray-400">
-                    <FiHome className="inline mr-1" /> {invoice.customer?.billingAddress}
-                  </p>
-                  <p className="text-xs text-gray-600 dark:text-gray-400">
-                    {invoice.customer?.billingCity}, {invoice.customer?.billingState} - {invoice.customer?.billingPinCode}
-                  </p>
-                  <p className="text-xs text-gray-600 dark:text-gray-400">
-                    <FiPhone className="inline mr-1" /> {invoice.customer?.phone || 'Not provided'}
-                  </p>
-                  <p className="text-xs text-gray-600 dark:text-gray-400">
-                    <FiMail className="inline mr-1" /> {invoice.customer?.email || 'Not provided'}
-                  </p>
-                  <p className="text-xs text-gray-600 dark:text-gray-400">
-                    <FiUser className="inline mr-1" /> GSTIN: {invoice.customer?.gstNumber || 'Not provided'}
-                  </p>
+                  <p>{localInvoice.customer?.billingAddress}</p>
+                  <p>{localInvoice.customer?.billingCity} {localInvoice.customer?.billingState} {localInvoice.customer?.billingPinCode}</p>
+                  <p>{localInvoice.customer?.billingCity}</p>
+                  <p>{localInvoice.customer?.billingPinCode} {localInvoice.customer?.billingState}</p>
+                  <p>India</p>
+                  <p><span className="font-medium">GSTIN</span> {localInvoice.customer?.gstNumber || 'Not provided'}</p>
                 </div>
               </div>
-              <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
-                <h3 className="font-bold mb-2 text-sm text-gray-900 dark:text-white">Payment Info</h3>
-                <div className="space-y-2">
-                  <div>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Status</p>
-                    <span
-                      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusColors[invoice.status] || statusColors.Draft}`}
-                    >
-                      {statusIcons[invoice.status]}
-                      {invoice.status}
-                    </span>
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Balance Due</p>
-                    <p className="text-sm font-medium text-gray-900 dark:text-white">
-                      ₹{balanceDue.toLocaleString("en-IN")}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Due Date</p>
-                    <p className="text-sm font-medium text-gray-900 dark:text-white">
-                      {format(new Date(invoice.dueDate), "dd MMM yyyy")}
-                    </p>
-                  </div>
+
+              {/* Ship To */}
+              <div>
+                <h3 className="font-bold mb-3 text-sm text-gray-900 dark:text-white">Ship To</h3>
+                <div className="text-sm text-gray-700 dark:text-gray-300 space-y-1">
+                  <p><span className="font-medium">GSTIN</span> {localInvoice.customer?.gstNumber || 'Not provided'}</p>
+                </div>
+                <div className="mt-4 text-sm text-gray-700 dark:text-gray-300">
+                  <p><span className="font-medium">Place Of Supply:</span> Karnataka (29)</p>
                 </div>
               </div>
             </div>
 
+            {/* Invoice Details */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6 text-sm">
+              <div>
+                <p className="font-medium text-gray-900 dark:text-white">Invoice Date</p>
+                <p className="text-gray-700 dark:text-gray-300">
+                  {format(new Date(localInvoice.invoiceDate), "dd/MM/yyyy")}
+                </p>
+              </div>
+              <div>
+                <p className="font-medium text-gray-900 dark:text-white">Terms</p>
+                <p className="text-gray-700 dark:text-gray-300">Due on Receipt</p>
+              </div>
+              <div>
+                <p className="font-medium text-gray-900 dark:text-white">Due Date</p>
+                <p className="text-gray-700 dark:text-gray-300">
+                  {format(new Date(localInvoice.dueDate), "dd/MM/yyyy")}
+                </p>
+              </div>
+              <div>
+                <p className="font-medium text-gray-900 dark:text-white">PO Number</p>
+                <p className="text-gray-700 dark:text-gray-300">NA</p>
+              </div>
+            </div>
             {/* Items Table */}
             <div className="mb-6 overflow-x-auto">
-              <table className="min-w-full border border-gray-200 dark:border-gray-700 divide-y divide-gray-200 dark:divide-gray-700">
-                <thead className="bg-gray-50 dark:bg-gray-800">
-                  <tr>
-                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider border border-gray-200 dark:border-gray-700">#</th>
-                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider border border-gray-200 dark:border-gray-700">Item & Description</th>
-                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider border border-gray-200 dark:border-gray-700">Qty</th>
-                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider border border-gray-200 dark:border-gray-700">Rate</th>
-                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider border border-gray-200 dark:border-gray-700">Amount</th>
+              <table className="w-full border-collapse border border-gray-300 dark:border-gray-600">
+                <thead>
+                  <tr className="bg-gray-50 dark:bg-gray-700">
+                    <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-left text-xs font-medium text-gray-700 dark:text-gray-300">#</th>
+                    <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-left text-xs font-medium text-gray-700 dark:text-gray-300">Item & Description</th>
+                    <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-left text-xs font-medium text-gray-700 dark:text-gray-300">HSN/SAC</th>
+                    <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-left text-xs font-medium text-gray-700 dark:text-gray-300">Qty</th>
+                    <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-left text-xs font-medium text-gray-700 dark:text-gray-300">Rate</th>
+                    <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-left text-xs font-medium text-gray-700 dark:text-gray-300">CGST</th>
+                    <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-left text-xs font-medium text-gray-700 dark:text-gray-300">SGST</th>
+                    <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-left text-xs font-medium text-gray-700 dark:text-gray-300">Amount</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                  {invoice.Item.map((item, index) => (
-                    <tr key={item.id} className="hover:bg-gray-50 dark:hover:bg-gray-800 transition">
-                      <td className="px-4 py-2 text-sm border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white">{index + 1}</td>
-                      <td className="px-4 py-2 text-sm border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white">
-                        <div className="font-medium">{item.itemDetails}</div>
-                        {item.description && (
-                          <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">{item.description}</div>
-                        )}
-                      </td>
-                      <td className="px-4 py-2 text-sm border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white">{item.quantity}</td>
-                      <td className="px-4 py-2 text-sm border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white">₹{item.rate.toLocaleString("en-IN")}</td>
-                      <td className="px-4 py-2 text-sm border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white">₹{item.amount.toLocaleString("en-IN")}</td>
-                    </tr>
-                  ))}
+                <tbody>
+                  {localInvoice.Item.map((item, index) => {
+                    const itemCgst = (item.amount * (item.GstPercentage || 9)) / 200;
+                    const itemSgst = (item.amount * (item.GstPercentage || 9)) / 200;
+                    return (
+                      <tr key={item.id}>
+                        <td className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm text-gray-900 dark:text-white">{index + 1}</td>
+                        <td className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm text-gray-900 dark:text-white">
+                          <div className="font-medium">{item.itemDetails}</div>
+                          {item.description && (
+                            <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">{item.description}</div>
+                          )}
+                        </td>
+                        <td className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm text-gray-900 dark:text-white">998313</td>
+                        <td className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm text-gray-900 dark:text-white">{item.quantity}</td>
+                        <td className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm text-gray-900 dark:text-white">{item.rate.toLocaleString("en-IN")}</td>
+                        <td className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm text-gray-900 dark:text-white">
+                          <div>{itemCgst.toFixed(2)}</div>
+                          <div className="text-xs text-gray-500">9%</div>
+                        </td>
+                        <td className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm text-gray-900 dark:text-white">
+                          <div>{itemSgst.toFixed(2)}</div>
+                          <div className="text-xs text-gray-500">9%</div>
+                        </td>
+                        <td className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm text-gray-900 dark:text-white">{item.amount.toLocaleString("en-IN")}</td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
 
+            {/* Bottom Zoho Branding */}
+            <div className="text-right text-xs text-gray-500 mb-4 print:block hidden">
+              <p>Crafted with ease using</p>
+              <p>Visit <span className="text-blue-600">zoho.com/invoice</span> to create truly professional invoices</p>
+              <div className="text-right text-lg font-bold text-gray-900 mt-2">2</div>
+            </div>
             {/* Totals Section */}
-            <div className="flex justify-end">
-              <div className="w-full md:w-1/2 bg-gray-50 dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm text-gray-700 dark:text-gray-300">
+            <div className="flex justify-end mb-6">
+              <div className="w-full md:w-1/2">
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between text-gray-700 dark:text-gray-300">
                     <span className="font-medium">Sub Total</span>
-                    <span>₹{subtotal.toLocaleString("en-IN")}</span>
+                    <span>{subtotal.toLocaleString("en-IN")}</span>
                   </div>
-                  <div className="flex justify-between text-sm text-gray-700 dark:text-gray-300">
-                    <span className="font-medium">GST</span>
-                    <span>₹{gst.toLocaleString("en-IN")}</span>
+                  <div className="flex justify-between text-gray-700 dark:text-gray-300">
+                    <span className="font-medium">CGST9 (9%)</span>
+                    <span>{cgst.toFixed(2)}</span>
                   </div>
-                  <div className="border-t border-gray-200 dark:border-gray-700 pt-2 flex justify-between text-sm font-medium text-gray-900 dark:text-white">
+                  <div className="flex justify-between text-gray-700 dark:text-gray-300">
+                    <span className="font-medium">SGST9 (9%)</span>
+                    <span>{sgst.toFixed(2)}</span>
+                  </div>
+                  <div className="border-t border-gray-300 dark:border-gray-600 pt-2 flex justify-between text-sm font-bold text-gray-900 dark:text-white">
                     <span>Total</span>
                     <span>₹{total.toLocaleString("en-IN")}</span>
                   </div>
-                  <div className="flex justify-between text-sm text-gray-700 dark:text-gray-300">
-                    <span className="font-medium">Amount Paid</span>
-                    <span>₹{(invoice.paidAmount || 0).toLocaleString("en-IN")}</span>
+                  <div className="flex justify-between text-sm font-bold text-gray-900 dark:text-white">
+                    <span>Paid Amount</span>
+                    <span>₹{(localInvoice.paidAmount || 0).toLocaleString("en-IN")}</span>
                   </div>
-                  <div className="border-t border-gray-200 dark:border-gray-700 pt-2 flex justify-between text-sm font-medium text-gray-900 dark:text-white">
+                  <div className="flex justify-between text-sm font-bold text-gray-900 dark:text-white">
                     <span>Balance Due</span>
                     <span>₹{balanceDue.toLocaleString("en-IN")}</span>
                   </div>
                 </div>
               </div>
             </div>
-
-            {/* Notes Section */}
-            <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
-              <div className="mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">Notes:</div>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                {invoice.customerNotes || "Thanks for your business. Please make payment by the due date."}
+            {/* Total in Words */}
+            <div className="mb-6 text-sm">
+              <p className="font-medium text-gray-900 dark:text-white mb-1">Total In Words:</p>
+              <p className="text-gray-700 dark:text-gray-300">
+                Indian Rupee {numberToWords(Math.floor(total))} Only
               </p>
             </div>
 
-            {/* Payment Instructions */}
-            <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
-              <div className="mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">Payment Instructions:</div>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-                <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg">
-                  <div className="font-medium text-blue-800 dark:text-blue-200 mb-1">Bank Transfer</div>
-                  <div className="text-xs text-blue-700 dark:text-blue-300 space-y-1">
-                    <p>Account Name: Your Company Name</p>
-                    <p>Bank: National Bank</p>
-                    <p>Account #: 1234567890</p>
-                    <p>IFSC: NBIN0001234</p>
+            {/* Notes */}
+            <div className="mb-6 text-sm text-gray-700 dark:text-gray-300">
+              <p>{localInvoice.customerNotes || "Thanks for your business."}</p>
+              {localInvoice.writeOffReason && (
+                <p className="mt-2 text-red-600">Written Off: {localInvoice.writeOffReason}</p>
+              )}
+            </div>
+
+            {/* Payment Details */}
+            <div className="border-t border-gray-300 dark:border-gray-600 pt-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div>
+                  <h3 className="font-bold mb-3 text-sm text-gray-900 dark:text-white">Payment Details</h3>
+                  <div className="text-sm text-gray-700 dark:text-gray-300 space-y-1">
+                    <p className="font-medium">WizzyBox Private Limited</p>
+                    <p>State Bank of India</p>
+                    <p><span className="font-medium">Bank A/C No:</span></p>
+                    <p>00000042985985552</p>
+                    <p><span className="font-medium">IFSC Code:</span></p>
+                    <p>SBIN0016225</p>
                   </div>
                 </div>
-                <div className="bg-green-50 dark:bg-green-900/20 p-3 rounded-lg">
-                  <div className="font-medium text-green-800 dark:text-green-200 mb-1">UPI Payment</div>
-                  <div className="text-xs text-green-700 dark:text-green-300">
-                    <p>UPI ID: yourcompany@upi</p>
-                  </div>
-                </div>
-                <div className="bg-purple-50 dark:bg-purple-900/20 p-3 rounded-lg">
-                  <div className="font-medium text-purple-800 dark:text-purple-200 mb-1">Other Methods</div>
-                  <div className="text-xs text-purple-700 dark:text-purple-300">
-                    <p>Cash, Cheque, Credit/Debit Card</p>
+                <div className="text-right">
+                  <div className="mt-16">
+                    <p className="text-sm font-medium text-gray-900 dark:text-white">Authorized Signature</p>
+                    <img 
+                      src="/sign.png" 
+                      alt="Authorized Signature" 
+                      className="w-32 h-auto mt-2 ml-auto" 
+                    />
                   </div>
                 </div>
               </div>
             </div>
-
-            {/* Footer */}
-            <div className="mt-8 pt-4 border-t border-gray-200 dark:border-gray-700 text-center text-xs text-gray-500 dark:text-gray-400">
-              <p>Thank you for your business!</p>
-              <p className="mt-1">If you have any questions concerning this invoice, contact accounts@yourcompany.com</p>
-            </div>
           </div>
         </div>
       )}
-
       {activeTab === 'edit' && (
         <div className="p-4 animate-fadeIn">
           <div className="max-w-4xl mx-auto">
@@ -753,7 +1026,21 @@ function InvoiceDetailPanel({ invoice, onClose, onAction }) {
       )}
 
       {activeTab === 'payments' && (
-        <ReceivedPaymentsTab invoice={invoice} onAction={onAction} />
+        <ReceivedPaymentsTab invoice={localInvoice} onAction={(action, id, data) => {
+          // Handle local update for payments
+          if (action === 'recordPayment') {
+            const newPaid = (localInvoice.paidAmount || 0) + parseFloat(data.amountReceived || 0);
+            const newStatus = newPaid >= total ? 'Paid' : 'PartiallyPaid';
+            setLocalInvoice(prev => ({ ...prev, paidAmount: newPaid, status: newStatus }));
+          } else if (action === 'writeOff') {
+            setLocalInvoice(prev => ({ ...prev, status: 'Cancelled', writeOffReason: data.reason }));
+          }
+          onAction(action, id, data);
+        }} />
+      )}
+
+      {activeTab === 'invoice' && (
+        <InvoicePDFTab invoice={localInvoice} onPrint={handlePrint} onDownload={handleDownload} />
       )}
 
       {activeTab === 'clone' && (
@@ -832,7 +1119,6 @@ export default function InvoiceList() {
       })
       .catch(() => setLoading(false));
   }, [selectedInvoiceId]);
-
   // Filter and search logic (memoized for performance)
   const filteredInvoices = useMemo(() => invoices.filter((inv) => {
     const matchesStatus = statusFilter === "All" || inv.status === statusFilter;
@@ -923,27 +1209,37 @@ export default function InvoiceList() {
       setSortOrder("D");
     }
   };
-
   const handleAction = (action, invoiceId, data = null) => {
-    switch (action) {
-      case "edit":
-        console.log("Edit invoice", invoiceId);
-        break;
-      case "download":
-        console.log("Download invoice", invoiceId);
-        break;
-      case "clone":
-        console.log("Clone invoice", invoiceId);
-        break;
-      case "recordPayment":
-        console.log("Record payment for invoice", invoiceId, data);
-        break;
-      case "delete":
-        console.log("Delete invoice", invoiceId);
-        break;
-      default:
-        break;
-    }
+    setInvoices(prevInvoices => prevInvoices.map(inv => {
+      if (inv.id === invoiceId) {
+        let updatedInv = { ...inv };
+        switch (action) {
+          case "changeStatus":
+            updatedInv.status = data;
+            break;
+          case "recordPayment":
+            const newPaid = (updatedInv.paidAmount || 0) + parseFloat(data.amountReceived || 0);
+            updatedInv.paidAmount = newPaid;
+            const total = updatedInv.Item.reduce((sum, item) => sum + item.amount, 0) + 
+                          updatedInv.Item.reduce((sum, item) => sum + (item.amount * (item.GstPercentage || 9)) / 100, 0);
+            updatedInv.status = newPaid >= total ? 'Paid' : 'PartiallyPaid';
+            break;
+          case "writeOff":
+            updatedInv.status = 'Cancelled';
+            updatedInv.writeOffReason = data.reason;
+            break;
+          // Other actions...
+          default:
+            break;
+        }
+        if (selectedInvoice && selectedInvoice.id === invoiceId) {
+          setSelectedInvoice(updatedInv);
+        }
+        return updatedInv;
+      }
+      return inv;
+    }));
+    // TODO: Call API to persist changes
   };
 
   const clearFilters = () => {
@@ -959,7 +1255,6 @@ export default function InvoiceList() {
   const handleInvoiceClick = (invoiceId) => {
     setSelectedInvoiceId(invoiceId);
   };
-
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
@@ -1108,7 +1403,7 @@ export default function InvoiceList() {
                     <option value="<">Less than</option>
                     <option value="between">Between</option>
                   </select>
-                  <input 
+                  <input
                     className="border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm w-24 dark:bg-gray-700 dark:text-white shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" 
                     placeholder="Amount" 
                     value={amountValue}
