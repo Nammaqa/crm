@@ -27,7 +27,8 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGri
 const COLORS = ["#3b82f6", "#10b981", "#f59e0b", "#ef4444"];
 
 export default function Overview() {
-  const [userName, setUserName] = useState("Fetching User...");
+  // Store full user object
+  const [user, setUser] = useState<{ userName?: string; wbEmailId?: string } | null>(null);
   const [stats, setStats] = useState({
     prospective: 0,
     newlead: 0,
@@ -40,48 +41,49 @@ export default function Overview() {
   const [showAddReminder, setShowAddReminder] = useState(false);
   const [editingReminder, setEditingReminder] = useState(null);
 
+  // Fetch user info
   const fetchUser = async () => {
     try {
       const baseUrl = process.env.NEXT_PUBLIC_BASEAPIURL;
       const res = await fetch(`${baseUrl}/api/users/me`, { 
         method: "GET",
-        credentials: "include" // Include credentials in the request
+        credentials: "include"
       });
 
       const data = await res.json();
-      if (res.ok) {
-        // Handle both response formats
-        const username = data?.data?.userName || data?.userName;
-        if (username) {
-          setUserName("Welcome, " + username);
-        } else {
-          console.warn("Username not found in response");
-        }
+      if (res.ok && data?.data) {
+        setUser(data.data);
       } else {
+        setUser(null);
         console.warn("User fetch failed:", data.message);
       }
     } catch (err) {
+      setUser(null);
       console.error("Error fetching user info:", err);
     }
   };
 
-  const fetchLeadStats = async () => {
+  // Fetch leads only for current user (salesName === userName)
+  const fetchLeadStats = async (userName) => {
+    if (!userName) return;
     try {
       const baseUrl = process.env.NEXT_PUBLIC_BASEAPIURL;
+      // Fetch all leads, then filter by salesName === userName
       const res = await fetch(`${baseUrl}/api/lead`);
       const data = await res.json();
-      
+
       if (res.ok) {
-        // Overall stats
-        const leadStats = data.reduce((acc, lead) => {
+        // Filter leads by salesName
+        const filteredLeads = data.filter(lead => lead.salesName === userName);
+
+        const leadStats = filteredLeads.reduce((acc, lead) => {
           acc[lead.status] = (acc[lead.status] || 0) + 1;
           acc.total += 1;
           return acc;
         }, { prospective: 0, newlead: 0, existing: 0, deal: 0, total: 0 });
-        
+
         setStats(leadStats);
 
-        // Monthly stats
         const today = new Date();
         const sixMonthsAgo = new Date();
         sixMonthsAgo.setMonth(today.getMonth() - 5);
@@ -92,7 +94,7 @@ export default function Overview() {
           monthlyData[monthKey] = { month: monthKey, prospective: 0, qualified: 0, deal: 0 };
         }
 
-        data.forEach(lead => {
+        filteredLeads.forEach(lead => {
           const leadDate = new Date(lead.createdAt);
           if (leadDate >= sixMonthsAgo) {
             const monthKey = leadDate.toLocaleString('default', { month: 'short', year: '2-digit' });
@@ -111,13 +113,17 @@ export default function Overview() {
     }
   };
 
-  const fetchReminders = async () => {
+  // Fetch reminders only for current user (salesName === userName)
+  const fetchReminders = async (userName) => {
+    if (!userName) return;
     try {
       const baseUrl = process.env.NEXT_PUBLIC_BASEAPIURL;
       const res = await fetch(`${baseUrl}/api/reminders`);
       if (res.ok) {
         const data = await res.json();
-        setReminders(data);
+        // Filter reminders where salesName === userName
+        const filteredReminders = data.filter(reminder => reminder.salesName === userName);
+        setReminders(filteredReminders);
       }
     } catch (error) {
       console.error('Error fetching reminders:', error);
@@ -133,30 +139,34 @@ export default function Overview() {
         method: 'DELETE',
       });
 
-      if (res.ok) {
-        fetchReminders();
+      if (res.ok && user?.userName) {
+        fetchReminders(user.userName);
       }
     } catch (error) {
       console.error('Error deleting reminder:', error);
     }
   };
 
+  // Fetch user first, then fetch leads/reminders for that user
   useEffect(() => {
     fetchUser();
-    fetchLeadStats();
-    fetchReminders();
-
-    // Debugging log for reminders
-    console.log('Reminders fetched:', reminders);
-
-    // Refresh stats and reminders every 5 minutes
-    const interval = setInterval(() => {
-      fetchLeadStats();
-      fetchReminders();
-    }, 300000);
-
-    return () => clearInterval(interval);
   }, []);
+
+  // When user is loaded, fetch stats and reminders for that user
+  useEffect(() => {
+    if (user?.userName) {
+      fetchLeadStats(user.userName);
+      fetchReminders(user.userName);
+
+      // Refresh stats and reminders every 5 minutes
+      const interval = setInterval(() => {
+        fetchLeadStats(user.userName);
+        fetchReminders(user.userName);
+      }, 300000);
+
+      return () => clearInterval(interval);
+    }
+  }, [user?.userName]);
 
   const summaryData = [
     { 
@@ -203,9 +213,16 @@ export default function Overview() {
             height={50}
             className="w-auto max-w-full"
           />
-          <h1 className="text-xl sm:text-2xl font-bold text-gray-800 text-center sm:text-left">
-            {userName.charAt(0).toUpperCase() + userName.slice(1)}
-          </h1>
+          <div className="flex flex-col items-center">
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-800 text-center sm:text-left">
+              {user?.userName
+                ? user.userName.charAt(0).toUpperCase() + user.userName.slice(1)
+                : "Fetching User..."}
+            </h1>
+            {user?.wbEmailId && (
+              <span className="text-sm text-gray-500">{user.wbEmailId}</span>
+            )}
+          </div>
         </div>
         <div className="mt-4 sm:mt-0">
           <div className="text-sm text-gray-600">Total Leads</div>
@@ -310,7 +327,7 @@ export default function Overview() {
               <AddReminderForm
                 onSuccess={() => {
                   setShowAddReminder(false);
-                  fetchReminders();
+                  if (user?.userName) fetchReminders(user.userName);
                 }}
               />
             </DialogContent>
@@ -331,7 +348,7 @@ export default function Overview() {
                 initialData={editingReminder}
                 onSuccess={() => {
                   setEditingReminder(null);
-                  fetchReminders();
+                  if (user?.userName) fetchReminders(user.userName);
                 }}
               />
             )}
