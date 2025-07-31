@@ -4,26 +4,11 @@ import { useState, useEffect } from "react";
 import Image from "next/image";
 import { Card, CardContent } from "@/components/ui/card";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-
-// Recharts Components
-import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from "recharts";
+  PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer
+} from "recharts";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid } from "recharts";
 
+// Your Candidate Interface
 interface Candidate {
   id: number;
   name: string;
@@ -32,6 +17,7 @@ interface Candidate {
   status: string;
   client?: string;
   createdAt: string;
+  updatedBy?: string; // <- make sure this is present as per your data
 }
 
 interface CandidateListProps {
@@ -48,29 +34,33 @@ export default function Overview({
   const [stats, setStats] = useState({ total: 0, shortlisted: 0, rejected: 0, pending: 0 });
 
   useEffect(() => {
+    // Step 1: Fetch user info first
     fetch("/api/users/me")
       .then((res) => res.json())
       .then((resJson) => {
         if (resJson.success && resJson.data) {
           setUserName(resJson.data.userName);
+          
+          // Step 2: Then fetch all candidates and filter
+          fetch("/api/ACmanager")
+            .then((res) => res.json())
+            .then((data) => {
+              // Only candidates updated by current user
+              const filtered = data.filter(
+                (c: Candidate) => c.updatedBy === resJson.data.userName
+              );
+              setCandidates(filtered);
+              // stats
+              const shortlisted = filtered.filter((c) => c.status === "Selected").length;
+              const rejected = filtered.filter((c) => c.status === "Rejected").length;
+              const pending = filtered.filter((c) => c.status === "Pending").length;
+              const total = filtered.length;
+              setStats({ total, shortlisted, rejected, pending });
+            })
+            .catch((err) => console.error("Failed to load candidates", err));
         }
       })
       .catch((err) => console.error("Failed to load user info", err));
-  }, []);
-
-  useEffect(() => {
-    fetch("/api/ACmanager")
-      .then((res) => res.json())
-      .then((data) => {
-        setCandidates(data);
-        const shortlisted = data.filter((c) => c.status === "Selected").length;
-        const rejected = data.filter((c) => c.status === "Rejected").length;
-        const pending = data.filter((c) => c.status === "Pending").length;
-        const total = data.length;
-        setStats({ total, shortlisted, rejected, pending });
-        console.log("Candidate statuses:", data.map((c: Candidate) => c.status)); // Debugging log
-      })
-      .catch((err) => console.error("Failed to load candidates", err));
   }, []);
 
   const chartData = [
@@ -107,7 +97,7 @@ export default function Overview({
         </div>
       </div>
 
-      {/* Dashboard Section */}
+      {/* Dashboard Summary Section */}
       <div className="w-full max-w-6xl grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
         <div className="summary-box bg-gradient-to-r from-blue-500 to-blue-600 text-white p-6 rounded-lg shadow-lg flex flex-col items-center justify-center">
           <div className="summary-title text-lg font-semibold">Total Candidates</div>
