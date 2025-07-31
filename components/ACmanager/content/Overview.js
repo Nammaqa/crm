@@ -26,25 +26,30 @@ export default function Overview() {
   const [userName, setUser] = useState("");
 
   useEffect(() => {
-    fetch("/api/candidates")
-      .then((res) => res.json())
-      .then((data) => {
-        setCandidates(data);
-        const clients = Array.from(new Set(data.map((c) => c.clientName))).filter(Boolean);
-        setUniqueClients(clients);
-        updateStats(data, "");
-      })
-      .catch((err) => console.error("Failed to load candidates", err));
-
+    // First, get user name
     fetch("/api/users/me")
       .then((res) => res.json())
       .then((resJson) => {
         if (resJson.success && resJson.data) {
           setUser(resJson.data.userName);
+
+          // Fetch candidates AFTER userName is known
+          fetch("/api/candidates")
+            .then((res) => res.json())
+            .then((data) => {
+              // Filter by acupdatedby === userName
+              const filtered = data.filter(
+                (c) => c.acupdatedby === resJson.data.userName
+              );
+              setCandidates(filtered);
+              const clients = Array.from(new Set(filtered.map((c) => c.clientName))).filter(Boolean);
+              setUniqueClients(clients);
+              updateStats(filtered, "");
+            })
+            .catch((err) => console.error("Failed to load candidates", err));
         }
       })
       .catch((err) => console.error("Failed to load user info", err));
-
   }, []);
 
   const updateStats = (data, client) => {
