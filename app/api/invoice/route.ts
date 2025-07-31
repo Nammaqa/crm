@@ -56,7 +56,20 @@ export async function GET(request: NextRequest) {
       },
       orderBy: { id: "desc" },
     });
-    return NextResponse.json({ success: true, data: invoices });
+
+    // Calculate balancedDue for each invoice
+    const updatedInvoices = invoices.map((inv) => {
+      let balance = 0;
+      if (inv.status === "Cancelled") {
+        balance = 0;
+      } else {
+        balance = (inv.total || 0) - (inv.amountReceived || 0);
+        if (balance < 0) balance = 0;
+      }
+      return { ...inv, balancedDue: balance };
+    });
+
+    return NextResponse.json({ success: true, data: updatedInvoices });
   } catch (error: any) {
     return NextResponse.json(
       { success: false, error: error.message || "Failed to fetch invoices" },
