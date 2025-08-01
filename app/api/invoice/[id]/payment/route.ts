@@ -1,23 +1,23 @@
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
 import { uploadImagetoCloudinary } from "@/lib/cloudinary";
 
 const prisma = new PrismaClient();
 
-// Helper to validate date string
 function isValidDateString(dateStr: any): boolean {
   return dateStr && !isNaN(Date.parse(dateStr));
 }
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: { id: string } }
 ) {
   try {
+    const { params } = await context;
     const invoiceId = Number(params.id);
     if (isNaN(invoiceId)) {
-      return new Response(
-        JSON.stringify({ success: false, error: "Invalid invoice ID" }),
+      return NextResponse.json(
+        { success: false, error: "Invalid invoice ID" },
         { status: 400 }
       );
     }
@@ -31,7 +31,6 @@ export async function POST(
     if (contentType.includes("multipart/form-data")) {
       const formData = await request.formData();
       for (const [key, value] of formData.entries()) {
-        // Accept both "attachments" and "files" as keys for uploaded files
         if (
           (key === "attachments" || key === "files") &&
           value instanceof File
@@ -65,8 +64,8 @@ export async function POST(
     });
 
     if (!invoice) {
-      return new Response(
-        JSON.stringify({ success: false, error: "Invoice not found" }),
+      return NextResponse.json(
+        { success: false, error: "Invoice not found" },
         { status: 404 }
       );
     }
@@ -77,9 +76,17 @@ export async function POST(
     if (action === "recordPayment") {
       const prevAmountReceived = invoice.amountReceived || 0;
       const amountReceived = parseFloat(body.amountReceived || "0");
+      if (amountReceived <= 0) {
+        return NextResponse.json(
+          { success: false, error: "Invalid amountReceived value" },
+          { status: 400 }
+        );
+      }
       const paidAmount = prevAmountReceived + amountReceived;
       const total = invoice.total || 0;
-      const status = paidAmount >= total ? "Paid" : "PartiallyPaid";
+      let status = "PartiallyPaid";
+      let balancedDue = Math.max(0, total - paidAmount);
+      if (balancedDue === 0) status = "Paid";
 
       updatedFields = {
         amountReceived: paidAmount,
@@ -95,7 +102,10 @@ export async function POST(
         bankCharges: body.bankCharges
           ? parseFloat(body.bankCharges)
           : invoice.bankCharges,
-        taxDeducted: body.taxDeducted === "Yes" || body.taxDeducted === true,
+        taxDeducted:
+          body.taxDeducted === "Yes" ||
+          body.taxDeducted === true ||
+          body.taxDeducted === "true",
         paymentReceivedOn: isValidDateString(body.paymentReceivedOn)
           ? new Date(body.paymentReceivedOn)
           : invoice.paymentReceivedOn,
@@ -104,21 +114,26 @@ export async function POST(
           ...paymentDocumentUrls,
         ],
         notes: body.notes || invoice.notes,
-        balancedDue: Math.max(0, total - paidAmount),
+        balancedDue,
       };
     } else if (action === "writeOff") {
+      // Store the current balancedDue in writeofamount, set balancedDue to 0
+      const total = invoice.total || 0;
+      const paidAmount = invoice.amountReceived || 0;
+      const currentBalancedDue = Math.max(0, total - paidAmount);
+
       updatedFields = {
-        status: "Cancelled",
+        status: "Paid",
         balancedDue: 0,
-        writeOffReason: body.reason || "",
-        // Optionally store writeOffDate with validation
-        ...(isValidDateString(body.writeOffDate)
-          ? { writeOffDate: new Date(body.writeOffDate) }
-          : {}),
+        writeofamount: currentBalancedDue,
+        writeofnotes: body.reason || "",
+        writeofdate: isValidDateString(body.writeOffDate)
+          ? new Date(body.writeOffDate)
+          : new Date(),
       };
     } else {
-      return new Response(
-        JSON.stringify({ success: false, error: "Invalid action" }),
+      return NextResponse.json(
+        { success: false, error: "Invalid action" },
         { status: 400 }
       );
     }
@@ -132,16 +147,13 @@ export async function POST(
       },
     });
 
-    return new Response(
-      JSON.stringify({ success: true, data: updatedInvoice }),
+    return NextResponse.json(
+      { success: true, data: updatedInvoice },
       { status: 200 }
     );
   } catch (error: any) {
-    return new Response(
-      JSON.stringify({
-        success: false,
-        error: error.message || "Failed to record payment",
-      }),
+    return NextResponse.json(
+      { success: false, error: error.message || "Failed to record payment" },
       { status: 500 }
     );
   }

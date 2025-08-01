@@ -18,7 +18,7 @@ const statusIcons = {
   // ... Add icons for other statuses if needed
 };
 
-export default function ReceivedPaymentsTab({ invoice, onAction }) {
+export default function ReceivedPaymentsTab({ invoice, refreshInvoice, onAction }) {
   const [selectedOption, setSelectedOption] = useState("recordPayment");
   const [formData, setFormData] = useState({
     customerName: invoice?.customer?.displayName || "",
@@ -39,10 +39,14 @@ export default function ReceivedPaymentsTab({ invoice, onAction }) {
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
 
-  const handleInputChange = (field, value) => setFormData((prev) => ({ ...prev, [field]: value }));
+  const handleInputChange = (field, value) =>
+    setFormData((prev) => ({ ...prev, [field]: value }));
   const handleFileUpload = (e) => {
     const files = Array.from(e.target.files);
-    setFormData((prev) => ({ ...prev, attachments: [...prev.attachments, ...files] }));
+    setFormData((prev) => ({
+      ...prev,
+      attachments: [...prev.attachments, ...files],
+    }));
   };
   const removeAttachment = (idx) =>
     setFormData((prev) => ({
@@ -83,7 +87,8 @@ export default function ReceivedPaymentsTab({ invoice, onAction }) {
         const fd = new FormData();
         fd.append("action", selectedOption);
         Object.entries(formData).forEach(([key, value]) => {
-          if (key === "attachments") value.forEach((file) => fd.append("attachments", file));
+          if (key === "attachments")
+            value.forEach((file) => fd.append("attachments", file));
           else fd.append(key, value ?? "");
         });
         res = await fetch(url, { method: "POST", body: fd });
@@ -98,7 +103,9 @@ export default function ReceivedPaymentsTab({ invoice, onAction }) {
       result = await res.json();
 
       if (result.success) {
-        if (typeof onAction === "function") onAction(selectedOption, invoice.id, formData);
+        if (typeof refreshInvoice === "function") refreshInvoice();
+        if (typeof onAction === "function")
+          onAction(selectedOption, invoice.id, formData);
         handleCancel();
       } else {
         setSubmitError(result.error || "Failed to submit payment");
@@ -113,7 +120,9 @@ export default function ReceivedPaymentsTab({ invoice, onAction }) {
   return (
     <div className="p-4 dark:bg-gray-800 rounded-lg overflow-y-auto max-h-full">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Payments</h3>
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+          Payments
+        </h3>
         <div className="flex items-center space-x-2">
           <span
             className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
@@ -124,13 +133,22 @@ export default function ReceivedPaymentsTab({ invoice, onAction }) {
             {invoice.status}
           </span>
           <span className="text-xs text-gray-500 dark:text-gray-400">
-            Balance: ₹{(invoice.total - (invoice.amountReceived || 0)).toLocaleString("en-IN")}
+            Balance: ₹
+            {(invoice.total - (invoice.amountReceived || 0)).toLocaleString(
+              "en-IN"
+            )}
           </span>
         </div>
       </div>
       {/* Option Radio */}
       <div className="mb-4 grid grid-cols-2 gap-2">
-        <label className={`flex items-center gap-2 px-3 py-1 rounded-lg border-2 cursor-pointer ${selectedOption === "recordPayment" ? "border-blue-600 bg-blue-50" : "border-gray-200"}`}>
+        <label
+          className={`flex items-center gap-2 px-3 py-1 rounded-lg border-2 cursor-pointer ${
+            selectedOption === "recordPayment"
+              ? "border-blue-600 bg-blue-50"
+              : "border-gray-200"
+          }`}
+        >
           <input
             type="radio"
             name="paymentOption"
@@ -138,9 +156,17 @@ export default function ReceivedPaymentsTab({ invoice, onAction }) {
             onChange={() => setSelectedOption("recordPayment")}
             className="accent-blue-600"
           />
-          <span className="text-sm font-semibold text-blue-700">Record Payment</span>
+          <span className="text-sm font-semibold text-blue-700">
+            Record Payment
+          </span>
         </label>
-        <label className={`flex items-center gap-2 px-3 py-1 rounded-lg border-2 cursor-pointer ${selectedOption === "writeOff" ? "border-red-600 bg-red-50" : "border-gray-200"}`}>
+        <label
+          className={`flex items-center gap-2 px-3 py-1 rounded-lg border-2 cursor-pointer ${
+            selectedOption === "writeOff"
+              ? "border-red-600 bg-red-50"
+              : "border-gray-200"
+          }`}
+        >
           <input
             type="radio"
             name="paymentOption"
@@ -160,7 +186,9 @@ export default function ReceivedPaymentsTab({ invoice, onAction }) {
               <input
                 type="text"
                 value={formData.customerName}
-                onChange={(e) => handleInputChange("customerName", e.target.value)}
+                onChange={(e) =>
+                  handleInputChange("customerName", e.target.value)
+                }
                 required
                 className="w-full px-3 py-2 text-sm border rounded"
               />
@@ -170,7 +198,9 @@ export default function ReceivedPaymentsTab({ invoice, onAction }) {
               <input
                 type="text"
                 value={formData.paymentNumber}
-                onChange={(e) => handleInputChange("paymentNumber", e.target.value)}
+                onChange={(e) =>
+                  handleInputChange("paymentNumber", e.target.value)
+                }
                 required
                 className="w-full px-3 py-2 text-sm border rounded"
               />
@@ -178,22 +208,32 @@ export default function ReceivedPaymentsTab({ invoice, onAction }) {
             <div>
               <label className="text-sm font-medium">Amount Received*</label>
               <input
-                type="number"
+                type="text"
                 value={formData.amountReceived}
-                onChange={(e) => handleInputChange("amountReceived", e.target.value)}
-                step="0.01"
+                onChange={(e) =>
+                  handleInputChange("amountReceived", e.target.value)
+                }
                 required
                 className="w-full px-3 py-2 text-sm border rounded"
+                inputMode="decimal"
+                pattern="^[0-9]*[.,]?[0-9]*$"
+                placeholder="Enter amount"
               />
             </div>
             <div>
-              <label className="text-sm font-medium">Bank Charges (if any)</label>
+              <label className="text-sm font-medium">
+                Bank Charges (if any)
+              </label>
               <input
-                type="number"
+                type="text"
                 value={formData.bankCharges}
-                onChange={(e) => handleInputChange("bankCharges", e.target.value)}
-                step="0.01"
+                onChange={(e) =>
+                  handleInputChange("bankCharges", e.target.value)
+                }
                 className="w-full px-3 py-2 text-sm border rounded"
+                inputMode="decimal"
+                pattern="^[0-9]*[.,]?[0-9]*$"
+                placeholder="Enter bank charges"
               />
             </div>
             <div>
@@ -201,7 +241,9 @@ export default function ReceivedPaymentsTab({ invoice, onAction }) {
               <input
                 type="date"
                 value={formData.paymentDate}
-                onChange={(e) => handleInputChange("paymentDate", e.target.value)}
+                onChange={(e) =>
+                  handleInputChange("paymentDate", e.target.value)
+                }
                 required
                 className="w-full px-3 py-2 text-sm border rounded"
               />
@@ -211,7 +253,9 @@ export default function ReceivedPaymentsTab({ invoice, onAction }) {
               <input
                 type="text"
                 value={formData.paymentReceivedOn}
-                onChange={(e) => handleInputChange("paymentReceivedOn", e.target.value)}
+                onChange={(e) =>
+                  handleInputChange("paymentReceivedOn", e.target.value)
+                }
                 placeholder="Bank account, Cash, etc."
                 className="w-full px-3 py-2 text-sm border rounded"
               />
@@ -220,7 +264,9 @@ export default function ReceivedPaymentsTab({ invoice, onAction }) {
               <label className="text-sm font-medium">Payment Mode</label>
               <select
                 value={formData.paymentMode}
-                onChange={(e) => handleInputChange("paymentMode", e.target.value)}
+                onChange={(e) =>
+                  handleInputChange("paymentMode", e.target.value)
+                }
                 className="w-full px-3 py-2 text-sm border rounded"
               >
                 <option>Bank Transfer</option>
@@ -235,13 +281,17 @@ export default function ReceivedPaymentsTab({ invoice, onAction }) {
               <input
                 type="text"
                 value={formData.reference}
-                onChange={(e) => handleInputChange("reference", e.target.value)}
+                onChange={(e) =>
+                  handleInputChange("reference", e.target.value)
+                }
                 placeholder="Transaction ID, Cheque number, etc."
                 className="w-full px-3 py-2 text-sm border rounded"
               />
             </div>
             <div className="md:col-span-2">
-              <label className="text-sm font-medium block mb-1">Tax deducted?</label>
+              <label className="text-sm font-medium block mb-1">
+                Tax deducted?
+              </label>
               <div className="flex space-x-6">
                 <label className="flex items-center space-x-2">
                   <input
@@ -249,7 +299,9 @@ export default function ReceivedPaymentsTab({ invoice, onAction }) {
                     name="taxDeducted"
                     value="No"
                     checked={formData.taxDeducted === "No"}
-                    onChange={(e) => handleInputChange("taxDeducted", e.target.value)}
+                    onChange={(e) =>
+                      handleInputChange("taxDeducted", e.target.value)
+                    }
                   />
                   <span>No Tax deducted</span>
                 </label>
@@ -259,20 +311,29 @@ export default function ReceivedPaymentsTab({ invoice, onAction }) {
                     name="taxDeducted"
                     value="Yes"
                     checked={formData.taxDeducted === "Yes"}
-                    onChange={(e) => handleInputChange("taxDeducted", e.target.value)}
+                    onChange={(e) =>
+                      handleInputChange("taxDeducted", e.target.value)
+                    }
                   />
                   <span>Yes, TDS</span>
                 </label>
               </div>
               {formData.taxDeducted === "Yes" && (
                 <div className="mt-2">
-                  <label className="text-sm font-medium">Withheld Amount*</label>
+                  <label className="text-sm font-medium">
+                    Withheld Amount*
+                  </label>
                   <input
-                    type="number"
+                    type="text"
                     value={formData.withheldAmount}
-                    onChange={(e) => handleInputChange("withheldAmount", e.target.value)}
+                    onChange={(e) =>
+                      handleInputChange("withheldAmount", e.target.value)
+                    }
                     required
                     className="w-full px-3 py-2 text-sm border rounded"
+                    inputMode="decimal"
+                    pattern="^[0-9]*[.,]?[0-9]*$"
+                    placeholder="Enter withheld amount"
                   />
                 </div>
               )}
@@ -282,7 +343,9 @@ export default function ReceivedPaymentsTab({ invoice, onAction }) {
               <textarea
                 rows={2}
                 value={formData.notes}
-                onChange={(e) => handleInputChange("notes", e.target.value)}
+                onChange={(e) =>
+                  handleInputChange("notes", e.target.value)
+                }
                 className="w-full px-3 py-2 text-sm border rounded"
                 placeholder="Additional notes..."
               />
@@ -297,14 +360,20 @@ export default function ReceivedPaymentsTab({ invoice, onAction }) {
                   id="file-upload"
                   multiple
                 />
-                <label htmlFor="file-upload" className="cursor-pointer text-blue-600">
+                <label
+                  htmlFor="file-upload"
+                  className="cursor-pointer text-blue-600"
+                >
                   Click or drag files here to upload
                 </label>
                 <div>
                   {formData.attachments.length > 0 && (
                     <div className="mt-2 space-y-2">
                       {formData.attachments.map((file, index) => (
-                        <div key={index} className="flex items-center bg-white px-2 py-1 rounded">
+                        <div
+                          key={index}
+                          className="flex items-center bg-white px-2 py-1 rounded"
+                        >
                           <span className="flex-auto truncate">{file.name}</span>
                           <button
                             type="button"
@@ -330,7 +399,9 @@ export default function ReceivedPaymentsTab({ invoice, onAction }) {
               <input
                 type="date"
                 value={formData.writeOffDate}
-                onChange={(e) => handleInputChange("writeOffDate", e.target.value)}
+                onChange={(e) =>
+                  handleInputChange("writeOffDate", e.target.value)
+                }
                 required
                 className="w-full px-3 py-2 text-sm border rounded"
               />
@@ -339,7 +410,9 @@ export default function ReceivedPaymentsTab({ invoice, onAction }) {
               <label className="text-sm font-medium">Reason*</label>
               <textarea
                 value={formData.reason}
-                onChange={(e) => handleInputChange("reason", e.target.value)}
+                onChange={(e) =>
+                  handleInputChange("reason", e.target.value)
+                }
                 rows={2}
                 placeholder="Reason for write off..."
                 required
@@ -348,7 +421,9 @@ export default function ReceivedPaymentsTab({ invoice, onAction }) {
             </div>
           </div>
         )}
-        {submitError && <div className="text-red-600 text-sm">{submitError}</div>}
+        {submitError && (
+          <div className="text-red-600 text-sm">{submitError}</div>
+        )}
         <div className="flex justify-end gap-2">
           <button
             type="button"

@@ -1,8 +1,9 @@
 "use client";
-import React from "react";
+import React, { useState, useMemo } from "react";
 import { format } from "date-fns";
 import { FiChevronDown, FiFileText } from "react-icons/fi";
 
+// Status color and icon mappings
 const statusColors = {
   Paid: "text-green-700 bg-green-50 border-green-200",
   Pending: "text-amber-700 bg-amber-50 border-amber-200",
@@ -16,7 +17,7 @@ const statusColors = {
 
 const statusIcons = {
   Draft: <FiFileText className="inline mr-1.5 text-xs" />,
-  Paid: <></>,         // You can map icons similarly if you want
+  Paid: <></>,
   Pending: <></>,
   Cancelled: <></>,
   Sent: <></>,
@@ -25,109 +26,136 @@ const statusIcons = {
   Refunded: <></>,
 };
 
-export default function ListFile({ paginatedInvoices, loading, sortColumn, sortOrder, handleSort, handleInvoiceClick }) {
+const columns = [
+  { key: "createdAt", label: "Created Time", sortable: true },
+  { key: "invoiceCode", label: "Invoice #", sortable: true },
+  { key: "customer", label: "Customer", sortable: false },
+  { key: "invoiceDate", label: "Invoice Date", sortable: true },
+  { key: "dueDate", label: "Due Date", sortable: true },
+  { key: "total", label: "Amount", sortable: true },
+  { key: "balanceDue", label: "Balance Due", sortable: true },
+  { key: "status", label: "Status", sortable: false },
+  { key: "actions", label: "Actions", sortable: false },
+];
+
+function getBalanceDue(inv) {
+  // Use balancedDue if present, else calculate
+  if (typeof inv.balancedDue === "number") return inv.balancedDue;
+  if (typeof inv.balanceDue === "number") return inv.balanceDue;
+  return Math.max(0, (inv.total || 0) - (inv.amountReceived || inv.paidAmount || 0));
+}
+
+export default function InvoiceListFile({ invoices, onSelectInvoice }) {
+  const [sortColumn, setSortColumn] = useState("invoiceDate");
+  const [sortDirection, setSortDirection] = useState("desc");
+
+  const handleSort = (col) => {
+    if (col === sortColumn) {
+      setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"));
+    } else {
+      setSortColumn(col);
+      setSortDirection("asc");
+    }
+  };
+
+  const sortedInvoices = useMemo(() => {
+    if (!Array.isArray(invoices)) return [];
+    const sorted = [...invoices].sort((a, b) => {
+      let aVal, bVal;
+      if (sortColumn === "customer") {
+        aVal = a.customer?.displayName || "";
+        bVal = b.customer?.displayName || "";
+      } else if (sortColumn === "balanceDue") {
+        aVal = getBalanceDue(a);
+        bVal = getBalanceDue(b);
+      } else {
+        aVal = a[sortColumn];
+        bVal = b[sortColumn];
+      }
+      if (aVal == null) return 1;
+      if (bVal == null) return -1;
+      if (typeof aVal === "string" && typeof bVal === "string") {
+        return sortDirection === "asc"
+          ? aVal.localeCompare(bVal)
+          : bVal.localeCompare(aVal);
+      }
+      if (aVal > bVal) return sortDirection === "asc" ? 1 : -1;
+      if (aVal < bVal) return sortDirection === "asc" ? -1 : 1;
+      return 0;
+    });
+    return sorted;
+  }, [invoices, sortColumn, sortDirection]);
+
+  if (!invoices) {
+    return (
+      <div className="flex flex-col items-center py-8 text-gray-400 dark:text-gray-500 text-sm">
+        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500 mb-2"></div>
+        Loading invoices...
+      </div>
+    );
+  }
+
+  if (invoices.length === 0) {
+    return (
+      <div className="flex flex-col items-center py-8 text-gray-400 dark:text-gray-500 text-sm">
+        <FiFileText className="h-8 w-8 text-gray-300 dark:text-gray-600 mb-2" />
+        No invoices found matching your criteria
+      </div>
+    );
+  }
+
   return (
     <div className="bg-white dark:bg-gray-800 shadow-sm rounded-xl overflow-hidden">
       <div className="overflow-x-auto">
         <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
           <thead className="bg-gray-50 dark:bg-gray-700">
             <tr>
-              <th
-                className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors duration-150"
-                onClick={() => handleSort("created_time")}
-              >
-                <div className="flex items-center">
-                  Created Time
-                  {sortColumn === "created_time" && (
-                    <FiChevronDown className={`ml-1 transition-transform text-xs ${sortOrder === "A" ? "transform rotate-180" : ""}`} />
-                  )}
-                </div>
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                Invoice #
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                Customer
-              </th>
-              <th
-                className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors duration-150"
-                onClick={() => handleSort("invoice_date")}
-              >
-                <div className="flex items-center">
-                  Invoice Date
-                  {sortColumn === "invoice_date" && (
-                    <FiChevronDown className={`ml-1 transition-transform text-xs ${sortOrder === "A" ? "transform rotate-180" : ""}`} />
-                  )}
-                </div>
-              </th>
-              <th
-                className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors duration-150"
-                onClick={() => handleSort("due_date")}
-              >
-                <div className="flex items-center">
-                  Due Date
-                  {sortColumn === "due_date" && (
-                    <FiChevronDown className={`ml-1 transition-transform text-xs ${sortOrder === "A" ? "transform rotate-180" : ""}`} />
-                  )}
-                </div>
-              </th>
-              <th
-                className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors duration-150"
-                onClick={() => handleSort("amount")}
-              >
-                <div className="flex items-center justify-end">
-                  Amount
-                  {sortColumn === "amount" && (
-                    <FiChevronDown className={`ml-1 transition-transform text-xs ${sortOrder === "A" ? "transform rotate-180" : ""}`} />
-                  )}
-                </div>
-              </th>
-              <th
-                className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors duration-150"
-                onClick={() => handleSort("balance_due")}
-              >
-                <div className="flex items-center justify-end">
-                  Balance Due
-                  {sortColumn === "balance_due" && (
-                    <FiChevronDown className={`ml-1 transition-transform text-xs ${sortOrder === "A" ? "transform rotate-180" : ""}`} />
-                  )}
-                </div>
-              </th>
-              <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                Status
-              </th>
-              <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                Actions
-              </th>
+              {columns.map((col) => (
+                <th
+                  key={col.key}
+                  className={`px-6 py-3 text-xs font-medium uppercase tracking-wider ${
+                    col.key === "amount" || col.key === "balanceDue"
+                      ? "text-right"
+                      : col.key === "status" || col.key === "actions"
+                      ? "text-center"
+                      : "text-left"
+                  } text-gray-500 dark:text-gray-400 ${
+                    col.sortable
+                      ? "cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors duration-150"
+                      : ""
+                  }`}
+                  onClick={col.sortable ? () => handleSort(col.key) : undefined}
+                >
+                  <div
+                    className={`flex items-center ${
+                      col.key === "amount" || col.key === "balanceDue"
+                        ? "justify-end"
+                        : col.key === "status" || col.key === "actions"
+                        ? "justify-center"
+                        : ""
+                    }`}
+                  >
+                    {col.label}
+                    {col.sortable && sortColumn === col.key && (
+                      <FiChevronDown
+                        className={`ml-1 transition-transform text-xs ${
+                          sortDirection === "asc" ? "transform rotate-180" : ""
+                        }`}
+                      />
+                    )}
+                  </div>
+                </th>
+              ))}
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-            {loading && (
-              <tr>
-                <td colSpan={9} className="text-center py-8 text-gray-400 dark:text-gray-500 text-sm">
-                  <div className="flex justify-center">
-                    <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
-                  </div>
-                  <p className="mt-2">Loading invoices...</p>
-                </td>
-              </tr>
-            )}
-            {!loading && paginatedInvoices.length === 0 && (
-              <tr>
-                <td colSpan={9} className="text-center py-8 text-gray-400 dark:text-gray-500 text-sm">
-                  <FiFileText className="mx-auto h-8 w-8 text-gray-300 dark:text-gray-600" />
-                  <p className="mt-2">No invoices found matching your criteria</p>
-                  {/* Add "Clear filters" button as per your parent component logic */}
-                </td>
-              </tr>
-            )}
-            {paginatedInvoices.map((inv) => {
-              const balanceDue = inv.total - (inv.paidAmount || 0);
+            {sortedInvoices.map((inv) => {
+              const balanceDue = getBalanceDue(inv);
               return (
                 <tr
                   key={inv.id}
                   className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors duration-150 cursor-pointer"
-                  onClick={() => handleInvoiceClick(inv.id)}
+                  onClick={() => onSelectInvoice && onSelectInvoice(inv.id)}
                 >
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                     {inv.createdAt
@@ -140,7 +168,9 @@ export default function ListFile({ paginatedInvoices, loading, sortColumn, sortO
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                     <div className="font-medium">{inv.customer?.displayName}</div>
                     {inv.customer?.companyName && (
-                      <div className="text-xs text-gray-500 dark:text-gray-400">{inv.customer.companyName}</div>
+                      <div className="text-xs text-gray-500 dark:text-gray-400">
+                        {inv.customer.companyName}
+                      </div>
                     )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
@@ -161,14 +191,20 @@ export default function ListFile({ paginatedInvoices, loading, sortColumn, sortO
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-center">
                     <span
-                      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusColors[inv.status] || statusColors.Draft}`}
+                      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                        statusColors[inv.status] || statusColors.Draft
+                      }`}
                     >
                       {statusIcons[inv.status]}
                       {inv.status}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-center">
-                    {/* Actions menu buttons can be added here or in parent */}
+                    <FiFileText
+                      className="inline-block mr-2 text-blue-600"
+                      title="View Details"
+                    />
+                    {/* Add more action icons as needed */}
                   </td>
                 </tr>
               );
@@ -179,4 +215,3 @@ export default function ListFile({ paginatedInvoices, loading, sortColumn, sortO
     </div>
   );
 }
-

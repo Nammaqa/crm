@@ -1,27 +1,14 @@
- "use client";
+"use client";
 
-import React, { useState, useEffect, useMemo } from "react";
-import {
-  FiEye,
-  FiEdit,
-  FiDollarSign,
-  FiFileText,
-  FiCopy,
-  FiPrinter,
-  FiDownload,
-  FiX,
-  FiCheckCircle,
-  FiClock,
-  FiXCircle,
-  FiMail,
-  FiDollarSign as FiDollarSignIcon
-} from "react-icons/fi";
+import React, { useState, useMemo, useEffect } from "react";
 import { format } from "date-fns";
-import html2canvas from "html2canvas";
-import jsPDF from "jspdf";
+import {
+  FiCheckCircle, FiXCircle, FiDollarSign, FiMail, FiDownload, FiPrinter, FiCopy
+} from "react-icons/fi";
 import ReceivedPaymentsTab from "./invoiceReceivedPaymentsTab";
 import InvoicePDFTab from "./InvoicePDFTab";
 
+// --- Status mapping (use more advanced icons/colors as desired) ---
 const statusColors = {
   Paid: "text-green-700 bg-green-50 border-green-200",
   Pending: "text-amber-700 bg-amber-50 border-amber-200",
@@ -34,178 +21,178 @@ const statusColors = {
 };
 
 const statusIcons = {
-  Draft: <FiFileText className="inline mr-1.5 text-xs" />,
   Paid: <FiCheckCircle className="inline mr-1.5 text-xs" />,
-  Pending: <FiClock className="inline mr-1.5 text-xs" />,
+  Pending: <FiDollarSign className="inline mr-1.5 text-xs" />,
+  Draft: <FiMail className="inline mr-1.5 text-xs" />,
   Cancelled: <FiXCircle className="inline mr-1.5 text-xs" />,
   Sent: <FiMail className="inline mr-1.5 text-xs" />,
-  Overdue: <FiClock className="inline mr-1.5 text-xs" />,
-  PartiallyPaid: <FiCheckCircle className="inline mr-1.5 text-xs" />,
-  Refunded: <FiDollarSignIcon className="inline mr-1.5 text-xs" />,
+  Overdue: <FiXCircle className="inline mr-1.5 text-xs" />,
+  PartiallyPaid: <FiDollarSign className="inline mr-1.5 text-xs" />,
+  Refunded: <FiDollarSign className="inline mr-1.5 text-xs" />,
 };
 
-// Utility to convert numbers to words (basic version)
+const TABS = [
+  { id: "overview", label: "Overview" },
+  { id: "payments", label: "Payments" },
+  { id: "pdf", label: "Invoice PDF" },
+  { id: "clone", label: "Clone" },
+];
+
+// --- Utility: Basic number to words (for completeness) ---
 function numberToWords(n) {
-  // ... Implement your full numberToWords utility ...
-  return n.toString();
+  if (n === 0) return "zero";
+  return n.toLocaleString("en-IN");
 }
 
-function InvoicePayment({ invoice, onClose, onAction }) {
+const InvoicePayment = ({ invoice, onClone }) => {
   const [activeTab, setActiveTab] = useState("overview");
-  const [isPrintView, setIsPrintView] = useState(false);
-  const [currentStatus, setCurrentStatus] = useState(invoice.status);
+  const [cloneInProgress, setCloneInProgress] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [sent, setSent] = useState(invoice.status === "Sent");
   const [localInvoice, setLocalInvoice] = useState(invoice);
+  const [refreshing, setRefreshing] = useState(false);
 
+  // If invoice prop changes (e.g. after parent refresh), update localInvoice and sent state
   useEffect(() => {
     setLocalInvoice(invoice);
-    setCurrentStatus(invoice.status);
+    setSent(invoice.status === "Sent");
   }, [invoice]);
 
-  if (!localInvoice) return null;
+  // Local refresh function (fetches latest invoice data)
+  const refreshInvoiceData = async () => {
+    setRefreshing(true);
+    try {
+      const res = await fetch(`/api/invoice/${localInvoice.id}`);
+      const data = await res.json();
+      if (data && data.data) {
+        setLocalInvoice(data.data);
+        setSent(data.data.status === "Sent");
+      }
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
+  if (!localInvoice) {
+    return (
+      <div className="flex flex-col items-center py-8 text-gray-400 dark:text-gray-500 text-sm">
+        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500 mb-2"></div>
+        Loading invoice details...
+      </div>
+    );
+  }
+
+  // --- Memoized calculations ---
+  const invoiceItems = localInvoice.Item || [];
   const subtotal = useMemo(
-    () => localInvoice.Item.reduce((sum, item) => sum + item.amount, 0),
-    [localInvoice.Item]
+    () => invoiceItems.reduce((sum, item) => sum + (item.amount || 0), 0),
+    [invoiceItems]
   );
   const cgst = useMemo(
-    () => localInvoice.Item.reduce((sum, item) => sum + (item.amount * (item.GstPercentage || 9)) / 200, 0),
-    [localInvoice.Item]
+    () => invoiceItems.reduce((sum, item) => sum + ((item.amount || 0) * (item.GstPercentage || 9)) / 200, 0),
+    [invoiceItems]
   );
   const sgst = useMemo(
-    () => localInvoice.Item.reduce((sum, item) => sum + (item.amount * (item.GstPercentage || 9)) / 200, 0),
-    [localInvoice.Item]
+    () => invoiceItems.reduce((sum, item) => sum + ((item.amount || 0) * (item.GstPercentage || 9)) / 200, 0),
+    [invoiceItems]
   );
   const total = subtotal + cgst + sgst;
-  const balanceDue = total - (localInvoice.paidAmount || 0);
+  const paidAmount = localInvoice.amountReceived || 0;
+  const balanceDue = Math.floor(total - paidAmount);
 
-  const tabs = [
-    { id: "overview", label: "Overview", icon: <FiEye className="mr-1" /> },
-    { id: "edit", label: "Edit", icon: <FiEdit className="mr-1" /> },
-    { id: "payments", label: "Payments", icon: <FiDollarSign className="mr-1" /> },
-    { id: "invoice", label: "Invoice", icon: <FiFileText className="mr-1" /> },
-    { id: "clone", label: "Clone", icon: <FiCopy className="mr-1" /> },
-  ];
-
-  const handlePrint = () => {
-    const previousTab = activeTab;
-    setActiveTab("overview");
-    setIsPrintView(true);
-    setTimeout(() => {
-      window.print();
-      setIsPrintView(false);
-      setActiveTab(previousTab);
-    }, 300);
-  };
-
-  const handleDownload = () => {
-    const previousTab = activeTab;
-    setActiveTab("overview");
-    setTimeout(() => {
-      const input = document.getElementById("overview-content");
-      if (input) {
-        html2canvas(input, { scale: 2, useCORS: true, logging: true }).then((canvas) => {
-          const imgData = canvas.toDataURL("image/png");
-          const pdf = new jsPDF("p", "mm", "a4");
-          const width = pdf.internal.pageSize.getWidth();
-          const height = pdf.internal.pageSize.getHeight();
-          const canvasRatio = canvas.height / canvas.width;
-          let pdfHeight = width * canvasRatio;
-          let heightLeft = pdfHeight;
-          let positionY = 0;
-
-          pdf.addImage(imgData, "PNG", 0, positionY, width, pdfHeight);
-          heightLeft -= height;
-
-          while (heightLeft > 0) {
-            positionY = heightLeft - pdfHeight;
-            pdf.addPage();
-            pdf.addImage(imgData, "PNG", 0, positionY, width, pdfHeight);
-            heightLeft -= height;
-          }
-
-          pdf.save(`Invoice_${localInvoice.invoiceCode}.pdf`);
-        });
+  // Send button handler
+  const handleSend = async () => {
+    setSending(true);
+    try {
+      const res = await fetch(`/api/invoice/${localInvoice.id}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "send" }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setSent(true);
+        // Refresh only this component's data after sending
+        await refreshInvoiceData();
       }
-      setActiveTab(previousTab);
-    }, 500);
+    } finally {
+      setSending(false);
+    }
   };
 
-  const handleStatusChange = (newStatus) => {
-    setCurrentStatus(newStatus);
-    setLocalInvoice((prev) => ({ ...prev, status: newStatus }));
-    onAction("changeStatus", localInvoice.id, newStatus);
-  };
-
+  // --- Tab Content ---
   return (
-    <div className={`bg-white dark:bg-gray-900 shadow-sm h-full overflow-y-auto ${isPrintView ? "print-view" : ""}`}>
+    <div className="p-4 border rounded bg-white dark:bg-gray-900 shadow-sm">
       {/* Header */}
-      <div
-        className={`flex justify-between items-center px-4 py-3 border-b bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-700 ${
-          isPrintView ? "hidden" : ""
-        }`}
-      >
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4">
         <div>
-          <h2 className="text-lg font-bold text-gray-900 dark:text-white">Invoice #{localInvoice.invoiceCode}</h2>
-          <div className="flex items-center mt-1">
-            <select
-              value={currentStatus}
-              onChange={(e) => handleStatusChange(e.target.value)}
-              className={`inline-flex items-center px-2.5 py-0.5 rounded-full border text-xs font-medium shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ${
-                statusColors[currentStatus] || statusColors.Draft
-              }`}
-            >
-              <option value="Draft">Draft</option>
-              <option value="Pending">Pending</option>
-              <option value="Sent">Sent</option>
-              <option value="PartiallyPaid">Partially Paid</option>
-              <option value="Overdue">Overdue</option>
-              <option value="Cancelled">Cancelled</option>
-              <option value="Refunded">Refunded</option>
-              <option value="Paid">Paid</option>
-            </select>
-            <span className="ml-2 text-xs text-gray-500 dark:text-gray-400">
-              {localInvoice.invoiceDate ? format(new Date(localInvoice.invoiceDate), "dd MMM yyyy") : "-"}
+          <h2 className="text-lg font-bold mb-1 flex items-center">
+            Invoice Overview
+            <span className={`ml-3 px-2 py-1 rounded-full text-xs font-medium border ${statusColors[localInvoice.status] || ""}`}>
+              {statusIcons[localInvoice.status]}
+              {localInvoice.status}
             </span>
+          </h2>
+          <div className="text-sm text-gray-500 dark:text-gray-400">
+            {localInvoice.invoiceDate
+              ? format(new Date(localInvoice.invoiceDate), "dd MMM yyyy")
+              : "-"}
           </div>
         </div>
-        <div className="flex items-center space-x-2">
-          <button onClick={handlePrint} className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400 transition-colors duration-200" title="Print">
-            <FiPrinter className="text-lg" />
-          </button>
-          <button onClick={handleDownload} className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400 transition-colors duration-200" title="Download">
-            <FiDownload className="text-lg" />
+        <div className="flex items-center gap-2 mt-2 sm:mt-0">
+          {/* Send Button only for Draft status */}
+          {localInvoice.status === "Draft" && (
+            <button
+              className="p-2 rounded bg-blue-600 text-white hover:bg-blue-700 transition"
+              onClick={async () => {
+                await handleSend();
+              }}
+              disabled={sending}
+              type="button"
+            >
+              {sending ? "Sending..." : "Send"}
+            </button>
+          )}
+          {/* RefreshButton removed as requested */}
+          <button
+            className="p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 dark:text-gray-400"
+            title="Print"
+            onClick={() => window.print()}
+            type="button"
+          >
+            <FiPrinter />
           </button>
           <button
-            className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400 transition-colors duration-200"
-            onClick={onClose}
-            title="Close"
+            className="p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 dark:text-gray-400"
+            title="Download"
+            type="button"
           >
-            <FiX className="text-lg" />
+            <FiDownload />
           </button>
         </div>
       </div>
+
       {/* Tabs */}
-      <div className={`border-b dark:border-gray-700 ${isPrintView ? "hidden" : ""}`}>
-        <nav className="flex space-x-4 px-4 overflow-x-auto">
-          {tabs.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`py-3 px-1 border-b-2 font-medium text-xs flex items-center transition-colors ${
-                activeTab === tab.id
-                  ? "border-blue-500 text-blue-600 dark:text-blue-400"
-                  : "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:border-gray-300 dark:hover:border-gray-600"
-              }`}
-            >
-              {tab.icon} {tab.label}
-            </button>
-          ))}
-        </nav>
+      <div className="flex border-b mb-4">
+        {TABS.map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id)}
+            className={`px-4 py-2 focus:outline-none transition-colors duration-150 ${
+              activeTab === tab.id
+                ? "border-b-2 border-blue-600 font-semibold text-blue-700 dark:text-blue-400"
+                : "text-gray-600 dark:text-gray-300"
+            }`}
+            type="button"
+          >
+            {tab.label}
+          </button>
+        ))}
       </div>
 
-      {/* Tab Content */}
+      {/* TAB: Overview */}
       {activeTab === "overview" && (
-        <div className="animate-fadeIn p-6 print:p-0" id="overview-content">
+        <div className="animate-fadeIn p-2" id="overview-content">
           {/* Company & Invoice Info */}
           <div className="flex flex-wrap justify-between mb-6">
             <div>
@@ -217,7 +204,7 @@ function InvoicePayment({ invoice, onClose, onAction }) {
             </div>
             <div className="text-right">
               <div className="text-md font-bold text-gray-900 dark:text-white">Invoice #{localInvoice.invoiceCode}</div>
-              <div className="text-gray-600 dark:text-gray-300 text-sm">Status: <span className="font-semibold">{currentStatus}</span></div>
+              <div className="text-gray-600 dark:text-gray-300 text-sm">Status: <span className="font-semibold">{localInvoice.status}</span></div>
               <div className="text-gray-600 dark:text-gray-300 text-sm">
                 Invoice Date: {localInvoice.invoiceDate ? format(new Date(localInvoice.invoiceDate), "dd/MM/yyyy") : "-"}
               </div>
@@ -226,7 +213,6 @@ function InvoicePayment({ invoice, onClose, onAction }) {
               </div>
             </div>
           </div>
-
           {/* Customer / Billing Info */}
           <div className="flex flex-wrap justify-between mb-6">
             <div>
@@ -251,7 +237,6 @@ function InvoicePayment({ invoice, onClose, onAction }) {
               <div className="text-gray-700 dark:text-gray-300 text-sm">Karnataka (29)</div>
             </div>
           </div>
-
           {/* Items Table */}
           <div className="overflow-x-auto border rounded-lg">
             <table className="min-w-full border-collapse">
@@ -268,9 +253,9 @@ function InvoicePayment({ invoice, onClose, onAction }) {
                 </tr>
               </thead>
               <tbody>
-                {localInvoice.Item.map((item, idx) => {
-                  const itemCgst = ((item.amount * (item.GstPercentage || 9)) / 200) || 0;
-                  const itemSgst = ((item.amount * (item.GstPercentage || 9)) / 200) || 0;
+                {invoiceItems.map((item, idx) => {
+                  const itemCgst = ((item.amount || 0) * (item.GstPercentage || 9)) / 200;
+                  const itemSgst = ((item.amount || 0) * (item.GstPercentage || 9)) / 200;
                   return (
                     <tr key={idx} className="bg-white dark:bg-gray-900">
                       <td className="py-2 px-2 border text-xs">{idx + 1}</td>
@@ -280,17 +265,16 @@ function InvoicePayment({ invoice, onClose, onAction }) {
                       </td>
                       <td className="py-2 px-2 border text-xs">998313</td>
                       <td className="py-2 px-2 border text-xs">{item.quantity}</td>
-                      <td className="py-2 px-2 border text-xs">{item.rate.toLocaleString("en-IN")}</td>
-                      <td className="py-2 px-2 border text-xs">{itemCgst.toFixed(2)}</td>
-                      <td className="py-2 px-2 border text-xs">{itemSgst.toFixed(2)}</td>
-                      <td className="py-2 px-2 border text-xs">{item.amount.toLocaleString("en-IN")}</td>
+                      <td className="py-2 px-2 border text-xs">{item.rate?.toLocaleString("en-IN")}</td>
+                      <td className="py-2 px-2 border text-xs">{itemCgst?.toFixed(2)}</td>
+                      <td className="py-2 px-2 border text-xs">{itemSgst?.toFixed(2)}</td>
+                      <td className="py-2 px-2 border text-xs">{item.amount?.toLocaleString("en-IN")}</td>
                     </tr>
                   );
                 })}
               </tbody>
             </table>
           </div>
-
           {/* Totals */}
           <div className="flex justify-end mt-6">
             <div className="w-full max-w-xs">
@@ -312,7 +296,7 @@ function InvoicePayment({ invoice, onClose, onAction }) {
               </div>
               <div className="flex justify-between py-1 text-gray-600 dark:text-gray-300">
                 <span>Paid</span>
-                <span>₹{(localInvoice.paidAmount || 0).toLocaleString("en-IN")}</span>
+                <span>₹{paidAmount.toLocaleString("en-IN")}</span>
               </div>
               <div className="flex justify-between font-bold text-black dark:text-white py-2 border-t mt-2">
                 <span>Balance Due</span>
@@ -320,25 +304,22 @@ function InvoicePayment({ invoice, onClose, onAction }) {
               </div>
             </div>
           </div>
-
           {/* In Words & Notes */}
           <div className="mt-5 text-gray-700 dark:text-gray-300 text-sm">
             <strong>Total In Words:</strong> Indian Rupee {numberToWords(Math.floor(total))} Only
           </div>
           <div className="mt-1 text-gray-700 dark:text-gray-300 text-sm italic">
             {localInvoice.customerNotes || "Thanks for your business."}
-            {localInvoice.writeOffReason && (
-              <span className="block text-xs mt-2 text-red-600">Written Off: {localInvoice.writeOffReason}</span>
+            {localInvoice.writeofnotes && (
+              <span className="block text-xs mt-2 text-red-600">Written Off: {localInvoice.writeofnotes}</span>
             )}
           </div>
-
           <div className="border-t border-dashed mt-6 pt-4">
             <div className="font-bold text-md text-gray-900 dark:text-white mb-1">Bank Details</div>
             <div className="text-gray-700 dark:text-gray-300 text-sm">State Bank of India</div>
             <div className="text-gray-700 dark:text-gray-300 text-sm">Bank A/C No: 00000042985985552</div>
             <div className="text-gray-700 dark:text-gray-300 text-sm">IFSC Code: SBIN0016225</div>
           </div>
-
           <div className="border-t border-dashed mt-4 pt-4 flex justify-between">
             <span className="text-xs text-gray-400 dark:text-gray-500">Crafted with ease using zoho.com/invoice</span>
             <span className="text-xs text-gray-600 dark:text-gray-300 font-semibold">Authorized Signature</span>
@@ -346,67 +327,55 @@ function InvoicePayment({ invoice, onClose, onAction }) {
         </div>
       )}
 
-      {activeTab === "edit" && (
-        <div className="p-4 animate-fadeIn">
-          <div className="max-w-4xl mx-auto">
-            <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">Edit Invoice</h3>
-            <div className="bg-yellow-50 dark:bg-yellow-900/20 border-l-4 border-yellow-400 dark:border-yellow-500 p-4 mb-6">
-              <div className="flex">
-                <div className="flex-shrink-0">
-                  <FiClock className="h-5 w-5 text-yellow-400 dark:text-yellow-300" />
-                </div>
-                <div className="ml-3">
-                  <p className="text-sm text-yellow-700 dark:text-yellow-300">
-                    This feature is under development and will be available in the next update.
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
+      {/* TAB: Payments */}
       {activeTab === "payments" && (
-        <ReceivedPaymentsTab
-          invoice={localInvoice}
-          onAction={(action, id, data) => {
-            if (action === "recordPayment") {
-              const newPaid = (localInvoice.paidAmount || 0) + parseFloat(data.amountReceived || 0);
-              const newStatus = newPaid >= total ? "Paid" : "PartiallyPaid";
-              setLocalInvoice((prev) => ({ ...prev, paidAmount: newPaid, status: newStatus }));
-            } else if (action === "writeOff") {
-              setLocalInvoice((prev) => ({ ...prev, status: "Cancelled", writeOffReason: data.reason }));
-            }
-            onAction(action, id, data);
-          }}
-        />
+        <ReceivedPaymentsTab invoice={localInvoice} refreshInvoice={refreshInvoiceData} />
       )}
 
-      {activeTab === "invoice" && (
-        <InvoicePDFTab invoice={localInvoice} onPrint={handlePrint} onDownload={handleDownload} />
-      )}
+      {/* TAB: PDF */}
+      {activeTab === "pdf" && <InvoicePDFTab invoice={localInvoice} />}
 
+      {/* TAB: Clone */}
       {activeTab === "clone" && (
-        <div className="p-4 animate-fadeIn">
-          <div className="max-w-4xl mx-auto">
-            <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">Clone Invoice</h3>
-            <div className="bg-blue-50 dark:bg-blue-900/20 border-l-4 border-blue-400 dark:border-blue-500 p-4 mb-6">
-              <div className="flex">
-                <div className="flex-shrink-0">
-                  <FiCopy className="h-5 w-5 text-blue-400 dark:text-blue-300" />
-                </div>
-                <div className="ml-3">
-                  <p className="text-sm text-blue-700 dark:text-blue-300">
-                    This feature will create a duplicate of this invoice with a new invoice number.
-                  </p>
-                </div>
-              </div>
+        <div className="p-4 flex flex-col items-center animate-fadeIn">
+          <div className="w-full max-w-sm bg-white dark:bg-gray-800 rounded shadow px-8 py-6 border border-blue-600">
+            <div className="flex items-center mb-4">
+              <FiCopy className="text-blue-600 mr-2" />
+              <span className="font-semibold text-blue-700 dark:text-blue-300 text-lg">
+                Clone Invoice
+              </span>
+            </div>
+            <div className="text-gray-700 dark:text-gray-200 text-base mb-6">
+              Do you want to clone this invoice?
+            </div>
+            <div className="flex gap-3">
+              <button
+                className={`bg-blue-600 text-white px-5 py-2 rounded font-semibold hover:bg-blue-700 transition disabled:opacity-50`}
+                onClick={async () => {
+                  setCloneInProgress(true);
+                  if (typeof onClone === "function") {
+                    await onClone(localInvoice);
+                  }
+                  setCloneInProgress(false);
+                }}
+                disabled={cloneInProgress}
+                type="button"
+              >
+                {cloneInProgress ? "Cloning..." : "Submit"}
+              </button>
+              <button
+                className="bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-5 py-2 rounded font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition"
+                onClick={() => setActiveTab("overview")}
+                type="button"
+              >
+                Cancel
+              </button>
             </div>
           </div>
         </div>
       )}
     </div>
   );
-}
+};
 
 export default InvoicePayment;
