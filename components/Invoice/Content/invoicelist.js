@@ -31,7 +31,7 @@ export default function InvoiceList() {
   const [invoices, setInvoices] = useState([]);
 
   // === Fetch invoices ===
-  useEffect(() => {
+  const fetchInvoices = useCallback(() => {
     setLoading(true);
     fetch("/api/invoice")
       .then((res) => res.json())
@@ -45,6 +45,10 @@ export default function InvoiceList() {
         setLoading(false);
       });
   }, []);
+
+  useEffect(() => {
+    fetchInvoices();
+  }, [fetchInvoices]);
 
   // === Fetch selected invoice details ===
   useEffect(() => {
@@ -275,6 +279,19 @@ export default function InvoiceList() {
     </div>
   );
 
+  // === Refresh Button ===
+  const RefreshButton = () => (
+    <button
+      onClick={fetchInvoices}
+      disabled={loading}
+      className="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 px-4 py-2.5 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200 flex items-center shadow-sm hover:shadow-md ml-2 disabled:opacity-50"
+      title="Refresh"
+    >
+      <FiRefreshCw className={`mr-2 text-sm ${loading ? "animate-spin" : ""}`} />
+      {loading ? "Refreshing..." : "Refresh"}
+    </button>
+  );
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
@@ -283,7 +300,7 @@ export default function InvoiceList() {
           <div>
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Invoice Management</h1>
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-              Track, manage, and analyze all your invoices in one place
+              {/* Track, manage, and analyze all your invoices in one place */}
             </p>
           </div>
           <div className="flex gap-2">
@@ -293,9 +310,10 @@ export default function InvoiceList() {
             >
               <FiPlus className="mr-2 text-sm" /> New Invoice
             </Link>
-            <button className="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 px-4 py-2.5 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200 flex items-center shadow-sm hover:shadow-md">
+            {/* <button className="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 px-4 py-2.5 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200 flex items-center shadow-sm hover:shadow-md">
               <FiDownload className="mr-2 text-sm" /> Export
-            </button>
+            </button> */}
+            <RefreshButton />
           </div>
         </div>
 
@@ -345,12 +363,8 @@ export default function InvoiceList() {
         {/* Conditional rendering based on whether an invoice is selected */}
         {!selectedInvoice ? (
           <ListFile
-            paginatedInvoices={paginatedInvoices}
-            loading={loading}
-            sortColumn={sortColumn}
-            sortOrder={sortOrder}
-            handleSort={handleSort}
-            handleInvoiceClick={handleInvoiceClick}
+            invoices={paginatedInvoices}
+            onSelectInvoice={handleInvoiceClick}
           />
         ) : (
           <div className="flex bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden min-h-[600px] border dark:border-gray-700">

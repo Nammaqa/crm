@@ -361,6 +361,9 @@ model Invoice {
  balancedDue       Float? @default(0)
   createdAt         DateTime      @default(now())
   updatedAt         DateTime      @updatedAt
+  writeofdate         DateTime?
+  writeofnotes         String?
+  writeofamount         Float?
   Item Item[]
 }
 
