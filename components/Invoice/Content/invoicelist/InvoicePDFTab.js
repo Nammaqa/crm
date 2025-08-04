@@ -73,7 +73,7 @@ export default function InvoicePDFTab({ invoice, onPrint, onDownload }) {
   return (
     <div className="py-4 space-y-4">
       <div className="flex space-x-4">
-        <button
+        {/* <button
           onClick={onPrint || handlePrint}
           className="p-2 bg-gray-200 hover:bg-gray-300 rounded flex items-center transition-colors"
           type="button"
@@ -86,14 +86,14 @@ export default function InvoicePDFTab({ invoice, onPrint, onDownload }) {
           type="button"
         >
           <FiDownload className="mr-1" /> Download
-        </button>
+        </button> */}
       </div>
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border dark:border-gray-700">
         <iframe
           ref={iframeRef}
           src={pdfSrc}
-          width="100%"
-          height="700px"
+          width="700px"
+          height="1000px"
           style={{ border: "1px solid #ddd", borderRadius: "8px" }}
           title="Invoice PDF"
         >

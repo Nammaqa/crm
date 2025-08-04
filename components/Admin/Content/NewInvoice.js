@@ -511,7 +511,7 @@ export default function InvoiceForm() {
     let logoYPosition = 18;
     if (logoBase64) {
       try {
-        doc.addImage(logoBase64, 'PNG', 14, logoYPosition, 60,19); 
+        doc.addImage(logoBase64, 'PNG', 14, logoYPosition, 80,15) 
         logoYPosition += 25;
       } catch (error) {
         doc.setFontSize(12);
@@ -578,9 +578,9 @@ export default function InvoiceForm() {
         doc.text(selectedCustomer.billingCountry, 14, customerAddressY);
         customerAddressY += 4;
       }
-      if (formData.gstNumber) {
-        doc.text(`GSTIN ${formData.gstNumber}`, 14, customerAddressY + 4);
-      }
+      // if (formData.gstNumber) {
+      //   doc.text(`GSTIN ${formData.gstNumber}`, 14, customerAddressY + 4);
+      // }
     }
     // Ship To Section
     doc.setFontSize(11);
@@ -624,7 +624,7 @@ export default function InvoiceForm() {
       return [
         (idx + 1).toString(),
         item.name || '',
-        item.sac || '998313',
+        item.sac || '',
         parseFloat(item.quantity || 1).toFixed(2),
         parseFloat(item.rate || 0).toFixed(2).replace(/\.00$/, '.00'),
         cgstAmount.toFixed(2),
@@ -661,11 +661,11 @@ export default function InvoiceForm() {
         0: { halign: 'center', cellWidth: 15 },
         1: { cellWidth: 70, halign: 'left' },
         2: { halign: 'center', cellWidth: 25 },
-        3: { halign: 'right', cellWidth: 20 },
-        4: { halign: 'right', cellWidth: 30 },
-        5: { halign: 'right', cellWidth: 25 },
+        3: { halign: 'center', cellWidth: 20 },
+        4: { halign: 'center', cellWidth: 30 },
+        5: { halign: 'center', cellWidth: 25 },
         6: { halign: 'center', cellWidth: 15 },
-        7: { halign: 'right', cellWidth: 25 },
+        7: { halign: 'center', cellWidth: 25 },
         8: { halign: 'center', cellWidth: 15 },
         9: { halign: 'right', cellWidth: 30 }
       },
@@ -673,19 +673,7 @@ export default function InvoiceForm() {
       tableLineWidth: 0,
       tableLineColor: [255, 255, 255]
     });
-    let finalY = doc.lastAutoTable.finalY || itemTableY + 50;
-    finalY += 10;
-    const totalInWords = numberToWords(Math.floor(calculateTotal()));
-    doc.setFontSize(9);
-    doc.setFont(undefined, 'bold');
-    doc.text('Total In Words:', 14, finalY + 15, { align: 'left' });
-    doc.setFont(undefined, 'normal');
-    const wordsText = `Indian Rupee ${totalInWords} Only`;
-    doc.text(wordsText, 14, finalY + 22, { align: 'left' });
-    if (formData.customerNotes) {
-      doc.setFontSize(9);
-      doc.text(formData.customerNotes, 14, finalY + 35, { align: 'left' });
-    }
+   
     doc.addPage();
     if (backgroundBase64) {
       try {
@@ -716,11 +704,37 @@ export default function InvoiceForm() {
         lineWidth: 0
       },
       columnStyles: {
-        0: { fontStyle: 'bold', cellWidth: 60, halign: 'left' },
-        1: { halign: 'right', cellWidth: 50 }
+        0: { fontStyle: 'bold', cellWidth: 30, halign: 'left' },
+        1: { halign: 'right', cellWidth: 30 }
       },
-      margin: { left: 150 }
+      margin: { left: 220 }
     });
+//the total amount in words
+    let finalY = doc.lastAutoTable.finalY || itemTableY + 50;
+    finalY += 5;
+    const totalInWords = numberToWords(Math.floor(calculateTotal()));
+    doc.setFontSize(9);
+    doc.setFont(undefined, 'bold');
+    doc.text('Total In Words:', 200, finalY + 2, { align: 'left' });
+    doc.setFont(undefined, 'normal');
+    const wordsText = `Indian Rupee ${totalInWords} Only`;
+    // If the wordsText is too long, split into two lines
+    const maxLineLength = 40;
+    if (wordsText.length > maxLineLength) {
+      const firstLine = wordsText.slice(0, maxLineLength);
+      // Try to break at last space for better readability
+      const lastSpace = firstLine.lastIndexOf(' ');
+      const line1 = lastSpace > 0 ? wordsText.slice(0, lastSpace) : firstLine;
+      const line2 = wordsText.slice(line1.length).trim();
+      doc.text(line1, 230, finalY + 2, { align: 'left' });
+      doc.text(line2, 230, finalY + 7, { align: 'left' });
+    } else {
+      doc.text(wordsText, 230, finalY + 2, { align: 'left' });
+    }
+    if (formData.customerNotes) {
+      doc.setFontSize(10);
+      doc.text(formData.customerNotes, 14, finalY + 20, { align: 'left' });
+    }
     // Return both doc and buffer (use 'arraybuffer' with compression)
     // Also try to reduce image quality if possible
     const pdfArrayBuffer = doc.output('arraybuffer');

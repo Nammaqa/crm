@@ -35,7 +35,7 @@ export default function SideListFile({
   }
 
   return (
-    <div className="overflow-y-auto max-h-screen border-r w-80 p-2 bg-white dark:bg-gray-900">
+    <div className="overflow-y-auto h-340 border-r w-80 p-2 bg-white dark:bg-gray-900">
       <h3 className="mb-2 text-base font-bold">Invoices</h3>
       <ul>
         {paginatedInvoices.map((inv) => {

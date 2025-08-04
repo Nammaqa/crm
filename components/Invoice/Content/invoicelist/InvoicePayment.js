@@ -1,14 +1,27 @@
 "use client";
 
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useRef } from "react";
 import { format } from "date-fns";
 import {
-  FiCheckCircle, FiXCircle, FiDollarSign, FiMail, FiDownload, FiPrinter, FiCopy
+  FiCheckCircle,
+  FiXCircle,
+  FiDollarSign,
+  FiMail,
+  FiDownload,
+  FiPrinter,
+  FiCopy
 } from "react-icons/fi";
 import ReceivedPaymentsTab from "./invoiceReceivedPaymentsTab";
 import InvoicePDFTab from "./InvoicePDFTab";
 
-// --- Status mapping (use more advanced icons/colors as desired) ---
+// --- PDF Libraries ---
+import html2canvas from "html2canvas";
+import jsPDF from "jspdf";
+
+// --- Next.js Router ---
+import { useRouter } from "next/navigation";
+
+// --- Status mapping ---
 const statusColors = {
   Paid: "text-green-700 bg-green-50 border-green-200",
   Pending: "text-amber-700 bg-amber-50 border-amber-200",
@@ -19,7 +32,6 @@ const statusColors = {
   PartiallyPaid: "text-purple-700 bg-purple-50 border-purple-200",
   Refunded: "text-indigo-700 bg-indigo-50 border-indigo-200",
 };
-
 const statusIcons = {
   Paid: <FiCheckCircle className="inline mr-1.5 text-xs" />,
   Pending: <FiDollarSign className="inline mr-1.5 text-xs" />,
@@ -30,21 +42,20 @@ const statusIcons = {
   PartiallyPaid: <FiDollarSign className="inline mr-1.5 text-xs" />,
   Refunded: <FiDollarSign className="inline mr-1.5 text-xs" />,
 };
-
 const TABS = [
   { id: "overview", label: "Overview" },
   { id: "payments", label: "Payments" },
   { id: "pdf", label: "Invoice PDF" },
   { id: "clone", label: "Clone" },
 ];
-
-// --- Utility: Basic number to words (for completeness) ---
 function numberToWords(n) {
   if (n === 0) return "zero";
   return n.toLocaleString("en-IN");
 }
 
 const InvoicePayment = ({ invoice, onClone }) => {
+  const router = useRouter();
+
   const [activeTab, setActiveTab] = useState("overview");
   const [cloneInProgress, setCloneInProgress] = useState(false);
   const [sending, setSending] = useState(false);
@@ -52,13 +63,16 @@ const InvoicePayment = ({ invoice, onClone }) => {
   const [localInvoice, setLocalInvoice] = useState(invoice);
   const [refreshing, setRefreshing] = useState(false);
 
-  // If invoice prop changes (e.g. after parent refresh), update localInvoice and sent state
+  // Ref for overview invoice DOM node
+  const overviewRef = useRef();
+
+  // Sync prop updates
   useEffect(() => {
     setLocalInvoice(invoice);
     setSent(invoice.status === "Sent");
   }, [invoice]);
 
-  // Local refresh function (fetches latest invoice data)
+  // Refresh invoice data
   const refreshInvoiceData = async () => {
     setRefreshing(true);
     try {
@@ -73,16 +87,7 @@ const InvoicePayment = ({ invoice, onClone }) => {
     }
   };
 
-  if (!localInvoice) {
-    return (
-      <div className="flex flex-col items-center py-8 text-gray-400 dark:text-gray-500 text-sm">
-        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500 mb-2"></div>
-        Loading invoice details...
-      </div>
-    );
-  }
-
-  // --- Memoized calculations ---
+  // Memoized calculations
   const invoiceItems = localInvoice.Item || [];
   const subtotal = useMemo(
     () => invoiceItems.reduce((sum, item) => sum + (item.amount || 0), 0),
@@ -98,9 +103,13 @@ const InvoicePayment = ({ invoice, onClone }) => {
   );
   const total = subtotal + cgst + sgst;
   const paidAmount = localInvoice.amountReceived || 0;
-  const balanceDue = Math.floor(total - paidAmount);
 
-  // Send button handler
+  // --- CHANGE: Force balanceDue to zero if status is Paid ---
+  // Original:
+  // const balanceDue = Math.floor(total - paidAmount);
+  // Updated:
+  const balanceDue = localInvoice.status === "Paid" ? 0 : Math.floor(total - paidAmount);
+
   const handleSend = async () => {
     setSending(true);
     try {
@@ -112,7 +121,6 @@ const InvoicePayment = ({ invoice, onClone }) => {
       const data = await res.json();
       if (data.success) {
         setSent(true);
-        // Refresh only this component's data after sending
         await refreshInvoiceData();
       }
     } finally {
@@ -120,9 +128,62 @@ const InvoicePayment = ({ invoice, onClone }) => {
     }
   };
 
-  // --- Tab Content ---
+  // --- Patch to remove "oklch" before export for html2canvas ---
+  const patchUnsupportedColors = (node) => {
+    if (!node || !node.querySelectorAll) return;
+    const all = node.querySelectorAll("*");
+    for (const el of all) {
+      const style = window.getComputedStyle(el);
+      if (style.backgroundColor && style.backgroundColor.startsWith("oklch")) {
+        el.style.backgroundColor = "#fff";
+      }
+      if (style.color && style.color.startsWith("oklch")) {
+        el.style.color = "#222";
+      }
+      if (style.borderColor && style.borderColor.startsWith("oklch")) {
+        el.style.borderColor = "#eee";
+      }
+    }
+    const nodeStyle = window.getComputedStyle(node);
+    if (nodeStyle.backgroundColor && nodeStyle.backgroundColor.startsWith("oklch")) {
+      node.style.backgroundColor = "#fff";
+    }
+    if (nodeStyle.color && nodeStyle.color.startsWith("oklch")) {
+      node.style.color = "#222";
+    }
+  };
+
+  // --- Overview PDF Download ---
+  const handleDownloadPDF = async () => {
+    if (!overviewRef.current) return;
+    patchUnsupportedColors(overviewRef.current); // Patch all children with oklch colors
+    const element = overviewRef.current;
+    element.style.background = "#fff";
+    const canvas = await html2canvas(element, { scale: 2, backgroundColor: "#fff" });
+    const imgData = canvas.toDataURL("image/png");
+    const pdf = new jsPDF("p", "mm", "a4");
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const pageHeight = pdf.internal.pageSize.getHeight();
+    const imgProps = pdf.getImageProperties(imgData);
+
+    let pdfWidth = pageWidth;
+    let pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+    if (pdfHeight > pageHeight) pdfHeight = pageHeight;
+    pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
+    pdf.save(`Invoice_${localInvoice.invoiceCode || localInvoice.id}.pdf`);
+  };
+
+  if (!localInvoice) {
+    return (
+      <div className="flex flex-col items-center py-8 text-gray-400 dark:text-gray-500 text-sm">
+        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500 mb-2"></div>
+        Loading invoice details...
+      </div>
+    );
+  }
+
   return (
-    <div className="p-4 border rounded bg-white dark:bg-gray-900 shadow-sm">
+    <div className="w-full max-w-7xl mx-auto p-8 border rounded bg-white dark:bg-gray-900 shadow-sm">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4">
         <div>
@@ -153,25 +214,28 @@ const InvoicePayment = ({ invoice, onClone }) => {
               {sending ? "Sending..." : "Send"}
             </button>
           )}
-          {/* RefreshButton removed as requested */}
+          {/* Download PDF */}
+          {activeTab === "overview" && (
+            <button
+              className="p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 dark:text-gray-400"
+              title="Download PDF"
+              type="button"
+              onClick={handleDownloadPDF}
+            >
+              <FiDownload />
+            </button>
+          )}
+          {/* Cancel Icon Action - always uses router.back() */}
           <button
             className="p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 dark:text-gray-400"
-            title="Print"
-            onClick={() => window.print()}
+            title="Cancel"
+            onClick={() => router.back()}
             type="button"
           >
-            <FiPrinter />
-          </button>
-          <button
-            className="p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 dark:text-gray-400"
-            title="Download"
-            type="button"
-          >
-            <FiDownload />
+            <FiXCircle />
           </button>
         </div>
       </div>
-
       {/* Tabs */}
       <div className="flex border-b mb-4">
         {TABS.map((tab) => (
@@ -189,13 +253,19 @@ const InvoicePayment = ({ invoice, onClone }) => {
           </button>
         ))}
       </div>
-
       {/* TAB: Overview */}
       {activeTab === "overview" && (
-        <div className="animate-fadeIn p-2" id="overview-content">
+        <div ref={overviewRef} className="animate-fadeIn p-4 bg-white dark:bg-gray-900" id="overview-content">
           {/* Company & Invoice Info */}
-          <div className="flex flex-wrap justify-between mb-6">
+          <div className="flex flex-wrap justify-between mb-6 items-start">
             <div>
+              {/* LOGO IMAGE ADDED HERE */}
+              <img
+                src="/Wizzybox Logo.png"
+                alt="WizzyBox Logo"
+                className="h-11 w-auto mb-2"
+                style={{ maxHeight: "48px" }}
+              />
               <div className="text-xl font-bold text-gray-900 dark:text-white mb-1">WizzyBox Private Limited</div>
               <div className="text-gray-700 dark:text-gray-300 text-sm">Bengaluru Karnataka 560056, India</div>
               <div className="text-gray-700 dark:text-gray-300 text-sm">GSTIN 29AADCW7843F1ZY</div>
@@ -213,7 +283,7 @@ const InvoicePayment = ({ invoice, onClone }) => {
               </div>
             </div>
           </div>
-          {/* Customer / Billing Info */}
+          {/* Billing Info */}
           <div className="flex flex-wrap justify-between mb-6">
             <div>
               <div className="font-bold text-gray-900 dark:text-white mb-1">Billed To:</div>
@@ -242,14 +312,14 @@ const InvoicePayment = ({ invoice, onClone }) => {
             <table className="min-w-full border-collapse">
               <thead className="bg-gray-100 dark:bg-gray-800">
                 <tr>
-                  <th className="py-2 px-2 border text-xs text-left">#</th>
-                  <th className="py-2 px-2 border text-xs text-left">Item & Description</th>
-                  <th className="py-2 px-2 border text-xs text-left">HSN/SAC</th>
-                  <th className="py-2 px-2 border text-xs text-left">Qty</th>
-                  <th className="py-2 px-2 border text-xs text-left">Rate</th>
-                  <th className="py-2 px-2 border text-xs text-left">CGST (9%)</th>
-                  <th className="py-2 px-2 border text-xs text-left">SGST (9%)</th>
-                  <th className="py-2 px-2 border text-xs text-left">Amount</th>
+                  <th className="py-2 px-2 border text-xs text-center">#</th>
+                  <th className="py-2 px-2 border text-xs text-center">Item & Description</th>
+                  <th className="py-2 px-2 border text-xs text-center">HSN/SAC</th>
+                  <th className="py-2 px-2 border text-xs text-center">Qty</th>
+                  <th className="py-2 px-2 border text-xs text-center">Rate</th>
+                  <th className="py-2 px-2 border text-xs text-center">CGST (9%)</th>
+                  <th className="py-2 px-2 border text-xs text-center">SGST (9%)</th>
+                  <th className="py-2 px-2 border text-xs text-center">Amount</th>
                 </tr>
               </thead>
               <tbody>
@@ -263,7 +333,7 @@ const InvoicePayment = ({ invoice, onClone }) => {
                         {item.itemDetails}
                         {item.description && (<span className="ml-1 text-gray-500">({item.description})</span>)}
                       </td>
-                      <td className="py-2 px-2 border text-xs">998313</td>
+                      <td className="py-2 px-2 border text-xs">{item.sac}</td>
                       <td className="py-2 px-2 border text-xs">{item.quantity}</td>
                       <td className="py-2 px-2 border text-xs">{item.rate?.toLocaleString("en-IN")}</td>
                       <td className="py-2 px-2 border text-xs">{itemCgst?.toFixed(2)}</td>
@@ -314,28 +384,25 @@ const InvoicePayment = ({ invoice, onClone }) => {
               <span className="block text-xs mt-2 text-red-600">Written Off: {localInvoice.writeofnotes}</span>
             )}
           </div>
-          <div className="border-t border-dashed mt-6 pt-4">
+          <div className=" mt-6 pt-4">
             <div className="font-bold text-md text-gray-900 dark:text-white mb-1">Bank Details</div>
             <div className="text-gray-700 dark:text-gray-300 text-sm">State Bank of India</div>
             <div className="text-gray-700 dark:text-gray-300 text-sm">Bank A/C No: 00000042985985552</div>
             <div className="text-gray-700 dark:text-gray-300 text-sm">IFSC Code: SBIN0016225</div>
           </div>
-          <div className="border-t border-dashed mt-4 pt-4 flex justify-between">
-            <span className="text-xs text-gray-400 dark:text-gray-500">Crafted with ease using zoho.com/invoice</span>
+          <div className=" mt-4 pt-4 flex justify-between">
+            <span className="text-xs text-gray-400 dark:text-gray-500"></span>
             <span className="text-xs text-gray-600 dark:text-gray-300 font-semibold">Authorized Signature</span>
           </div>
         </div>
       )}
-
-      {/* TAB: Payments */}
+      {/* Payments Tab */}
       {activeTab === "payments" && (
         <ReceivedPaymentsTab invoice={localInvoice} refreshInvoice={refreshInvoiceData} />
       )}
-
-      {/* TAB: PDF */}
+      {/* Invoice PDF Tab */}
       {activeTab === "pdf" && <InvoicePDFTab invoice={localInvoice} />}
-
-      {/* TAB: Clone */}
+      {/* Clone Tab */}
       {activeTab === "clone" && (
         <div className="p-4 flex flex-col items-center animate-fadeIn">
           <div className="w-full max-w-sm bg-white dark:bg-gray-800 rounded shadow px-8 py-6 border border-blue-600">
