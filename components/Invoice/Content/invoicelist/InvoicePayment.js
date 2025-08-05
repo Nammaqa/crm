@@ -74,26 +74,9 @@ const InvoicePayment = ({ invoice, onClone, onClose }) => {
 
   // Memoized calculations
   const invoiceItems = localInvoice.Item || [];
-  const subtotal = useMemo(
-    () => invoiceItems.reduce((sum, item) => sum + (item.amount || 0), 0),
-    [invoiceItems]
-  );
-  const cgst = useMemo(
-    () =>
-      invoiceItems.reduce(
-        (sum, item) => sum + ((item.amount || 0) * (item.GstPercentage || 9)) / 200,
-        0
-      ),
-    [invoiceItems]
-  );
-  const sgst = useMemo(
-    () =>
-      invoiceItems.reduce(
-        (sum, item) => sum + ((item.amount || 0) * (item.GstPercentage || 9)) / 200,
-        0
-      ),
-    [invoiceItems]
-  );
+  const subtotal = useMemo(() => invoiceItems.reduce((sum, item) => sum + (item.amount || 0), 0),[invoiceItems]);
+  const cgst = useMemo(() =>invoiceItems.reduce((sum, item) => sum + ((item.amount || 0) * (item.GstPercentage || 9)) / 200,0),[invoiceItems]);
+  const sgst = useMemo(() =>invoiceItems.reduce((sum, item) => sum + ((item.amount || 0) * (item.GstPercentage || 9)) / 200,0),[invoiceItems]);
   const total = subtotal + cgst + sgst;
   const paidAmount = localInvoice.amountReceived || 0;
 
@@ -246,8 +229,7 @@ const InvoicePayment = ({ invoice, onClone, onClose }) => {
                 ? "border-b-2 border-blue-600 font-semibold text-blue-700 dark:text-blue-400"
                 : "text-gray-600 dark:text-gray-300"
             }`}
-            type="button"
-          >
+            type="button">
             {tab.label}
           </button>
         ))}
