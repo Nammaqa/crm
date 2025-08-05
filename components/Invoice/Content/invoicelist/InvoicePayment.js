@@ -2,24 +2,11 @@
 
 import React, { useState, useMemo, useEffect, useRef } from "react";
 import { format } from "date-fns";
-import {
-  FiCheckCircle,
-  FiXCircle,
-  FiDollarSign,
-  FiMail,
-  FiDownload,
-  FiPrinter,
-  FiCopy
-} from "react-icons/fi";
+import {FiCheckCircle,FiXCircle,FiDollarSign,FiMail,FiDownload,FiPrinter,FiCopy,FiX,} from "react-icons/fi";
 import ReceivedPaymentsTab from "./invoiceReceivedPaymentsTab";
 import InvoicePDFTab from "./InvoicePDFTab";
-
-// --- PDF Libraries ---
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
-
-// --- Next.js Router ---
-import { useRouter } from "next/navigation";
 
 // --- Status mapping ---
 const statusColors = {
@@ -53,9 +40,8 @@ function numberToWords(n) {
   return n.toLocaleString("en-IN");
 }
 
-const InvoicePayment = ({ invoice, onClone }) => {
-  const router = useRouter();
 
+const InvoicePayment = ({ invoice, onClone, onClose }) => {
   const [activeTab, setActiveTab] = useState("overview");
   const [cloneInProgress, setCloneInProgress] = useState(false);
   const [sending, setSending] = useState(false);
@@ -63,7 +49,6 @@ const InvoicePayment = ({ invoice, onClone }) => {
   const [localInvoice, setLocalInvoice] = useState(invoice);
   const [refreshing, setRefreshing] = useState(false);
 
-  // Ref for overview invoice DOM node
   const overviewRef = useRef();
 
   // Sync prop updates
@@ -89,26 +74,15 @@ const InvoicePayment = ({ invoice, onClone }) => {
 
   // Memoized calculations
   const invoiceItems = localInvoice.Item || [];
-  const subtotal = useMemo(
-    () => invoiceItems.reduce((sum, item) => sum + (item.amount || 0), 0),
-    [invoiceItems]
-  );
-  const cgst = useMemo(
-    () => invoiceItems.reduce((sum, item) => sum + ((item.amount || 0) * (item.GstPercentage || 9)) / 200, 0),
-    [invoiceItems]
-  );
-  const sgst = useMemo(
-    () => invoiceItems.reduce((sum, item) => sum + ((item.amount || 0) * (item.GstPercentage || 9)) / 200, 0),
-    [invoiceItems]
-  );
+  const subtotal = useMemo(() => invoiceItems.reduce((sum, item) => sum + (item.amount || 0), 0),[invoiceItems]);
+  const cgst = useMemo(() =>invoiceItems.reduce((sum, item) => sum + ((item.amount || 0) * (item.GstPercentage || 9)) / 200,0),[invoiceItems]);
+  const sgst = useMemo(() =>invoiceItems.reduce((sum, item) => sum + ((item.amount || 0) * (item.GstPercentage || 9)) / 200,0),[invoiceItems]);
   const total = subtotal + cgst + sgst;
   const paidAmount = localInvoice.amountReceived || 0;
 
-  // --- CHANGE: Force balanceDue to zero if status is Paid ---
-  // Original:
-  // const balanceDue = Math.floor(total - paidAmount);
-  // Updated:
-  const balanceDue = localInvoice.status === "Paid" ? 0 : Math.floor(total - paidAmount);
+  // --- Force balanceDue to zero if status is Paid
+  const balanceDue =
+    localInvoice.status === "Paid" ? 0 : Math.floor(total - paidAmount);
 
   const handleSend = async () => {
     setSending(true);
@@ -145,7 +119,10 @@ const InvoicePayment = ({ invoice, onClone }) => {
       }
     }
     const nodeStyle = window.getComputedStyle(node);
-    if (nodeStyle.backgroundColor && nodeStyle.backgroundColor.startsWith("oklch")) {
+    if (
+      nodeStyle.backgroundColor &&
+      nodeStyle.backgroundColor.startsWith("oklch")
+    ) {
       node.style.backgroundColor = "#fff";
     }
     if (nodeStyle.color && nodeStyle.color.startsWith("oklch")) {
@@ -189,7 +166,11 @@ const InvoicePayment = ({ invoice, onClone }) => {
         <div>
           <h2 className="text-lg font-bold mb-1 flex items-center">
             Invoice Overview
-            <span className={`ml-3 px-2 py-1 rounded-full text-xs font-medium border ${statusColors[localInvoice.status] || ""}`}>
+            <span
+              className={`ml-3 px-2 py-1 rounded-full text-xs font-medium border ${
+                statusColors[localInvoice.status] || ""
+              }`}
+            >
               {statusIcons[localInvoice.status]}
               {localInvoice.status}
             </span>
@@ -225,17 +206,18 @@ const InvoicePayment = ({ invoice, onClone }) => {
               <FiDownload />
             </button>
           )}
-          {/* Cancel Icon Action - always uses router.back() */}
+          {/* Cancel/Close Icon Action */}
           <button
             className="p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 dark:text-gray-400"
-            title="Cancel"
-            onClick={() => router.back()}
+            title="Close"
+            onClick={onClose} 
             type="button"
           >
-            <FiXCircle />
+            <FiX />
           </button>
         </div>
       </div>
+
       {/* Tabs */}
       <div className="flex border-b mb-4">
         {TABS.map((tab) => (
@@ -247,64 +229,101 @@ const InvoicePayment = ({ invoice, onClone }) => {
                 ? "border-b-2 border-blue-600 font-semibold text-blue-700 dark:text-blue-400"
                 : "text-gray-600 dark:text-gray-300"
             }`}
-            type="button"
-          >
+            type="button">
             {tab.label}
           </button>
         ))}
       </div>
       {/* TAB: Overview */}
       {activeTab === "overview" && (
-        <div ref={overviewRef} className="animate-fadeIn p-4 bg-white dark:bg-gray-900" id="overview-content">
+        <div
+          ref={overviewRef}
+          className="animate-fadeIn p-4 bg-white dark:bg-gray-900"
+          id="overview-content"
+        >
           {/* Company & Invoice Info */}
           <div className="flex flex-wrap justify-between mb-6 items-start">
             <div>
-              {/* LOGO IMAGE ADDED HERE */}
               <img
                 src="/Wizzybox Logo.png"
                 alt="WizzyBox Logo"
                 className="h-11 w-auto mb-2"
                 style={{ maxHeight: "48px" }}
               />
-              <div className="text-xl font-bold text-gray-900 dark:text-white mb-1">WizzyBox Private Limited</div>
-              <div className="text-gray-700 dark:text-gray-300 text-sm">Bengaluru Karnataka 560056, India</div>
-              <div className="text-gray-700 dark:text-gray-300 text-sm">GSTIN 29AADCW7843F1ZY</div>
-              <div className="text-gray-700 dark:text-gray-300 text-sm">contactus@wizzybox.com</div>
-              <div className="text-gray-700 dark:text-gray-300 text-sm">www.wizzybox.com</div>
+              <div className="text-xl font-bold text-gray-900 dark:text-white mb-1">
+                WizzyBox Private Limited
+              </div>
+              <div className="text-gray-700 dark:text-gray-300 text-sm">
+                Bengaluru Karnataka 560056, India
+              </div>
+              <div className="text-gray-700 dark:text-gray-300 text-sm">
+                GSTIN 29AADCW7843F1ZY
+              </div>
+              <div className="text-gray-700 dark:text-gray-300 text-sm">
+                contactus@wizzybox.com
+              </div>
+              <div className="text-gray-700 dark:text-gray-300 text-sm">
+                www.wizzybox.com
+              </div>
             </div>
             <div className="text-right">
-              <div className="text-md font-bold text-gray-900 dark:text-white">Invoice #{localInvoice.invoiceCode}</div>
-              <div className="text-gray-600 dark:text-gray-300 text-sm">Status: <span className="font-semibold">{localInvoice.status}</span></div>
-              <div className="text-gray-600 dark:text-gray-300 text-sm">
-                Invoice Date: {localInvoice.invoiceDate ? format(new Date(localInvoice.invoiceDate), "dd/MM/yyyy") : "-"}
+              <div className="text-md font-bold text-gray-900 dark:text-white">
+                Invoice #{localInvoice.invoiceCode}
               </div>
               <div className="text-gray-600 dark:text-gray-300 text-sm">
-                Due Date: {localInvoice.dueDate ? format(new Date(localInvoice.dueDate), "dd/MM/yyyy") : "-"}
+                Status: <span className="font-semibold">{localInvoice.status}</span>
+              </div>
+              <div className="text-gray-600 dark:text-gray-300 text-sm">
+                Invoice Date:{" "}
+                {localInvoice.invoiceDate
+                  ? format(new Date(localInvoice.invoiceDate), "dd/MM/yyyy")
+                  : "-"}
+              </div>
+              <div className="text-gray-600 dark:text-gray-300 text-sm">
+                Due Date:{" "}
+                {localInvoice.dueDate
+                  ? format(new Date(localInvoice.dueDate), "dd/MM/yyyy")
+                  : "-"}
               </div>
             </div>
           </div>
           {/* Billing Info */}
           <div className="flex flex-wrap justify-between mb-6">
             <div>
-              <div className="font-bold text-gray-900 dark:text-white mb-1">Billed To:</div>
-              <div className="text-gray-700 dark:text-gray-300 text-sm">
-                {localInvoice.customer?.displayName || localInvoice.customer?.companyName}
-                {localInvoice.customer?.companyName && localInvoice.customer?.displayName !== localInvoice.customer?.companyName && (
-                  <> ({localInvoice.customer.companyName})</>
-                )}
+              <div className="font-bold text-gray-900 dark:text-white mb-1">
+                Billed To:
               </div>
-              <div className="text-gray-700 dark:text-gray-300 text-sm">{localInvoice.customer?.billingAddress}</div>
               <div className="text-gray-700 dark:text-gray-300 text-sm">
-                {localInvoice.customer?.billingCity} {localInvoice.customer?.billingState} {localInvoice.customer?.billingPinCode}
+                {localInvoice.customer?.displayName ||
+                  localInvoice.customer?.companyName}
+                {localInvoice.customer?.companyName &&
+                  localInvoice.customer?.displayName !==
+                    localInvoice.customer?.companyName && (
+                    <> ({localInvoice.customer.companyName})</>
+                  )}
               </div>
-              <div className="text-gray-700 dark:text-gray-300 text-sm">India</div>
               <div className="text-gray-700 dark:text-gray-300 text-sm">
-                GSTIN {localInvoice.customer?.gstNumber || 'Not provided'}
+                {localInvoice.customer?.billingAddress}
+              </div>
+              <div className="text-gray-700 dark:text-gray-300 text-sm">
+                {localInvoice.customer?.billingCity}{" "}
+                {localInvoice.customer?.billingState}{" "}
+                {localInvoice.customer?.billingPinCode}
+              </div>
+              <div className="text-gray-700 dark:text-gray-300 text-sm">
+                India
+              </div>
+              <div className="text-gray-700 dark:text-gray-300 text-sm">
+                GSTIN {localInvoice.customer?.gstNumber || "Not provided"}
               </div>
             </div>
             <div>
-              <div className="font-bold text-gray-900 dark:text-white mb-1">Place Of Supply:</div>
-              <div className="text-gray-700 dark:text-gray-300 text-sm">Karnataka (29)</div>
+              <div className="font-bold text-gray-900 dark:text-white mb-1">
+                Place Of Supply:
+              </div>
+              <div className="text-gray-700 dark:text-gray-300 text-sm">
+                Karnataka (29)
+              </div>
             </div>
           </div>
           {/* Items Table */}
@@ -313,32 +332,54 @@ const InvoicePayment = ({ invoice, onClone }) => {
               <thead className="bg-gray-100 dark:bg-gray-800">
                 <tr>
                   <th className="py-2 px-2 border text-xs text-center">#</th>
-                  <th className="py-2 px-2 border text-xs text-center">Item & Description</th>
+                  <th className="py-2 px-2 border text-xs text-center">
+                    Item & Description
+                  </th>
                   <th className="py-2 px-2 border text-xs text-center">HSN/SAC</th>
                   <th className="py-2 px-2 border text-xs text-center">Qty</th>
                   <th className="py-2 px-2 border text-xs text-center">Rate</th>
-                  <th className="py-2 px-2 border text-xs text-center">CGST (9%)</th>
-                  <th className="py-2 px-2 border text-xs text-center">SGST (9%)</th>
+                  <th className="py-2 px-2 border text-xs text-center">
+                    CGST (9%)
+                  </th>
+                  <th className="py-2 px-2 border text-xs text-center">
+                    SGST (9%)
+                  </th>
                   <th className="py-2 px-2 border text-xs text-center">Amount</th>
                 </tr>
               </thead>
               <tbody>
                 {invoiceItems.map((item, idx) => {
-                  const itemCgst = ((item.amount || 0) * (item.GstPercentage || 9)) / 200;
-                  const itemSgst = ((item.amount || 0) * (item.GstPercentage || 9)) / 200;
+                  const itemCgst =
+                    ((item.amount || 0) * (item.GstPercentage || 9)) / 200;
+                  const itemSgst =
+                    ((item.amount || 0) * (item.GstPercentage || 9)) / 200;
                   return (
                     <tr key={idx} className="bg-white dark:bg-gray-900">
                       <td className="py-2 px-2 border text-xs">{idx + 1}</td>
                       <td className="py-2 px-2 border text-xs">
                         {item.itemDetails}
-                        {item.description && (<span className="ml-1 text-gray-500">({item.description})</span>)}
+                        {item.description && (
+                          <span className="ml-1 text-gray-500">
+                            ({item.description})
+                          </span>
+                        )}
                       </td>
                       <td className="py-2 px-2 border text-xs">{item.sac}</td>
-                      <td className="py-2 px-2 border text-xs">{item.quantity}</td>
-                      <td className="py-2 px-2 border text-xs">{item.rate?.toLocaleString("en-IN")}</td>
-                      <td className="py-2 px-2 border text-xs">{itemCgst?.toFixed(2)}</td>
-                      <td className="py-2 px-2 border text-xs">{itemSgst?.toFixed(2)}</td>
-                      <td className="py-2 px-2 border text-xs">{item.amount?.toLocaleString("en-IN")}</td>
+                      <td className="py-2 px-2 border text-xs">
+                        {item.quantity}
+                      </td>
+                      <td className="py-2 px-2 border text-xs">
+                        {item.rate?.toLocaleString("en-IN")}
+                      </td>
+                      <td className="py-2 px-2 border text-xs">
+                        {itemCgst?.toFixed(2)}
+                      </td>
+                      <td className="py-2 px-2 border text-xs">
+                        {itemSgst?.toFixed(2)}
+                      </td>
+                      <td className="py-2 px-2 border text-xs">
+                        {item.amount?.toLocaleString("en-IN")}
+                      </td>
                     </tr>
                   );
                 })}
@@ -381,18 +422,30 @@ const InvoicePayment = ({ invoice, onClone }) => {
           <div className="mt-1 text-gray-700 dark:text-gray-300 text-sm italic">
             {localInvoice.customerNotes || "Thanks for your business."}
             {localInvoice.writeofnotes && (
-              <span className="block text-xs mt-2 text-red-600">Written Off: {localInvoice.writeofnotes}</span>
+              <span className="block text-xs mt-2 text-red-600">
+                Written Off: {localInvoice.writeofnotes}
+              </span>
             )}
           </div>
           <div className=" mt-6 pt-4">
-            <div className="font-bold text-md text-gray-900 dark:text-white mb-1">Bank Details</div>
-            <div className="text-gray-700 dark:text-gray-300 text-sm">State Bank of India</div>
-            <div className="text-gray-700 dark:text-gray-300 text-sm">Bank A/C No: 00000042985985552</div>
-            <div className="text-gray-700 dark:text-gray-300 text-sm">IFSC Code: SBIN0016225</div>
+            <div className="font-bold text-md text-gray-900 dark:text-white mb-1">
+              Bank Details
+            </div>
+            <div className="text-gray-700 dark:text-gray-300 text-sm">
+              State Bank of India
+            </div>
+            <div className="text-gray-700 dark:text-gray-300 text-sm">
+              Bank A/C No: 00000042985985552
+            </div>
+            <div className="text-gray-700 dark:text-gray-300 text-sm">
+              IFSC Code: SBIN0016225
+            </div>
           </div>
           <div className=" mt-4 pt-4 flex justify-between">
             <span className="text-xs text-gray-400 dark:text-gray-500"></span>
-            <span className="text-xs text-gray-600 dark:text-gray-300 font-semibold">Authorized Signature</span>
+            <span className="text-xs text-gray-600 dark:text-gray-300 font-semibold">
+              Authorized Signature
+            </span>
           </div>
         </div>
       )}
