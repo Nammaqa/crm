@@ -17,7 +17,7 @@ function stringToColor(str) {
 const TABS = [
   { name: "Overview", icon: <FaUserTie className="mr-2 text-sm" /> },
   { name: "Invoices", icon: <FaFileInvoice className="mr-2 text-sm" /> },
-  { name: "Documents", icon: <FaIdCard className="mr-2 text-sm" /> },
+  // { name: "Documents", icon: <FaIdCard className="mr-2 text-sm" /> },
 ];
 
 const statusColors = {
