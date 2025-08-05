@@ -47,13 +47,13 @@ const TDS_OPTIONS = [
 ];
 
 const paymentTermsOptions = [
-  { value: "NET_15", label: "Net 15" },
-  { value: "NET_30", label: "Net 30" },
-  { value: "NET_45", label: "Net 45" },
-  { value: "NET_60", label: "Net 60" },
-  { value: "DUE_ON_RECEIPT", label: "Due on Receipt" },
-  { value: "DUE_END_OF_MONTH", label: "Due end of the month" },
-  { value: "DUE_END_OF_NEXT_MONTH", label: "Due end of next month" },
+  { value: "NET 15", label: "Net 15" },
+  { value: "NET 30", label: "Net 30" },
+  { value: "NET 45", label: "Net 45" },
+  { value: "NET 60", label: "Net 60" },
+  { value: "DUE ON RECEIPT", label: "Due on Receipt" },
+  { value: "DUE END OF MONTH", label: "Due end of the month" },
+  { value: "DUE END OF NEXT MONTH", label: "Due end of next month" },
 ];
 
 function formatDate(date) {
@@ -304,25 +304,25 @@ export default function InvoiceForm() {
     let dueDate = formData.dueDate;
     if (formData.terms && formData.invoiceDate) {
       switch (formData.terms) {
-        case 'NET_15':
+        case 'NET 15':
           dueDate = addDays(formData.invoiceDate, 15);
           break;
-        case 'NET_30':
+        case 'NET 30':
           dueDate = addDays(formData.invoiceDate, 30);
           break;
-        case 'NET_45':
+        case 'NET 45':
           dueDate = addDays(formData.invoiceDate, 45);
           break;
-        case 'NET_60':
+        case 'NET 60':
           dueDate = addDays(formData.invoiceDate, 60);
           break;
-        case 'DUE_ON_RECEIPT':
+        case 'DUE ON RECEIPT':
           dueDate = formData.invoiceDate;
           break;
-        case 'DUE_END_OF_MONTH':
+        case 'DUE END OF MONTH':
           dueDate = getLastDayOfMonth(formData.invoiceDate);
           break;
-        case 'DUE_END_OF_NEXT_MONTH':
+        case 'DUE END OF NEXT MONTH':
           dueDate = getLastDayOfNextMonth(formData.invoiceDate);
           break;
         default:
@@ -682,10 +682,10 @@ export default function InvoiceForm() {
     }
     const summaryStartY = 40;
     const summaryData = [
-      ['Sub Total', `${calculateSubtotal().toFixed(2)}`],
+      ['Sub Total'`${calculateSubtotal().toFixed(2)}`],
       [`CGST${cgstRate.toFixed(0)} (${cgstRate.toFixed(0)}%)`, `${calculateCGST().toFixed(2)}`],
       [`SGST${sgstRate.toFixed(0)} (${sgstRate.toFixed(0)}%)`, `${calculateSGST().toFixed(2)}`],
-      ['Total', `₹${calculateTotal().toFixed(2)}`],
+      ['Total'`₹${calculateTotal().toFixed(2)}`],
       ['Balance Due', `₹${calculateTotal().toFixed(2)}`]
     ];
     if (formData.tdsTcsType === 'TDS' && formData.tdsRate) {

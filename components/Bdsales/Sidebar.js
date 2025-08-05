@@ -15,18 +15,7 @@ import AgreementList from "@components/Admin/Content/AgreementList";
 import RequirementList from "@components/Admin/Content/RequirementList";
 import Shorlisted from "@components/Bdsales/Content/Shorlisted";
 import Reminder from "@components/Bdsales/Content/Reminder";
-
-
-import {
-  FaChartPie,
-  FaHandshake,
-  FaUsers,
-  FaFileContract,
-  FaClipboardList,
-  FaShoppingCart,
-  FaListAlt,
-  FaBell,
-} from "react-icons/fa";
+import {FaChartPie,FaHandshake,FaUsers,FaFileContract,FaClipboardList,FaShoppingCart,FaListAlt,FaBell,} from "react-icons/fa";
 
 // Sidebar sections with dynamic content
 const sections = [
@@ -37,11 +26,9 @@ const sections = [
   { id: "sow", label: "Statement of Work", icon: <FaClipboardList size={20} />, content: <Sow /> },
   { id: "po", label: "Purchase Order", icon: <FaShoppingCart size={20} />, content: <Po /> },
   { id: "requirement-list", label: "Requirement List", icon: <FaListAlt size={20} />, content: <RequirementList /> },
-  // Agreement List is a navigation link, not inline content
-  { id: "agreement-list", label: "Agreement List", icon: <FaClipboardList size={20} />, content: <AgreementList /> }, // <-- NEW SECTION
-  { id: "shorlisted", label: "Shorlisted", icon: <FaUsers size={20} />, content: <Shorlisted /> }, // <-- Add this line
-  { id: "reminder", label: "Reminder", icon: <FaBell  size={20} />, content: <Reminder /> }, // <-- Add this line
-
+  { id: "agreement-list", label: "Agreement List", icon: <FaClipboardList size={20} />, content: <AgreementList /> },
+  { id: "shorlisted", label: "Shorlisted", icon: <FaUsers size={20} />, content: <Shorlisted /> },
+  { id: "reminder", label: "Reminder", icon: <FaBell size={20} />, content: <Reminder /> },
 ];
 
 export default function Bdsles() {
@@ -69,46 +56,53 @@ export default function Bdsles() {
   return (
     <div className="flex h-screen w-full overflow-hidden">
       {/* Static Sidebar */}
-      <div className="bg-gray-900 text-white h-full w-64 p-5 pt-8 flex flex-col relative">
-        {/* Logo Section */}
-        <div className="flex items-center gap-x-4 mb-6">
-          <Image
-            src="/Wizzybox Logo.png"
-            alt="Company Logo"
-            width={150}
-            height={50}
-            className="transition-all duration-300"
-          />
-        </div>
+      <div className="bg-gray-900 text-white h-full w-64 flex flex-col relative">
+        {/* Sidebar content with scrollbar */}
+        <div className="flex flex-col h-full">
+          {/* Logo Section */}
+          <div className="flex items-center gap-x-4 mb-6 p-5 pt-8">
+            <Image
+              src="/Wizzybox Logo.png"
+              alt="Company Logo"
+              width={150}
+              height={50}
+              className="transition-all duration-300"
+            />
+          </div>
 
-        {/* Sidebar Menu Items */}
-        <ul className="flex flex-col space-y-2 flex-1">
-          {sections.map((section) => (
-            <li
-              key={section.id}
-              className={`flex items-center p-2 rounded-md cursor-pointer text-sm transition-all hover:bg-gray-700 ${selectedSection === section.id && !section.isLink ? "bg-gray-700" : ""}`}
-              onClick={() => handleSectionClick(section)}
-              tabIndex={0}
+          {/* Menu Items in a scrollable container */}
+          <div className="flex-1 overflow-y-auto px-5">
+            <ul className="flex flex-col space-y-2">
+              {sections.map((section) => (
+                <li
+                  key={section.id}
+                  className={`flex items-center p-2 rounded-md cursor-pointer text-sm transition-all hover:bg-gray-700 ${selectedSection === section.id && !section.isLink ? "bg-gray-700" : ""}`}
+                  onClick={() => handleSectionClick(section)}
+                  tabIndex={0}
+                >
+                  <div className="w-8 text-center">{section.icon}</div>
+                  <span className="ml-2">{section.label}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Logout Button at the Bottom */}
+          <div className="mt-auto p-5 pt-0">
+            <button
+              onClick={handleLogout}
+              className="w-full flex items-center justify-center gap-2 p-2 rounded-md bg-red-600 hover:bg-red-700 text-white transition-all text-sm pl-8 pr-4"
             >
-              <div className="w-8 text-center">{section.icon}</div>
-              <span className="ml-2">{section.label}</span>
-            </li>
-          ))}
-        </ul>
-
-        {/* Logout Button at the Bottom */}
-        <button
-          onClick={handleLogout}
-          className="absolute bottom-6 left-0 w-full flex items-center justify-center gap-2 p-2 rounded-md bg-red-600 hover:bg-red-700 text-white transition-all text-sm pl-8 pr-4"
-        >
-          <FaSignOutAlt size={18} />
-          <span>Logout</span>
-        </button>
+              <FaSignOutAlt size={18} />
+              <span>Logout</span>
+            </button>
+          </div>
+        </div>
       </div>
 
       {/* Main Content Area */}
       <main className="max-h-screen flex-1 flex justify-center items-start p-6 overflow-y-scroll scrollbar-hide">
-        <div className="w-full max-w-6xl pt-6 ">
+        <div className="w-full max-w-6xl pt-6">
           {/* Only render content for non-link sections */}
           {sections.find((s) => s.id === selectedSection && !s.isLink)?.content}
         </div>
