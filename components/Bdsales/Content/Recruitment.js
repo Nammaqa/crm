@@ -12,7 +12,7 @@ function RecruitmentForm() {
     requirementName: "",
     companyName: "",
     jobDescription: "",
-    jdImage: null, 
+    jdImage: null,
     experience: "",
     noticePeriod: "",
     positions: "",
@@ -24,22 +24,29 @@ function RecruitmentForm() {
     budget: "",
   };
 
+  // Remove scrollbars from body when this component mounts
+  useEffect(() => {
+    const originalStyle = window.getComputedStyle(document.body).overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = originalStyle; // Restore scrollbar on unmount
+    };
+  }, []);
+
   const [formData, setFormData] = useState(initialFormData);
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
   const [jdImagePreview, setJdImagePreview] = useState(null);
 
-  // Validation functions
+  // Validation functions...
   const isAlpha = (str) => /^[A-Za-z\s]+$/.test(str);
   const isAlphaOrComma = (str) => /^[A-Za-z\s,]+$/.test(str);
   const isNumeric = (str) => /^\d+$/.test(str);
-  // Experience: up to 2 digits before decimal, optional 1 digit after decimal
   const isExperienceValid = (str) => /^(\d{1,2}(\.\d{0,1})?)?$/.test(str);
 
   const validate = () => {
     const newErrors = {};
 
-    // Alphabetic validations
     if (!formData.requirementName.trim()) {
       newErrors.requirementName = "Requirement Name is required.";
     } else if (!isAlpha(formData.requirementName)) {
@@ -70,7 +77,6 @@ function RecruitmentForm() {
       newErrors.secondarySkills = "Only alphabets, commas, and spaces allowed.";
     }
 
-    // Numeric validations
     if (!formData.experience.toString().trim()) {
       newErrors.experience = "Experience is required.";
     } else if (!isExperienceValid(formData.experience)) {
@@ -95,7 +101,6 @@ function RecruitmentForm() {
       newErrors.budget = "Only whole numbers allowed.";
     }
 
-    // Required radio/select fields
     if (!formData.requirementType) {
       newErrors.requirementType = "Recruitment Type is required.";
     }
@@ -106,16 +111,12 @@ function RecruitmentForm() {
       newErrors.closePositions = "Position Type is required.";
     }
 
-    // JD Image is optional, so no validation
-
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  // Restrict experience input at the keyboard level
   const handleExperienceChange = (e) => {
     const { value } = e.target;
-    // Allow only valid pattern or empty string
     if (value === "" || isExperienceValid(value)) {
       setFormData((prev) => ({
         ...prev,
@@ -135,11 +136,7 @@ function RecruitmentForm() {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    // Prevent decimals for integer fields except experience
-    if (
-      ["noticePeriod", "positions", "budget"].includes(name) &&
-      value.includes(".")
-    ) {
+    if (["noticePeriod", "positions", "budget"].includes(name) && value.includes(".")) {
       return;
     }
     setFormData((prev) => ({
@@ -152,7 +149,6 @@ function RecruitmentForm() {
     }));
   };
 
-  // Handle JD Image change
   const handleJdImageChange = (e) => {
     const file = e.target.files && e.target.files[0];
     if (file) {
@@ -170,7 +166,6 @@ function RecruitmentForm() {
     }
   };
 
-  // Remove JD Image
   const handleRemoveJdImage = () => {
     setFormData((prev) => ({
       ...prev,
@@ -193,7 +188,6 @@ function RecruitmentForm() {
               setLoading(true);
 
               try {
-                // Use FormData if jdImage is present, else JSON
                 let body;
                 let headers;
                 if (formData.jdImage) {
@@ -205,7 +199,6 @@ function RecruitmentForm() {
                       body.append(key, value);
                     }
                   });
-                  // Don't set Content-Type for FormData
                   headers = {};
                 } else {
                   body = JSON.stringify({
@@ -228,9 +221,7 @@ function RecruitmentForm() {
 
                 if (res.ok) {
                   alert("Requirement submitted successfully!");
-                  // Log form data to console
                   console.log("Submitted Recruitment Data:", formData);
-                  // Clear form fields
                   setFormData(initialFormData);
                   setErrors({});
                   setJdImagePreview(null);
@@ -246,7 +237,9 @@ function RecruitmentForm() {
             }}
             className="space-y-6"
           >
-            {/* Alphabetic fields */}
+            {/* The form fields remain unchanged, omitted here for brevity */}
+
+            {/* requirementName */}
             <div className="flex flex-col mb-5">
               <Label htmlFor="requirementName" className="mb-2">
                 Requirement Name: <span className="text-red-500">*</span>
@@ -264,6 +257,8 @@ function RecruitmentForm() {
                 <span className="text-red-600 text-xs mt-1">{errors.requirementName}</span>
               )}
             </div>
+
+            {/* companyName */}
             <div className="flex flex-col mb-5">
               <Label htmlFor="companyName" className="mb-2">
                 Company Name: <span className="text-red-500">*</span>
@@ -281,6 +276,8 @@ function RecruitmentForm() {
                 <span className="text-red-600 text-xs mt-1">{errors.companyName}</span>
               )}
             </div>
+
+            {/* jobDescription */}
             <div className="flex flex-col mb-5">
               <Label htmlFor="jobDescription" className="mb-2">
                 Job Description: <span className="text-red-500">*</span>
@@ -298,7 +295,8 @@ function RecruitmentForm() {
                 <span className="text-red-600 text-xs mt-1">{errors.jobDescription}</span>
               )}
             </div>
-            {/* JD Image Upload (Optional) */}
+
+            {/* JD Image Upload */}
             <div className="flex flex-col mb-5">
               <Label htmlFor="jdImage" className="mb-2">
                 JD Image / Document (optional):
@@ -321,7 +319,7 @@ function RecruitmentForm() {
                       className="h-24 w-auto rounded border"
                     />
                   ) : (
-                   <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2">
                       <span className="text-sm font-medium">
                         {formData.jdImage?.name || "No file selected"}
                       </span>
@@ -330,13 +328,13 @@ function RecruitmentForm() {
                         <span className="text-xs text-gray-500">(PDF)</span>
                       )}
 
-                      {["application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"].includes(formData.jdImage?.type) && (
-                        <span className="text-xs text-gray-500">(Word)</span>
-                      )}
+                      {["application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"].includes(
+                        formData.jdImage?.type
+                      ) && <span className="text-xs text-gray-500">(Word)</span>}
 
-                      {!["application/pdf", "application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"].includes(formData.jdImage?.type) && (
-                        <span className="text-xs text-gray-400">(Unsupported file type)</span>
-                      )}
+                      {!["application/pdf", "application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"].includes(
+                        formData.jdImage?.type
+                      ) && <span className="text-xs text-gray-400">(Unsupported file type)</span>}
                     </div>
                   )}
                   <Button
@@ -350,8 +348,8 @@ function RecruitmentForm() {
                 </div>
               )}
             </div>
-            {/* Primary Skills, Secondary Skills, Experience, Notice Period, Positions, etc. */}
-            {/* Continue as before */}
+
+            {/* Primary Skills */}
             <div className="flex flex-col mb-5">
               <Label htmlFor="primarySkills" className="mb-2">
                 Primary Skills: <span className="text-red-500">*</span>
@@ -369,6 +367,8 @@ function RecruitmentForm() {
                 <span className="text-red-600 text-xs mt-1">{errors.primarySkills}</span>
               )}
             </div>
+
+            {/* Secondary Skills */}
             <div className="flex flex-col mb-5">
               <Label htmlFor="secondarySkills" className="mb-2">
                 Secondary Skills: <span className="text-red-500">*</span>
@@ -386,6 +386,8 @@ function RecruitmentForm() {
                 <span className="text-red-600 text-xs mt-1">{errors.secondarySkills}</span>
               )}
             </div>
+
+            {/* Experience */}
             <div className="flex flex-col mb-5">
               <Label htmlFor="experience" className="mb-2">
                 Experience (years): <span className="text-red-500">*</span>
@@ -405,6 +407,8 @@ function RecruitmentForm() {
                 <span className="text-red-600 text-xs mt-1">{errors.experience}</span>
               )}
             </div>
+
+            {/* Notice Period */}
             <div className="flex flex-col mb-5">
               <Label htmlFor="noticePeriod" className="mb-2">
                 Notice Period (days): <span className="text-red-500">*</span>
@@ -423,6 +427,8 @@ function RecruitmentForm() {
                 <span className="text-red-600 text-xs mt-1">{errors.noticePeriod}</span>
               )}
             </div>
+
+            {/* Positions */}
             <div className="flex flex-col mb-5">
               <Label htmlFor="positions" className="mb-2">
                 Number of Positions: <span className="text-red-500">*</span>
@@ -441,7 +447,8 @@ function RecruitmentForm() {
                 <span className="text-red-600 text-xs mt-1">{errors.positions}</span>
               )}
             </div>
-            {/* Requirement Type */} 
+
+            {/* Recruitment Type */}
             <div className="flex flex-col mb-5">
               <Label className="mb-2">
                 Recruitment Type: <span className="text-red-500">*</span>
@@ -451,7 +458,7 @@ function RecruitmentForm() {
                 onValueChange={(value) =>
                   setFormData((prev) => ({ ...prev, requirementType: value }))
                 }
-                className="flex flex-row gap-6"
+                className="flex flex-row gap-6 flex-wrap"
               >
                 {["FullTime", "C2H", "Contract"].map((type) => (
                   <div key={type} className="flex items-center space-x-2">
@@ -464,6 +471,7 @@ function RecruitmentForm() {
                 <span className="text-red-600 text-xs mt-1">{errors.requirementType}</span>
               )}
             </div>
+
             {/* Work Location */}
             <div className="flex flex-col mb-5">
               <Label className="mb-2">
@@ -474,7 +482,7 @@ function RecruitmentForm() {
                 onValueChange={(value) =>
                   setFormData((prev) => ({ ...prev, workLocation: value }))
                 }
-                className="flex flex-row gap-6"
+                className="flex flex-row gap-6 flex-wrap"
               >
                 {["WFO", "WFC", "Hybrid", "Remote"].map((loc) => (
                   <div key={loc} className="flex items-center space-x-2">
@@ -487,7 +495,8 @@ function RecruitmentForm() {
                 <span className="text-red-600 text-xs mt-1">{errors.workLocation}</span>
               )}
             </div>
-            {/* Position Type (New / Replacement) as Radio Buttons */}
+
+            {/* Position Type */}
             <div className="flex flex-col mb-5">
               <Label className="mb-2">
                 Position Type: <span className="text-red-500">*</span>
@@ -497,7 +506,7 @@ function RecruitmentForm() {
                 onValueChange={(value) =>
                   setFormData((prev) => ({ ...prev, closePositions: value }))
                 }
-                className="flex flex-row gap-8"
+                className="flex flex-row gap-8 flex-wrap"
               >
                 {["New", "Replacement"].map((option) => (
                   <div key={option} className="flex items-center space-x-2">
@@ -510,6 +519,7 @@ function RecruitmentForm() {
                 <span className="text-red-600 text-xs mt-1">{errors.closePositions}</span>
               )}
             </div>
+
             {/* Budget */}
             <div className="flex flex-col mb-5">
               <Label htmlFor="budget" className="mb-2">
@@ -530,7 +540,12 @@ function RecruitmentForm() {
                 <span className="text-red-600 text-xs mt-1">{errors.budget}</span>
               )}
             </div>
-            <Button type="submit" className="w-full flex items-center justify-center" disabled={loading}>
+
+            <Button
+              type="submit"
+              className="w-full flex items-center justify-center"
+              disabled={loading}
+            >
               {loading && (
                 <svg
                   className="animate-spin h-5 w-5 mr-2 text-white"

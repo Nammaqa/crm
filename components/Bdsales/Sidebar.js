@@ -57,7 +57,7 @@ export default function Bdsles() {
     <div className="flex h-screen w-full overflow-hidden">
       {/* Static Sidebar */}
       <div className="bg-gray-900 text-white h-full w-64 flex flex-col relative">
-        {/* Sidebar content with scrollbar */}
+        {/* Sidebar content */}
         <div className="flex flex-col h-full">
           {/* Logo Section */}
           <div className="flex items-center gap-x-4 mb-6 p-5 pt-8">
@@ -70,8 +70,8 @@ export default function Bdsles() {
             />
           </div>
 
-          {/* Menu Items in a scrollable container */}
-          <div className="flex-1 overflow-y-auto px-5">
+          {/* Menu Items container without overflow scroll */}
+          <div className="flex-1 px-5">
             <ul className="flex flex-col space-y-2">
               {sections.map((section) => (
                 <li
@@ -103,7 +103,7 @@ export default function Bdsles() {
       {/* Main Content Area */}
       <main className="max-h-screen flex-1 flex justify-center items-start p-6 overflow-y-scroll scrollbar-hide">
         <div className="w-full max-w-6xl pt-6">
-          {/* Only render content for non-link sections */}
+          {/* Render content for selected section */}
           {sections.find((s) => s.id === selectedSection && !s.isLink)?.content}
         </div>
       </main>

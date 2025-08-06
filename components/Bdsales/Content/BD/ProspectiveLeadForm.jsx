@@ -265,7 +265,14 @@ export default function ProspectiveLeadForm({ formData, setFormData, handleMoveT
   };
 
   return (
-    <div className="mb-4 p-5 border rounded-md shadow-md space-y-4">
+    // Add overflow-hidden to prevent scroll/slide bar in this area
+    <div className="mb-4 p-5 border rounded-md shadow-md space-y-4 overflow-hidden">
+      {/* 
+        If you want to remove scroll bars from the entire page, 
+        add this to your global CSS (e.g., globals.css):
+
+        html, body { overflow: hidden; }
+      */}
       <div className="space-y-1">
         <Label>Company Name</Label>
         <Input

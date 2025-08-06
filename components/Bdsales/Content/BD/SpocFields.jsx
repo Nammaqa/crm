@@ -1,4 +1,3 @@
-
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
@@ -77,7 +76,7 @@ export default function SpocFields({ spocs, setSpocs, max = 5, errors = [] }) {
   };
 
   return (
-    <div>
+    <div className="overflow-hidden">
       {spocs.map((spoc, index) => (
         <div key={spoc.id} className="bg-white p-4 rounded-md shadow-sm mt-2 space-y-2">
           <Input
