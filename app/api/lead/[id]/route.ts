@@ -102,6 +102,9 @@ export async function PUT(
         industry: safeIndustry ?? existingLead.industry,
         percentage: body.percentage ?? existingLead.percentage,
         remarks: body.remarks ?? existingLead.remarks,
+        companyType: body.companyType ?? existingLead.companyType, // <-- FIXED: add this line
+        technologyOther: body.technologyOther ?? existingLead.technologyOther,
+        // industryOther: body.industryOther ?? existingLead.industryOther,
         updatedAt: new Date(),
         ...(body.spocs && {
           spocs: {
@@ -175,6 +178,7 @@ export async function PATCH(
       where: { id: leadId },
       data: {
         ...body,
+        companyType: body.companyType, // <-- FIXED: allow PATCH to update companyType
         updatedAt: new Date(),
       },
       include: { spocs: true },
@@ -191,4 +195,3 @@ export async function PATCH(
 export async function OPTIONS() {
   return withCors(new NextResponse(null, { status: 200 }));
 }
-

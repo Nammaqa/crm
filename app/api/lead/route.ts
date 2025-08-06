@@ -203,7 +203,9 @@ export async function POST(req: NextRequest) {
         industry: indMap.enumValue as Industry,
         percentage: percentage ? Number(percentage) : null,
         remarks,
+        companyType, // <-- FIXED: add this line
         technologyOther: technologyOther || null,
+        // industryOther: industryOther || null,
         spocs: {
           create: spocArray.map((spoc: SpocInput) => ({
             name: spoc.name,

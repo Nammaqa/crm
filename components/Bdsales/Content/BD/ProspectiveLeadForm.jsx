@@ -120,6 +120,8 @@ export default function ProspectiveLeadForm({ formData, setFormData, handleMoveT
     spocs: [],
     technologyOther: "",
     industryOther: "",
+    businessType: "",
+    companyType: "",
   });
 
   // Track if "Other" is selected for Technology/Industry
@@ -144,6 +146,8 @@ export default function ProspectiveLeadForm({ formData, setFormData, handleMoveT
       spocs: [],
       technologyOther: "",
       industryOther: "",
+      businessType: "",
+      companyType: "",
     };
 
     if (!formData.companyName || !isAlpha(formData.companyName)) {
@@ -158,6 +162,18 @@ export default function ProspectiveLeadForm({ formData, setFormData, handleMoveT
 
     if (!formData.companyID || !isAlphanumeric(formData.companyID)) {
       newErrors.companyID = "Company ID must be alphanumeric (auto-generated).";
+      valid = false;
+    }
+
+    // --- Business Type required ---
+    if (!formData.businessType || formData.businessType.trim() === "") {
+      newErrors.businessType = "Business Type is required.";
+      valid = false;
+    }
+
+    // --- Company Type required ---
+    if (!formData.companyType || formData.companyType.trim() === "") {
+      newErrors.companyType = "Company Type is required.";
       valid = false;
     }
 
@@ -264,15 +280,16 @@ export default function ProspectiveLeadForm({ formData, setFormData, handleMoveT
     }));
   };
 
-  return (
-    // Add overflow-hidden to prevent scroll/slide bar in this area
-    <div className="mb-4 p-5 border rounded-md shadow-md space-y-4 overflow-hidden">
-      {/* 
-        If you want to remove scroll bars from the entire page, 
-        add this to your global CSS (e.g., globals.css):
+  // Business Type input handler (now as a dropdown for consistency)
+  const handleBusinessTypeChange = (value) => {
+    setFormData((prev) => ({
+      ...prev,
+      businessType: value,
+    }));
+  };
 
-        html, body { overflow: hidden; }
-      */}
+  return (
+    <div className="mb-4 p-5 border rounded-md shadow-md space-y-4 overflow-hidden">
       <div className="space-y-1">
         <Label>Company Name</Label>
         <Input
@@ -326,13 +343,26 @@ export default function ProspectiveLeadForm({ formData, setFormData, handleMoveT
         )}
       </div>
 
+      {/* Business Type Dropdown */}
       <div className="space-y-1">
         <Label>Business Type</Label>
-        <Input
-          placeholder="e.g. Staffing, Permanent"
-          value={formData.dealType}
-          onChange={(e) => setFormData((prev) => ({ ...prev, dealType: e.target.value }))}
-        />
+        <Select
+          value={formData.businessType || ""}
+          onValueChange={handleBusinessTypeChange}
+        >
+          <SelectTrigger className="w-full">
+            <SelectValue placeholder="Select Business Type" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="Staffing">Staffing</SelectItem>
+            <SelectItem value="Permanent">Permanent</SelectItem>
+            <SelectItem value="Managed">Managed</SelectItem>
+            <SelectItem value="Crowd Testing">Crowd Testing</SelectItem>
+          </SelectContent>
+        </Select>
+        {errors.businessType && (
+          <span className="text-red-500 text-xs">{errors.businessType}</span>
+        )}
       </div>
 
       <div className="space-y-1">
@@ -364,6 +394,9 @@ export default function ProspectiveLeadForm({ formData, setFormData, handleMoveT
             ))}
           </SelectContent>
         </Select>
+        {errors.companyType && (
+          <span className="text-red-500 text-xs">{errors.companyType}</span>
+        )}
       </div>
 
       <h3 className="text-lg font-semibold">Primary SPOC</h3>
