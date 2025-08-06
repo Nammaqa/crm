@@ -55,7 +55,7 @@ export default function QualifiedLeadForm({ formData, setFormData, handleMoveToD
   };
 
   return (
-    <div className="mb-4 p-5 border rounded-md shadow-md space-y-4">
+    <div className="mb-4 p-5 border rounded-md shadow-md space-y-4 overflow-hidden">
       <h2 className="text-xl font-bold mb-2">Qualified Lead</h2>
       <Label htmlFor="companyName">Company Name :</Label>
       <Input
@@ -113,7 +113,7 @@ export default function QualifiedLeadForm({ formData, setFormData, handleMoveToD
             <div key={value} className="flex items-center space-x-2">
               <RadioGroupItem
                 value={String(value)}
-                id={`percentage-${value}`}  // Fixed string interpolation
+                id={`percentage-${value}`}
                 className="border-black"
               />
               <Label htmlFor={`percentage-${value}`}>{value}%</Label>

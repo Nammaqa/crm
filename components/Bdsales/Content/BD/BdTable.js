@@ -14,9 +14,9 @@ export default function BdTable({ leads = [], onLeadClick, activeTab, onTabChang
   const filteredLeads = leads.filter((lead) => {
     if (activeTab === "Prospective") return lead.leadType === "prospective" && lead.status === "prospective";
     if (activeTab === "new-lead") return lead.leadType === "new" && lead.status === "newlead";
-     if (activeTab === "existing-deal") return lead.leadType === "existing" && lead.status === "deal";
-  if (activeTab === "deal") return lead.leadType === "existing" && lead.status === "deal";
-  return false;
+    if (activeTab === "existing-deal") return lead.leadType === "existing" && lead.status === "deal";
+    if (activeTab === "deal") return lead.leadType === "existing" && lead.status === "deal";
+    return false;
   });
 
   const tabs = [
@@ -27,7 +27,7 @@ export default function BdTable({ leads = [], onLeadClick, activeTab, onTabChang
   ];
 
   return (
-    <Card className="p-6 my-12">
+    <Card className="p-6 my-12 overflow-hidden">
       {/* Tabs */}
       <div className="flex space-x-4 mb-6">
         {tabs.map((tab) => (
@@ -46,7 +46,8 @@ export default function BdTable({ leads = [], onLeadClick, activeTab, onTabChang
       </div>
 
       {/* Table Data */}
-      <div className="overflow-x-auto border rounded-md">
+      {/* No overflow-x-auto, and Card has overflow-hidden */}
+      <div className="border rounded-md">
         {filteredLeads.length > 0 ? (
           <table className="min-w-full table-auto">
             <thead>

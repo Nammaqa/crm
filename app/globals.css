@@ -176,3 +176,12 @@
 .invoice-status-cancelled {
   @apply bg-red-100 text-red-800;
 }
+
+/* Hide scrollbars but keep scroll functionality */
+::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
+}
+body, * {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}

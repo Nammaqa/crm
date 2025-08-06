@@ -51,52 +51,52 @@ export default function BdSales({ isSidebarOpen }) {
 
   // Fetch initial data
   useEffect(() => {
-  const fetchInitialData = async () => {
-    try {
-      // Fetch logged-in user
-      const baseUrl = process.env.NEXT_PUBLIC_BASEAPIURL;
-      const userRes = await fetch(`${baseUrl}/api/users/me`, { 
-        method: "GET",
-        credentials: "include"
-      });
-      const userData = await userRes.json();
+    const fetchInitialData = async () => {
+      try {
+        // Fetch logged-in user
+        const baseUrl = process.env.NEXT_PUBLIC_BASEAPIURL;
+        const userRes = await fetch(`${baseUrl}/api/users/me`, { 
+          method: "GET",
+          credentials: "include"
+        });
+        const userData = await userRes.json();
 
-      if (!userRes.ok) {
-        throw new Error(userData.message || 'Failed to fetch user data');
+        if (!userRes.ok) {
+          throw new Error(userData.message || 'Failed to fetch user data');
+        }
+        
+        const username = userData?.data?.userName || userData?.userName;
+        if (!username) {
+          throw new Error("Failed to fetch user data");
+        }
+
+        const loggedInSalesName = userData.data.userName;
+        setFormData((prev) => ({ ...prev, salesName: loggedInSalesName }));
+
+        // Fetch all leads
+        const leadRes = await fetch("/api/lead");
+        const leadData = await leadRes.json();
+
+        if (!leadRes.ok) {
+          console.error("Failed to fetch leads:", leadData.error);
+          return;
+        }
+
+        // ✅ Filter only those leads where salesName === loggedInSalesName
+        const filteredLeads = leadData.filter(
+          (lead) => lead.salesName?.toLowerCase() === loggedInSalesName.toLowerCase()
+        );
+
+        setLeads(filteredLeads);
+      } catch (err) {
+        console.error("Initialization error:", err);
       }
-      
-      const username = userData?.data?.userName || userData?.userName;
-      if (!username) {
-        throw new Error("Failed to fetch user data");
-      }
+    };
 
-      const loggedInSalesName = userData.data.userName;
-      setFormData((prev) => ({ ...prev, salesName: loggedInSalesName }));
+    fetchInitialData();
+  }, []); 
 
-      // Fetch all leads
-      const leadRes = await fetch("/api/lead");
-      const leadData = await leadRes.json();
-
-      if (!leadRes.ok) {
-        console.error("Failed to fetch leads:", leadData.error);
-        return;
-      }
-
-      // ✅ Filter only those leads where salesName === loggedInSalesName
-      const filteredLeads = leadData.filter(
-        (lead) => lead.salesName?.toLowerCase() === loggedInSalesName.toLowerCase()
-      );
-
-      setLeads(filteredLeads);
-    } catch (err) {
-      console.error("Initialization error:", err);
-    }
-  };
-
-  fetchInitialData();
-}, []); 
-
-// When user clicks a row in the table, load that lead into the form
+  // When user clicks a row in the table, load that lead into the form
   const handleLeadClick = (lead) => {
     setFormData({
       id: lead.id || "",
@@ -339,8 +339,12 @@ export default function BdSales({ isSidebarOpen }) {
     }
   };
 
+  // Add overflow-hidden and minHeight: 100vh to remove scroll/slide bar from the page
   return (
-    <div className={`transition-all duration-300 ${isSidebarOpen ? "lg:pl-64" : "lg:pl-20"} pl-0 flex-1 w-full p-0`}>
+    <div
+      className={`transition-all duration-300 ${isSidebarOpen ? "lg:pl-64" : "lg:pl-20"} pl-0 flex-1 w-full p-0 overflow-hidden`}
+      style={{ minHeight: "100vh" }}
+    >
       <Card className="mx-auto">
         <CardHeader>
           <CardTitle>BD/Sales Details</CardTitle>

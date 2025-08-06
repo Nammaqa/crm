@@ -4,7 +4,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 
 export default function LeadTypeSelector({ value, onChange }) {
     return (
-        <div>
+        <div className="overflow-hidden">
             <Label>Lead:</Label>
             <Select value={value} onValueChange={onChange}>
                 <SelectTrigger className="w-full">

@@ -1,0 +1,9 @@
+/* Hide scrollbars in all browsers while keeping scroll functionality */
+::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
+}
+
+body, * {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}

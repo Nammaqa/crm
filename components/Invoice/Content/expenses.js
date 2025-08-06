@@ -10,7 +10,6 @@ import {
   DialogContentText,
   DialogTitle,
   IconButton,
-  InputAdornment,
   LinearProgress,
   Snackbar,
   Table,
@@ -32,7 +31,7 @@ import {
   MenuItem,
   Select,
   FormControl,
-  InputLabel
+  InputLabel,
 } from '@mui/material';
 import {
   Add,
@@ -48,23 +47,25 @@ import { format, parseISO } from 'date-fns';
 // Custom styled components
 const MainContainer = styled(Box)(({ theme }) => ({
   maxWidth: 1600,
-  margin: '32px auto',
-  padding: theme.spacing(4),
+  margin: '24px auto',
+  padding: theme.spacing(2),
+  fontSize: '0.875rem', // 14px everywhere
   [theme.breakpoints.down('md')]: {
-    padding: theme.spacing(2),
+    padding: theme.spacing(1),
+    fontSize: '0.8rem', // 12-13px
   },
 }));
 
 const StyledCard = styled(Card)(({ theme }) => ({
-  marginBottom: theme.spacing(4),
+  marginBottom: theme.spacing(3),
   borderRadius: theme.shape.borderRadius * 2,
-  boxShadow: theme.shadows[2],
+  boxShadow: theme.shadows[1],
   background: theme.palette.background.paper,
   border: `1px solid ${theme.palette.divider}`,
 }));
 
 const ShadowedPaper = styled(Paper)(({ theme }) => ({
-  marginTop: theme.spacing(3),
+  marginTop: theme.spacing(2),
   borderRadius: theme.shape.borderRadius * 2,
   boxShadow: theme.shadows[1],
   overflow: 'hidden',
@@ -73,18 +74,22 @@ const ShadowedPaper = styled(Paper)(({ theme }) => ({
 const AmountCell = styled(TableCell)(({ theme }) => ({
   fontWeight: 700,
   color: theme.palette.success.dark,
+  fontSize: '0.875rem',
+  padding: '4px 8px',
 }));
 
 const ActionCell = styled(TableCell)(({ theme }) => ({
-  minWidth: 120,
+  minWidth: 90,
+  padding: '4px 8px',
 }));
 
 const FilePreviewLink = styled('a')(({ theme }) => ({
   display: 'flex',
   alignItems: 'center',
-  gap: theme.spacing(1),
+  gap: theme.spacing(0.5),
   textDecoration: 'none',
   color: theme.palette.secondary.main,
+  fontSize: '0.85em',
   '&:hover': {
     textDecoration: 'underline',
   },
@@ -151,11 +156,8 @@ export default function ExpensesPremium() {
     }
   };
 
-
-
   const handleSubmit = async (e) => {
     e.preventDefault();
-    // Client-side validation
     const errors = {};
     if (!form.date) errors.date = 'Date is required.';
     if (!form.item) errors.item = 'Item is required.';
@@ -259,7 +261,6 @@ export default function ExpensesPremium() {
     setSnackbar({ ...snackbar, open: false });
   };
 
-  // Filter expenses based on search term and filterMonth / filterYear
   const filteredExpenses = expenses.filter((exp) => {
     const expDate = new Date(exp.date);
     const monthMatch = filterMonth ? expDate.getMonth() + 1 === parseInt(filterMonth) : true;
@@ -273,10 +274,8 @@ export default function ExpensesPremium() {
     return monthMatch && yearMatch && searchMatch;
   });
 
-  // Unique years from expenses for filter dropdown
   const years = Array.from(new Set(expenses.map(exp => new Date(exp.date).getFullYear()))).sort((a, b) => b - a);
 
-  // Month options
   const monthOptions = [
     { value: '', label: 'All Months' },
     { value: '1', label: 'January' },
@@ -301,13 +300,15 @@ export default function ExpensesPremium() {
           onDelete={() => setFile(null)}
           deleteIcon={<Cancel />}
           variant="outlined"
+          size="small"
           avatar={
             file.type.includes('pdf') ? (
-              <Avatar><PictureAsPdf /></Avatar>
+              <Avatar sx={{ width: 24, height: 24 }}><PictureAsPdf fontSize="small" /></Avatar>
             ) : (
-              <Avatar><Image /></Avatar>
+              <Avatar sx={{ width: 24, height: 24 }}><Image fontSize="small" /></Avatar>
             )
           }
+          sx={{ fontSize: '0.87em', height: 28 }}
         />
       );
     } else if (form.attachment) {
@@ -315,7 +316,7 @@ export default function ExpensesPremium() {
       return (
         <FilePreviewLink href={form.attachment} target="_blank" rel="noopener noreferrer">
           {isPdf ? <PictureAsPdf fontSize="small" /> : <Image fontSize="small" />}
-          <Typography variant="body2">
+          <Typography variant="body2" sx={{ fontSize: '0.9em' }}>
             {isPdf ? 'View PDF' : 'View Image'}
           </Typography>
         </FilePreviewLink>
@@ -329,30 +330,21 @@ export default function ExpensesPremium() {
   return (
     <MainContainer>
       {/* Header Section */}
-      <Box sx={{ mb: 4 }}>
-        <Typography variant="h4" fontWeight={700} gutterBottom>
+      <Box sx={{ mb: 3 }}>
+        <Typography variant="h5" fontWeight={700} gutterBottom sx={{ fontSize: '1.05rem' }}>
           Expense Management
         </Typography>
-        {/* <Typography variant="body1" color="text.secondary">
-          Track and manage all business expenses in one place
-        </Typography> */}
       </Box>
 
       {/* Form Section */}
       <StyledCard>
-        <CardContent>
-          <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            {/* Uncomment below to display title with icon */}
-            {/* {editingId ? <Edit color="primary" /> : <Add color="primary" />} */}
-            {/* {editingId ? 'Edit Expense' : 'Add New Expense'} */}
-          </Typography>
-
+        <CardContent sx={{ p: 2 }}>
           <Box
             component="form"
             onSubmit={handleSubmit}
-            sx={{ mt: 2 }}
+            sx={{ mt: 1 }}
           >
-            <Grid container spacing={2}>
+            <Grid container spacing={1}>
               <Grid item xs={12} sm={6} md={3}>
                 <TextField
                   fullWidth
@@ -360,11 +352,13 @@ export default function ExpensesPremium() {
                   type="date"
                   name="date"
                   value={form.date}
+                  size="small"
                   onChange={handleChange}
                   required
                   InputLabelProps={{ shrink: true }}
                   error={!!formErrors.date}
                   helperText={formErrors.date}
+                  sx={{ fontSize: '0.9em' }}
                 />
               </Grid>
 
@@ -374,10 +368,12 @@ export default function ExpensesPremium() {
                   label="Item"
                   name="item"
                   value={form.item}
+                  size="small"
                   onChange={handleChange}
                   required
                   error={!!formErrors.item}
                   helperText={formErrors.item}
+                  sx={{ fontSize: '0.9em' }}
                 />
               </Grid>
 
@@ -388,10 +384,12 @@ export default function ExpensesPremium() {
                   name="amount"
                   type="number"
                   value={form.amount}
+                  size="small"
                   onChange={handleChange}
                   required
                   error={!!formErrors.amount}
                   helperText={formErrors.amount}
+                  sx={{ fontSize: '0.9em' }}
                 />
               </Grid>
 
@@ -403,7 +401,9 @@ export default function ExpensesPremium() {
                   maxRows={4}
                   name="description"
                   value={form.description}
+                  size="small"
                   onChange={handleChange}
+                  sx={{ fontSize: '0.9em' }}
                 />
               </Grid>
 
@@ -413,6 +413,8 @@ export default function ExpensesPremium() {
                   variant={file || form.attachment ? 'contained' : 'outlined'}
                   component="label"
                   color={file ? 'primary' : 'default'}
+                  size="small"
+                  sx={{ fontSize: '0.89em', py: 0.8 }}
                 >
                   {file ? 'Change File' : form.attachment ? 'Replace Attachment' : 'Upload Attachment'}
                   <input
@@ -424,7 +426,7 @@ export default function ExpensesPremium() {
                   />
                 </Button>
                 {formErrors.attachment && (
-                  <Typography color="error" variant="caption" sx={{ mt: 1, display: 'block' }}>
+                  <Typography color="error" variant="caption" sx={{ mt: 1, display: 'block', fontSize: '0.8em' }}>
                     {formErrors.attachment}
                   </Typography>
                 )}
@@ -437,27 +439,28 @@ export default function ExpensesPremium() {
               </Grid>
 
               <Grid item xs={12} sm={6} md={4}>
-                <Box sx={{ display: 'flex', gap: 2 }}>
+                <Box sx={{ display: 'flex', gap: 1 }}>
                   <Button
                     type="submit"
                     variant="contained"
                     color="primary"
-                    size="large"
+                    size="small"
                     fullWidth
                     disabled={uploading || loading}
-                    startIcon={editingId ? <Edit /> : <Add />}
+                    startIcon={editingId ? <Edit fontSize="small" /> : <Add fontSize="small" />}
+                    sx={{ fontSize: '0.89em', py: 0.8 }}
                   >
                     {uploading ? 'Uploading...' : editingId ? 'Update' : 'Add Expense'}
                   </Button>
-
                   {editingId && (
                     <Button
                       variant="outlined"
                       color="error"
                       onClick={resetForm}
-                      size="large"
+                      size="small"
                       fullWidth
-                      startIcon={<Cancel />}
+                      startIcon={<Cancel fontSize="small" />}
+                      sx={{ fontSize: '0.89em' }}
                     >
                       Cancel
                     </Button>
@@ -465,32 +468,33 @@ export default function ExpensesPremium() {
                 </Box>
               </Grid>
             </Grid>
-
             {(uploading || loading) && <LinearProgress sx={{ mt: 2 }} />}
           </Box>
         </CardContent>
       </StyledCard>
 
       {/* Filter Section */}
-      <Box sx={{ mb: 2, display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center' }}>
-        <FormControl sx={{ minWidth: 140 }} size="small">
-          <InputLabel id="filter-month-label">Filter by Month</InputLabel>
+      <Box sx={{ mb: 2, display: 'flex', gap: 1, flexWrap: 'wrap', alignItems: 'center', fontSize: '0.95em' }}>
+        <FormControl sx={{ minWidth: 120 }} size="small">
+          <InputLabel id="filter-month-label" sx={{ fontSize: '0.9em' }}>Month</InputLabel>
           <Select
             labelId="filter-month-label"
             id="filter-month"
             value={filterMonth}
             label="Filter by Month"
             onChange={(e) => setFilterMonth(e.target.value)}
+            size="small"
+            sx={{ fontSize: '0.92em' }}
           >
             {monthOptions.map((m) => (
-              <MenuItem key={m.value} value={m.value}>
+              <MenuItem key={m.value} value={m.value} sx={{ fontSize: '0.92em' }}>
                 {m.label}
               </MenuItem>
             ))}
           </Select>
         </FormControl>
-        <FormControl sx={{ minWidth: 140 }} size="small">
-          <InputLabel id="filter-year-label">Filter by Year</InputLabel>
+        <FormControl sx={{ minWidth: 120 }} size="small">
+          <InputLabel id="filter-year-label" sx={{ fontSize: '0.9em' }}>Year</InputLabel>
           <Select
             labelId="filter-year-label"
             id="filter-year"
@@ -498,10 +502,12 @@ export default function ExpensesPremium() {
             label="Filter by Year"
             onChange={(e) => setFilterYear(e.target.value)}
             disabled={years.length === 0}
+            size="small"
+            sx={{ fontSize: '0.92em' }}
           >
-            <MenuItem value="">All Years</MenuItem>
+            <MenuItem value="" sx={{ fontSize: '0.92em' }}>All Years</MenuItem>
             {years.map((y) => (
-              <MenuItem key={y} value={y}>
+              <MenuItem key={y} value={y} sx={{ fontSize: '0.92em' }}>
                 {y}
               </MenuItem>
             ))}
@@ -511,28 +517,26 @@ export default function ExpensesPremium() {
 
       {/* Expenses Table Section */}
       <ShadowedPaper>
-        <Box sx={{ p: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: isMobile ? 'wrap' : 'nowrap', gap: 1 }}>
-          <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+        <Box sx={{ p: 2, pb: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: isMobile ? 'wrap' : 'nowrap', gap: 1 }}>
+          <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1, fontSize: '1em' }}>
             Expense Records
           </Typography>
-
           <TextField
             variant="outlined"
             placeholder="Search expenses..."
             size="small"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
+            sx={{ width: isMobile ? '100%' : 220, fontSize: '0.9em', background: "#fafafa" }}
             InputProps={{
-              startAdornment: null, // removed icon
+              style: { fontSize: '0.92em', padding: 6 },
+              startAdornment: null,
             }}
-            sx={{ width: isMobile ? '100%' : 300 }}
           />
         </Box>
-
         <Divider />
-
-        <Box sx={{ p: 2, bgcolor: theme.palette.grey[100], display: 'flex', justifyContent: 'flex-end' }}>
-          <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+        <Box sx={{ p: 1.5, bgcolor: theme.palette.grey[100], display: 'flex', justifyContent: 'flex-end' }}>
+          <Typography variant="subtitle1" sx={{ fontWeight: 600, fontSize: '0.97em' }}>
             Total: {totalAmount.toLocaleString(undefined, {
               style: 'currency',
               currency: 'INR',
@@ -540,20 +544,18 @@ export default function ExpensesPremium() {
             })}
           </Typography>
         </Box>
-
-        <TableContainer sx={{ maxHeight: 600 }}>
-          <Table stickyHeader aria-label="expenses table">
+        <TableContainer sx={{ maxHeight: 420 }}>
+          <Table stickyHeader aria-label="expenses table" size="small">
             <TableHead>
               <TableRow>
-                <TableCell sx={{ fontWeight: 700 }}>Date</TableCell>
-                <TableCell sx={{ fontWeight: 700 }}>Item</TableCell>
-                <TableCell sx={{ fontWeight: 700 }}>Description</TableCell>
-                <TableCell align="right" sx={{ fontWeight: 700 }}>Amount</TableCell>
-                <TableCell sx={{ fontWeight: 700 }}>Attachment</TableCell>
-                <ActionCell align="center" sx={{ fontWeight: 700 }}>Actions</ActionCell>
+                <TableCell sx={{ fontWeight: 700, fontSize: '0.9em', p: '6px 8px' }}>Date</TableCell>
+                <TableCell sx={{ fontWeight: 700, fontSize: '0.9em', p: '6px 8px' }}>Item</TableCell>
+                <TableCell sx={{ fontWeight: 700, fontSize: '0.9em', p: '6px 8px' }}>Description</TableCell>
+                <TableCell align="right" sx={{ fontWeight: 700, fontSize: '0.9em', p: '6px 8px' }}>Amount</TableCell>
+                <TableCell sx={{ fontWeight: 700, fontSize: '0.9em', p: '6px 8px' }}>Attachment</TableCell>
+                <ActionCell align="center" sx={{ fontWeight: 700, fontSize: '0.9em', p: '6px 8px' }}>Actions</ActionCell>
               </TableRow>
             </TableHead>
-
             <TableBody>
               {loading ? (
                 <TableRow>
@@ -563,12 +565,12 @@ export default function ExpensesPremium() {
                 </TableRow>
               ) : filteredExpenses.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} align="center" sx={{ py: 4 }}>
+                  <TableCell colSpan={6} align="center" sx={{ py: 3 }}>
                     <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
-                      <Typography color="text.secondary" sx={{ fontSize: 60, mb: 1 }}>
+                      <Typography color="text.secondary" sx={{ fontSize: 36, mb: 1 }}>
                         📄
                       </Typography>
-                      <Typography color="text.secondary">
+                      <Typography color="text.secondary" sx={{ fontSize: '0.95em' }}>
                         {searchTerm || filterMonth || filterYear ? 'No matching expenses found' : 'No expenses recorded yet'}
                       </Typography>
                       {(searchTerm || filterMonth || filterYear) && (
@@ -576,7 +578,7 @@ export default function ExpensesPremium() {
                           setSearchTerm('');
                           setFilterMonth('');
                           setFilterYear('');
-                        }} variant="text">
+                        }} variant="text" size="small" sx={{ fontSize: '0.89em' }}>
                           Clear filters
                         </Button>
                       )}
@@ -593,24 +595,21 @@ export default function ExpensesPremium() {
                       '&:hover': { backgroundColor: theme.palette.action.hover },
                     }}
                   >
-                    <TableCell>
-                      <Typography variant="body2">
+                    <TableCell sx={{ fontSize: '0.89em', p: '4px 8px' }}>
+                      <Typography variant="body2" sx={{ fontSize: '0.91em' }}>
                         {format(parseISO(exp.date), 'MMM dd, yyyy')}
                       </Typography>
                     </TableCell>
-
-                    <TableCell>
-                      <Typography fontWeight={600}>
+                    <TableCell sx={{ fontSize: '0.89em', p: '4px 8px' }}>
+                      <Typography fontWeight={600} sx={{ fontSize: '0.91em' }}>
                         {exp.item}
                       </Typography>
                     </TableCell>
-
-                    <TableCell>
-                      <Typography variant="body2" color="text.secondary" sx={{ whiteSpace: 'pre-line' }}>
+                    <TableCell sx={{ fontSize: '0.86em', p: '4px 8px' }}>
+                      <Typography variant="body2" color="text.secondary" sx={{ whiteSpace: 'pre-line', fontSize: '0.88em' }}>
                         {exp.description || '—'}
                       </Typography>
                     </TableCell>
-
                     <AmountCell align="right">
                       {parseFloat(exp.amount).toLocaleString(undefined, {
                         style: 'currency',
@@ -618,8 +617,7 @@ export default function ExpensesPremium() {
                         minimumFractionDigits: 2,
                       })}
                     </AmountCell>
-
-                    <TableCell>
+                    <TableCell sx={{ fontSize: '0.88em', p: '4px 8px' }}>
                       {exp.attachment ? (
                         <FilePreviewLink href={exp.attachment} target="_blank" rel="noopener noreferrer">
                           {exp.attachment.toLowerCase().endsWith('.pdf') ? (
@@ -627,29 +625,26 @@ export default function ExpensesPremium() {
                           ) : (
                             <Image fontSize="small" />
                           )}
-                          <Typography variant="body2">
+                          <Typography variant="body2" sx={{ fontSize: '0.88em' }}>
                             View
                           </Typography>
                         </FilePreviewLink>
                       ) : (
-                        <Typography variant="body2" color="text.disabled">
+                        <Typography variant="body2" color="text.disabled" sx={{ fontSize: '0.88em' }}>
                           None
                         </Typography>
                       )}
                     </TableCell>
-
                     <ActionCell align="center">
                       <Tooltip title="Edit">
                         <IconButton
                           color="primary"
                           onClick={() => handleEdit(exp)}
                           size="small"
-                          sx={{ mr: 1 }}
                         >
                           <Edit fontSize="small" />
                         </IconButton>
                       </Tooltip>
-
                       <Tooltip title="Delete">
                         <IconButton
                           color="error"
@@ -675,9 +670,9 @@ export default function ExpensesPremium() {
         maxWidth="xs"
         fullWidth
       >
-        <DialogTitle sx={{ fontWeight: 700 }}>Confirm Deletion</DialogTitle>
+        <DialogTitle sx={{ fontWeight: 700, fontSize: '1em' }}>Confirm Deletion</DialogTitle>
         <DialogContent>
-          <DialogContentText>
+          <DialogContentText sx={{ fontSize: '0.93em' }}>
             Are you sure you want to permanently delete this expense record? 
           </DialogContentText>
         </DialogContent>
@@ -686,6 +681,8 @@ export default function ExpensesPremium() {
             onClick={() => setDeleteDialog({ open: false, id: null })}
             variant="outlined"
             color="inherit"
+            size="small"
+            sx={{ fontSize: '0.89em' }}
           >
             Cancel
           </Button>
@@ -694,6 +691,8 @@ export default function ExpensesPremium() {
             variant="contained"
             onClick={confirmDelete}
             autoFocus
+            size="small"
+            sx={{ fontSize: '0.89em' }}
           >
             Delete
           </Button>
@@ -712,7 +711,7 @@ export default function ExpensesPremium() {
           severity={snackbar.severity}
           elevation={6}
           variant="filled"
-          sx={{ width: '100%' }}
+          sx={{ width: '100%', fontSize: '0.95em' }}
         >
           {snackbar.message}
         </Alert>
@@ -720,4 +719,3 @@ export default function ExpensesPremium() {
     </MainContainer>
   );
 }
-// 
