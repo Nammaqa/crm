@@ -42,8 +42,8 @@ export async function GET(req: NextRequest) {
       poNumber: inv.poNumber,
       paymentReference: inv.paymentId,
       dueDate: inv.dueDate,
-      taxAmount: 0, // Add logic if you have tax field
-      discount: 0,  // Add logic if you have discount field
+      taxAmount: 0, 
+      discount: 0,  
     }));
 
     return NextResponse.json(mapped);
