@@ -116,7 +116,7 @@ const CandidateForm = () => {
     "Current Location (Nearest City)", "Ready to Relocate for Other Location",
     "Prefered Location (City)", "Availability for the Interview", "Client Name",
     "Demand Code", "Interview taken by", "Comments", "Status", "Follow Ups",
-    "Updated By", "Offers Any", "Screening Comment (L2)", "Technical Skills",
+    "Updated By", "Offers Any", "Screening Comment (L2)", "Technical Skills","Secondary Skill", 
     "Relavant Experience", "Relevant Experience in Primary Skill",
     "Relevant Experience in Secondary Skill", "NammaQA update", "Feedback",
     "Upload Resume"

@@ -196,6 +196,7 @@ const CandidateForm = () => {
     "Offers Any",
     "Technical Skills",
     "Relavant Experience",
+    // "Secondary Skill",
     "Relevant Experience in Primary Skill",
     "Relevant Experience in Secondary Skill",
     "NammaQA update", 

@@ -203,7 +203,7 @@ export async function POST(req: NextRequest) {
         industry: indMap.enumValue as Industry,
         percentage: percentage ? Number(percentage) : null,
         remarks,
-        companyType, // <-- FIXED: add this line
+        companyType, 
         technologyOther: technologyOther || null,
         // industryOther: industryOther || null,
         spocs: {
