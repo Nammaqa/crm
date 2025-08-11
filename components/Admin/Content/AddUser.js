@@ -25,6 +25,7 @@ export default function SignupForm() {
   });
 
   const [users, setUsers] = useState([]);
+  const [errors, setErrors] = useState({});
 
   const fetchUsers = async () => {
     try {
@@ -40,11 +41,44 @@ export default function SignupForm() {
     fetchUsers();
   }, []);
 
+  const validatePhoneNumber = (number) => {
+    // Only digits, length 10, starts with 6,7,8,9
+    const phoneRegex = /^[6-9]\d{9}$/;
+    return phoneRegex.test(number);
+  };
+
   const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    setForm({ ...form, [name]: value });
+
+    // Inline validation for phone number
+    if (name === 'phoneNumber') {
+      if (value === '') {
+        setErrors((prev) => ({ ...prev, phoneNumber: undefined }));
+      } else if (!validatePhoneNumber(value)) {
+        setErrors((prev) => ({
+          ...prev,
+          phoneNumber:
+            'Phone number must be 10 digits and start with 6, 7, 8, or 9.',
+        }));
+      } else {
+        setErrors((prev) => ({ ...prev, phoneNumber: undefined }));
+      }
+    }
   };
 
   const handleSubmit = async () => {
+    // Validate phone number before submit
+    if (!validatePhoneNumber(form.phoneNumber)) {
+      setErrors((prev) => ({
+        ...prev,
+        phoneNumber:
+          'Phone number must be 10 digits and start with 6, 7, 8, or 9.',
+      }));
+      toast.error('Please enter a valid phone number.');
+      return;
+    }
+
     try {
       const res = await fetch('/api/auth/signup', {
         method: 'POST',
@@ -63,6 +97,7 @@ export default function SignupForm() {
           phoneNumber: '',
           role: 'SALES',
         });
+        setErrors({});
         fetchUsers(); // refresh list
       } else {
         toast.error(data.message || 'Signup failed');
@@ -79,27 +114,55 @@ export default function SignupForm() {
 
         <div>
           <Label htmlFor="userName">Username</Label>
-          <Input name="userName" value={form.userName} onChange={handleChange} />
+          <Input
+            name="userName"
+            value={form.userName}
+            onChange={handleChange}
+          />
         </div>
 
         <div>
           <Label htmlFor="wbEmailId">Email</Label>
-          <Input name="wbEmailId" value={form.wbEmailId} onChange={handleChange} />
+          <Input
+            name="wbEmailId"
+            value={form.wbEmailId}
+            onChange={handleChange}
+          />
         </div>
 
         <div>
           <Label htmlFor="password">Password</Label>
-          <Input type="password" name="password" value={form.password} onChange={handleChange} />
+          <Input
+            type="password"
+            name="password"
+            value={form.password}
+            onChange={handleChange}
+          />
         </div>
 
         <div>
           <Label htmlFor="phoneNumber">Phone Number</Label>
-          <Input name="phoneNumber" value={form.phoneNumber} onChange={handleChange} />
+          <Input
+            name="phoneNumber"
+            value={form.phoneNumber}
+            onChange={handleChange}
+            maxLength={10}
+            minLength={10}
+            pattern="[6-9][0-9]{9}"
+            inputMode="numeric"
+            autoComplete="tel"
+          />
+          {errors.phoneNumber && (
+            <p className="text-red-500 text-xs mt-1">{errors.phoneNumber}</p>
+          )}
         </div>
 
         <div>
           <Label>Role</Label>
-          <Select value={form.role} onValueChange={(value) => setForm({ ...form, role: value })}>
+          <Select
+            value={form.role}
+            onValueChange={(value) => setForm({ ...form, role: value })}
+          >
             <SelectTrigger>
               <SelectValue placeholder="Select role" />
             </SelectTrigger>
@@ -113,7 +176,11 @@ export default function SignupForm() {
           </Select>
         </div>
 
-        <Button className="w-full mt-4" onClick={handleSubmit}>
+        <Button
+          className="w-full mt-4"
+          onClick={handleSubmit}
+          disabled={!!errors.phoneNumber}
+        >
           Create User
         </Button>
       </div>
@@ -142,7 +209,9 @@ export default function SignupForm() {
                     <td className="px-4 py-2">{u.wbEmailId}</td>
                     <td className="px-4 py-2">{u.phoneNumber || '-'}</td>
                     <td className="px-4 py-2">{u.role}</td>
-                    <td className="px-4 py-2">{new Date(u.createdAt).toLocaleDateString()}</td>
+                    <td className="px-4 py-2">
+                      {new Date(u.createdAt).toLocaleDateString()}
+                    </td>
                   </tr>
                 ))}
               </tbody>

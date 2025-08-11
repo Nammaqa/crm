@@ -1,5 +1,6 @@
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import React, { useEffect } from "react";
 
 // Helper functions for live input restriction
 function allowAlpha(value) {
@@ -14,28 +15,77 @@ function allowPhone(value) {
   return value.replace(/[^0-9]/g, "").slice(0, 10);
 }
 
-export default function SpocFields({ spocs, setSpocs, max = 5, errors = [] }) {
+function isTenDigits(value) {
+  return /^\d{10}$/.test(value);
+}
+
+export default function SpocFields({ spocs, setSpocs, max = 5, errors = [], setErrors }) {
+  // Ensure errors array is always in sync with spocs
+  useEffect(() => {
+    if (setErrors && errors.length !== spocs.length) {
+      setErrors(
+        spocs.map(() => ({
+          name: "",
+          email: "",
+          contact: "",
+          altContact: "",
+          designation: "",
+          location: "",
+        }))
+      );
+    }
+    // eslint-disable-next-line
+  }, [spocs.length]);
+
   const updateSpoc = (index, field, value) => {
     const updated = [...spocs];
     updated[index][field] = value;
     setSpocs(updated);
   };
 
+  const updateError = (index, field, message) => {
+    if (!setErrors) return;
+    const updatedErrors = errors.length === spocs.length
+      ? [...errors]
+      : spocs.map(() => ({
+          name: "",
+          email: "",
+          contact: "",
+          altContact: "",
+          designation: "",
+          location: "",
+        }));
+    updatedErrors[index][field] = message;
+    setErrors(updatedErrors);
+  };
+
   const handleNameChange = (index, value) => {
     updateSpoc(index, "name", allowAlpha(value));
+    updateError(index, "name", "");
   };
 
   const handleEmailChange = (index, value) => {
     updateSpoc(index, "email", allowEmail(value));
+    updateError(index, "email", "");
   };
 
   const handleContactChange = (index, value) => {
-    // Only allow starting with 6/7/8/9
     let cleaned = allowPhone(value);
     if (cleaned.length === 1 && !/[6789]/.test(cleaned)) {
       cleaned = "";
     }
     updateSpoc(index, "contact", cleaned);
+
+    // Validation: must be exactly 10 digits
+    if (cleaned.length === 0) {
+      updateError(index, "contact", "Contact Number is required.");
+    } else if (cleaned.length < 10) {
+      updateError(index, "contact", "Contact Number must be exactly 10 digits.");
+    } else if (!isTenDigits(cleaned)) {
+      updateError(index, "contact", "Contact Number must be exactly 10 digits.");
+    } else {
+      updateError(index, "contact", "");
+    }
   };
 
   const handleAltContactChange = (index, value) => {
@@ -44,14 +94,27 @@ export default function SpocFields({ spocs, setSpocs, max = 5, errors = [] }) {
       cleaned = "";
     }
     updateSpoc(index, "altContact", cleaned);
+
+    // Validation: must be exactly 10 digits if not empty
+    if (cleaned.length === 0) {
+      updateError(index, "altContact", "");
+    } else if (cleaned.length < 10) {
+      updateError(index, "altContact", "Alt Contact Number must be exactly 10 digits.");
+    } else if (!isTenDigits(cleaned)) {
+      updateError(index, "altContact", "Alt Contact Number must be exactly 10 digits.");
+    } else {
+      updateError(index, "altContact", "");
+    }
   };
 
   const handleDesignationChange = (index, value) => {
     updateSpoc(index, "designation", allowAlpha(value));
+    updateError(index, "designation", "");
   };
 
   const handleLocationChange = (index, value) => {
     updateSpoc(index, "location", allowAlpha(value));
+    updateError(index, "location", "");
   };
 
   const addSpoc = () => {
@@ -68,11 +131,28 @@ export default function SpocFields({ spocs, setSpocs, max = 5, errors = [] }) {
           location: "",
         },
       ]);
+      if (setErrors) {
+        setErrors([
+          ...errors,
+          {
+            name: "",
+            email: "",
+            contact: "",
+            altContact: "",
+            designation: "",
+            location: "",
+          },
+        ]);
+      }
     }
   };
 
   const removeSpoc = (id) => {
+    const idx = spocs.findIndex((s) => s.id === id);
     setSpocs(spocs.filter((s) => s.id !== id));
+    if (setErrors) {
+      setErrors(errors.filter((_, i) => i !== idx));
+    }
   };
 
   return (
@@ -105,6 +185,7 @@ export default function SpocFields({ spocs, setSpocs, max = 5, errors = [] }) {
             value={spoc.contact}
             onChange={(e) => handleContactChange(index, e.target.value)}
             required
+            minLength={10}
             maxLength={10}
           />
           {errors && errors[index] && errors[index].contact && (
