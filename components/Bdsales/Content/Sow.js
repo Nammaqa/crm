@@ -184,10 +184,10 @@ export default function SOPForm() {
     const formDataToSend = new FormData();
     formDataToSend.append("clientName", formData.clientName);
     formDataToSend.append("employeeName", formData.employeeName);
-    formDataToSend.append(
-      "Technology",
-      formData.technology === "other" ? formData.otherTechnology : formData.technology
-    );
+    formDataToSend.append("technology", formData.technology);
+    if (formData.technology === "other") {
+      formDataToSend.append("technologyOther", formData.otherTechnology);
+    }
     formDataToSend.append("startDate", formData.startDate);
     formDataToSend.append("endDate", formData.endDate);
     formDataToSend.append("type", "SOW"); // SOW handled as PO

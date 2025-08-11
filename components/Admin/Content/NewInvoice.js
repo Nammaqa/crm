@@ -681,11 +681,12 @@ export default function InvoiceForm() {
       } catch (error) {}
     }
     const summaryStartY = 40;
+    // --- FIX: Use array of arrays for summaryData ---
     const summaryData = [
-      ['Sub Total'`${calculateSubtotal().toFixed(2)}`],
+      ['Sub Total', `${calculateSubtotal().toFixed(2)}`],
       [`CGST${cgstRate.toFixed(0)} (${cgstRate.toFixed(0)}%)`, `${calculateCGST().toFixed(2)}`],
       [`SGST${sgstRate.toFixed(0)} (${sgstRate.toFixed(0)}%)`, `${calculateSGST().toFixed(2)}`],
-      ['Total'`₹${calculateTotal().toFixed(2)}`],
+      ['Total', `₹${calculateTotal().toFixed(2)}`],
       ['Balance Due', `₹${calculateTotal().toFixed(2)}`]
     ];
     if (formData.tdsTcsType === 'TDS' && formData.tdsRate) {
@@ -709,7 +710,7 @@ export default function InvoiceForm() {
       },
       margin: { left: 220 }
     });
-//the total amount in words
+    //the total amount in words
     let finalY = doc.lastAutoTable.finalY || itemTableY + 50;
     finalY += 5;
     const totalInWords = numberToWords(Math.floor(calculateTotal()));
@@ -868,7 +869,6 @@ export default function InvoiceForm() {
       tcsRate: e.target.value,
     }));
   };
-
   return (
     <div className="w-full px-2 min-h-screen">
       <div className="max-w-screen-2xl mx-auto px-4 py-6 space-y-6 text-gray-800 my-4">

@@ -40,7 +40,6 @@ function numberToWords(n) {
   return n.toLocaleString("en-IN");
 }
 
-
 const InvoicePayment = ({ invoice, onClone, onClose }) => {
   const [activeTab, setActiveTab] = useState("overview");
   const [cloneInProgress, setCloneInProgress] = useState(false);
@@ -234,11 +233,12 @@ const InvoicePayment = ({ invoice, onClone, onClose }) => {
           </button>
         ))}
       </div>
+      
       {/* TAB: Overview */}
       {activeTab === "overview" && (
         <div
           ref={overviewRef}
-          className="animate-fadeIn p-4 bg-white dark:bg-gray-900"
+          className="animate-fadeIn p-4 bg-white dark:bg-gray-900 relative"
           id="overview-content"
         >
           {/* Company & Invoice Info */}
@@ -287,6 +287,7 @@ const InvoicePayment = ({ invoice, onClone, onClose }) => {
               </div>
             </div>
           </div>
+          
           {/* Billing Info */}
           <div className="flex flex-wrap justify-between mb-6">
             <div>
@@ -326,6 +327,7 @@ const InvoicePayment = ({ invoice, onClone, onClose }) => {
               </div>
             </div>
           </div>
+          
           {/* Items Table */}
           <div className="overflow-x-auto border rounded-lg">
             <table className="min-w-full border-collapse">
@@ -386,6 +388,7 @@ const InvoicePayment = ({ invoice, onClone, onClose }) => {
               </tbody>
             </table>
           </div>
+          
           {/* Totals */}
           <div className="flex justify-end mt-6">
             <div className="w-full max-w-xs">
@@ -415,6 +418,7 @@ const InvoicePayment = ({ invoice, onClone, onClose }) => {
               </div>
             </div>
           </div>
+          
           {/* In Words & Notes */}
           <div className="mt-5 text-gray-700 dark:text-gray-300 text-sm">
             <strong>Total In Words:</strong> Indian Rupee {numberToWords(Math.floor(total))} Only
@@ -427,7 +431,8 @@ const InvoicePayment = ({ invoice, onClone, onClose }) => {
               </span>
             )}
           </div>
-          <div className=" mt-6 pt-4">
+          
+          <div className="mt-6 pt-4">
             <div className="font-bold text-md text-gray-900 dark:text-white mb-1">
               Bank Details
             </div>
@@ -441,20 +446,36 @@ const InvoicePayment = ({ invoice, onClone, onClose }) => {
               IFSC Code: SBIN0016225
             </div>
           </div>
-          <div className=" mt-4 pt-4 flex justify-between">
+          
+          <div className="mt-4 pt-4 flex justify-between items-end relative">
             <span className="text-xs text-gray-400 dark:text-gray-500"></span>
-            <span className="text-xs text-gray-600 dark:text-gray-300 font-semibold">
-              Authorized Signature
-            </span>
+          
+              {/* Karthik's signature image */}
+              <div className="flex flex-col items-end">
+              <img
+                src="/karthik.png"
+                alt="Signature"
+                className="h-20 w-170 opacity-100 mt-9 "
+                style={{ maxHeight: "80px", maxWidth: "200px" }}
+              />
+                  {/* Authorized Signature with Image */}
+              <span className="text-xs text-gray-600 dark:text-gray-300 font-semibold mb-1">
+                Authorized Signature
+              </span>
+            </div>
+
           </div>
         </div>
       )}
+      
       {/* Payments Tab */}
       {activeTab === "payments" && (
         <ReceivedPaymentsTab invoice={localInvoice} refreshInvoice={refreshInvoiceData} />
       )}
+      
       {/* Invoice PDF Tab */}
       {activeTab === "pdf" && <InvoicePDFTab invoice={localInvoice} />}
+      
       {/* Clone Tab */}
       {activeTab === "clone" && (
         <div className="p-4 flex flex-col items-center animate-fadeIn">
