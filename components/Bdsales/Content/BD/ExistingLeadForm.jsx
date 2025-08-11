@@ -53,6 +53,27 @@ export default function ExistingLeadForm({ leads, formData, setFormData, handleM
     }));
   };
 
+  // --- Flatten existingLeadDetails into main formData before submit ---
+  const handleSubmit = () => {
+    if (!validateFields()) return;
+
+    // Flatten fields for backend
+    const payload = {
+      ...formData,
+      ...existingLeadDetails,
+      companySelect: existingLeadDetails.companySelect,
+      companyNameGST: existingLeadDetails.companyNameGST,
+      employeeName: existingLeadDetails.employeeName,
+      replacementReason: existingLeadDetails.replacementReason,
+      replacementToDate: existingLeadDetails.replacementToDate,
+      replacementRequestDate: existingLeadDetails.replacementRequestDate,
+      // Remove nested existingLeadDetails
+      existingLeadDetails: undefined,
+    };
+
+    handleMoveToDeal(payload);
+  };
+
   return (
     <div className="mb-4 p-5 border rounded-md shadow-md overflow-hidden">
       <h3 className="text-lg font-semibold">Existing Lead Details</h3>
@@ -132,8 +153,8 @@ export default function ExistingLeadForm({ leads, formData, setFormData, handleM
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="resigned">Resigned</SelectItem>
-              <SelectItem value="performance-issue">Performance Issue</SelectItem>
-              <SelectItem value="employee-concern">Employee Concern</SelectItem>
+              <SelectItem value="performance_issue">Performance Issue</SelectItem>
+              <SelectItem value="employee_concern">Employee Concern</SelectItem>
             </SelectContent>
           </Select>
           {errors.replacementReason && <p className="text-red-500 text-sm">{errors.replacementReason}</p>}
@@ -229,11 +250,7 @@ export default function ExistingLeadForm({ leads, formData, setFormData, handleM
 
           <Button
             variant="outline"
-            onClick={() => {
-              if (validateFields()) {
-                handleMoveToDeal();
-              }
-            }}
+            onClick={handleSubmit}
           >
             Move to Deal
           </Button>

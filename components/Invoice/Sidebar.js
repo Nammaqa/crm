@@ -18,7 +18,7 @@ import NewInvoice      from "@components/Admin/Content/NewInvoice";
 import AddCustomerForm from "@components/Admin/Content/Invoice";
 import Invoicelist from "@components/Invoice/Content/invoicelist";
 import Expenses from "@components/Invoice/Content/expenses";
-import Paymentlist from "@/components/Invoice/Content/recivedpaymentlist";
+import Paymentlist from "@/components/Invoice/Content/receivedpaymentlist";
 
 // ──────────────────────────────────────────────────────────────
 // Dummy Settings section (kept for reference)

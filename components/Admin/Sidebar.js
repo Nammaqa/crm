@@ -19,8 +19,8 @@ import JobList from "@components/Admin/Content/JobList";
 import Adduser from "@components/Admin/Content/AddUser";
 import AgreementList from "@components/Admin/Content/AgreementList";
 import RequirementList from "@components/Admin/Content/RequirementList";
-import Customerlist from "@components/Admin/Content/Customerlist"; // import
-import NewInvoice from "@components/Admin/Content/NewInvoice"; // <-- Add this import
+import Customerlist from "@components/Admin/Content/Customerlist";
+import NewInvoice from "@components/Admin/Content/NewInvoice"; 
 
 // import Customerlist from "@components/Admin/Content/Customerlist";
 

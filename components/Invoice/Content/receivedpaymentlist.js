@@ -57,7 +57,7 @@ const PaidInvoicesTable = () => {
   // Fetch paid invoices from backend API
   useEffect(() => {
     setLoading(true);
-    fetch("/api/recivedpayment")
+    fetch("/api/receivedpayment")
       .then((res) => res.json())
       .then((data) => {
         setInvoices(data);
@@ -888,7 +888,7 @@ const PaidInvoicesTable = () => {
         <div className="flex justify-between items-center px-4 py-3 border-b border-gray-200 bg-gray-50 rounded-t-xl">
           <h2 className="text-lg font-bold text-gray-900">Payment Receipt</h2>
           <div className="flex items-center gap-2">
-            <Button
+            {/* <Button
               variant="contained"
               color="success"
               size="small"
@@ -897,7 +897,7 @@ const PaidInvoicesTable = () => {
               sx={{ fontSize: '11px', py: 0.5, px: 1.5 }}
             >
               Print
-            </Button>
+            </Button> */}
             <Button
               variant="contained"
               color="primary"

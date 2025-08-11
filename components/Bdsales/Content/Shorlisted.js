@@ -37,7 +37,7 @@ export default function ShortList() {
 
   // Fetch all shortlisted candidates
   useEffect(() => {
-    fetch("/api/ACmanager")
+    fetch("/api/candidates")
       .then((res) => res.json())
       .then((data) => {
         const shortlisted = data.filter((c) => c.acmanagerStatus === "Selected");
@@ -95,7 +95,7 @@ export default function ShortList() {
           value={selectedDemandCode}
           onChange={(e) => { handleDemandCodeChange(e.target.value) }}
         >
-          <option value="">All Demand Codes</option>
+          <option value=""></option>
           {demandCodes && demandCodes.map((code) => (
             <option key={code} value={code}>
               {code}
