@@ -13,7 +13,8 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith('.') ||
     // pathname.startsWith('/images') ||
     pathname.startsWith('/api/auth/login') ||
-    pathname.startsWith('/api/users/me')
+    pathname.startsWith('/api/users/me') ||
+    pathname.startsWith('/api/test-email')
   ) {
     res.headers.append('Access-Control-Allow-Credentials', "true")
     res.headers.append('Access-Control-Allow-Origin', '*') // replace this your actual origin
