@@ -6,7 +6,7 @@ export async function GET(req) {
   const { searchParams } = new URL(req.url);
   const clients = searchParams.getAll('clients');
 
-  let where = {status: "Selected"};
+  let where = {};
   if (clients.length > 0) {
     where.clientName = { in: clients };
   }

@@ -92,6 +92,9 @@ export async function PUT(
         numberOfEmployees: body.numberOfEmployees ?? existingLead.numberOfEmployees,
         employeeName: body.employeeName ?? existingLead.employeeName,
         replacementReason: safeReplacementReason ?? existingLead.replacementReason,
+        replacementToDate: body.replacementToDate
+          ? new Date(body.replacementToDate)
+          : existingLead.replacementToDate,
         replacementRequestDate: body.replacementRequestDate
           ? new Date(body.replacementRequestDate)
           : existingLead.replacementRequestDate,
@@ -102,7 +105,7 @@ export async function PUT(
         industry: safeIndustry ?? existingLead.industry,
         percentage: body.percentage ?? existingLead.percentage,
         remarks: body.remarks ?? existingLead.remarks,
-        companyType: body.companyType ?? existingLead.companyType, // <-- FIXED: add this line
+        companyType: body.companyType ?? existingLead.companyType,
         technologyOther: body.technologyOther ?? existingLead.technologyOther,
         // industryOther: body.industryOther ?? existingLead.industryOther,
         updatedAt: new Date(),
@@ -178,7 +181,11 @@ export async function PATCH(
       where: { id: leadId },
       data: {
         ...body,
-        companyType: body.companyType, // <-- FIXED: allow PATCH to update companyType
+        employeeName: body.employeeName,
+        replacementToDate: body.replacementToDate ? new Date(body.replacementToDate) : undefined,
+        replacementRequestDate: body.replacementRequestDate ? new Date(body.replacementRequestDate) : undefined,
+        companyNameGST: body.companyNameGST,
+        companyType: body.companyType,
         updatedAt: new Date(),
       },
       include: { spocs: true },

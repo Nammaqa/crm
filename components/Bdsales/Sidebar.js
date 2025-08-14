@@ -14,7 +14,7 @@ import Po from "@components/Bdsales/Content/Po";
 import AgreementList from "@components/Admin/Content/AgreementList";
 import RequirementList from "@components/Admin/Content/RequirementList";
 import Shorlisted from "@components/Bdsales/Content/Shorlisted";
-import Reminder from "@components/Bdsales/Content/Reminder";
+// import Reminder from "@components/Bdsales/Content/Reminder";
 import {FaChartPie,FaHandshake,FaUsers,FaFileContract,FaClipboardList,FaShoppingCart,FaListAlt,FaBell,} from "react-icons/fa";
 
 // Sidebar sections with dynamic content
@@ -28,7 +28,7 @@ const sections = [
   { id: "requirement-list", label: "Requirement List", icon: <FaListAlt size={20} />, content: <RequirementList /> },
   { id: "agreement-list", label: "Agreement List", icon: <FaClipboardList size={20} />, content: <AgreementList /> },
   { id: "shorlisted", label: "Shorlisted", icon: <FaUsers size={20} />, content: <Shorlisted /> },
-  { id: "reminder", label: "Reminder", icon: <FaBell size={20} />, content: <Reminder /> },
+  // { id: "reminder", label: "Reminder", icon: <FaBell size={20} />, content: <Reminder /> },
 ];
 
 export default function Bdsles() {

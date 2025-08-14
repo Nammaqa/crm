@@ -365,7 +365,7 @@ export default function ProspectiveLeadForm({ formData, setFormData, handleMoveT
         )}
       </div>
 
-      <div className="space-y-1">
+      {/* <div className="space-y-1">
         <Label>No. of Employees</Label>
         <Input
           type="number"
@@ -374,7 +374,7 @@ export default function ProspectiveLeadForm({ formData, setFormData, handleMoveT
             setFormData((prev) => ({ ...prev, numEmployees: e.target.value }))
           }
         />
-      </div>
+      </div> */}
 
       {/* Company Type Dropdown */}
       <div className="space-y-1">

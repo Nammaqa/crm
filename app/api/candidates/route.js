@@ -51,9 +51,6 @@ export async function POST(req) {
         resumeUrl = await uploadToCloudinary(buffer, data['Upload Resume'].name);
       }
 
-      // Fix: Ensure demandCode is mapped correctly
-      const demandCodeValue = data['Demand Code'] ?? data['demandCode'] ?? null;
-
       const candidate = await prisma.candidate.create({
         data: {
           name: data['Name'],
@@ -74,7 +71,7 @@ export async function POST(req) {
           preferredLocation: data['Prefered Location (City)'],
           interviewAvailability: data['Availability for the Interview'],
           clientName: data['Client Name'],
-          demandCode: demandCodeValue, 
+          demandCode: data['Demand Code'],
           interviewTakenBy: data['Interview taken by'],
           comments: data['Comments'] ? [data['Comments']] : [],
           status: data['Status'],
