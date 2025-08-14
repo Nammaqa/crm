@@ -1,13 +1,12 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { validateACmanager } from "@/actions/validateACmanager";
 
 export default function ShortList() {
   const [candidates, setCandidates] = useState([]);
   const [userName, setUserName] = useState("");
-  const [demandCodes, setDemandCodes] = useState([]);
-  const [selectedDemandCode, setSelectedDemandCode] = useState("");
+  const [clientNames, setClientNames] = useState([]);
+  const [selectedClients, setSelectedClients] = useState([]);
   const router = useRouter();
 
   // Fetch logged-in user name
@@ -18,93 +17,65 @@ export default function ShortList() {
         if (resJson.success && resJson.data) {
           setUserName(resJson.data.userName);
         }
-      }).then((res) => {
-        fetchDemandCodes();
       });
   }, []);
-  async function fetchDemandCodes() {
-    const res = await fetch("/api/demand-code");
-    const data = await res.json();
-    // If the API returns { data: [...], success: true }
-    if (data.success && Array.isArray(data.data)) {
-      console.log('fff ', data.data);
-      setDemandCodes(data.data);
-    }
-  }
-  // useEffect(() => {
-  //   fetchDemandCodes();
-  // }, [])
 
-  // Fetch all shortlisted candidates
+  // Fetch all shortlisted candidates for this user using the new API
   useEffect(() => {
-    fetch("/api/ACmanager")
+    if (!userName) return;
+    fetch(`/api/shortlisted-candidates?userName=${encodeURIComponent(userName)}`)
       .then((res) => res.json())
       .then((data) => {
-        const shortlisted = data.filter((c) => c.acmanagerStatus === "Selected");
-        setCandidates(shortlisted);
-
-        // Filter demand codes where userName === salesName
-        const codes = [
-          ...new Set(
-            shortlisted
-              .filter((c) => c.salesName === userName && c.demandCode)
-              .map((c) => c.demandCode)
-          ),
-        ];
-        setDemandCodes(codes);
+        if (data.success && Array.isArray(data.data)) {
+          setCandidates(data.data);
+          // Extract unique client names for filter
+          const uniqueClients = Array.from(new Set(data.data.map((c) => c.clientName).filter(Boolean)));
+          setClientNames(uniqueClients);
+        } else {
+          setCandidates([]);
+          setClientNames([]);
+        }
       });
   }, [userName]);
 
-  // Filtered candidates by demand code
-  const filteredCandidates = selectedDemandCode
-    ? candidates.filter((c) => c.demandCode === selectedDemandCode)
-    : candidates.filter((c) => c.salesName === userName);
+  // Filter candidates by selected client names
+  const filteredCandidates = selectedClients.length === 0
+    ? candidates
+    : candidates.filter((c) => selectedClients.includes(c.clientName));
 
-  // Handler for viewing resume in a new tab
-  const handleViewResume = (resumeLink) => {
-    if (resumeLink) {
-      window.open(resumeLink, "_blank", "noopener,noreferrer");
-    }
-  };
-  const handleDemandCodeChange = async (code) => {
-    setSelectedDemandCode(code);
-    try {
-      const res = await fetch(`/api/demand-code/filter`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ companyId: code }),
-      });
-      const data = await res.json();
-      if (data.success && Array.isArray(data.data)) {
-        setCandidates(data.data);
-      }
-    } catch (error) {
-      console.error("Error fetching filtered candidates:", error);
-    }
+  const handleClientCheckbox = (client) => {
+    setSelectedClients((prev) =>
+      prev.includes(client)
+        ? prev.filter((c) => c !== client)
+        : [...prev, client]
+    );
   };
 
+  // Filter UI and table
   return (
     <div className="p-8 bg-gray-50 min-h-screen">
-      {/* Container 1: Demand Code Dropdown */}
-      <div className="max-w-2xl mx-auto bg-white rounded shadow-md p-6 mb-8">
-        <h2 className="text-xl font-semibold text-blue-700 mb-4">Filter by Demand Code</h2>
-        <select
-          className="border rounded px-4 py-2 w-full"
-          value={selectedDemandCode}
-          onChange={(e) => { handleDemandCodeChange(e.target.value) }}
-        >
-          <option value="">All Demand Codes</option>
-          {demandCodes && demandCodes.map((code) => (
-            <option key={code} value={code}>
-              {code}
-            </option>
-          ))}
-        </select>
+      {/* Filter Section */}
+      <div className="max-w-7xl mx-auto bg-white rounded shadow-md p-4 mb-4">
+        <h3 className="text-lg font-semibold mb-2">Filter by Client Name</h3>
+        <div className="flex flex-wrap gap-4">
+          {clientNames.length === 0 ? (
+            <span className="text-gray-400">No clients found.</span>
+          ) : (
+            clientNames.map((client) => (
+              <label key={client} className="inline-flex items-center">
+                <input
+                  type="checkbox"
+                  className="form-checkbox h-4 w-4 text-blue-600"
+                  checked={selectedClients.includes(client)}
+                  onChange={() => handleClientCheckbox(client)}
+                />
+                <span className="ml-2 text-gray-700">{client}</span>
+              </label>
+            ))
+          )}
+        </div>
       </div>
-
-      {/* Container 2: Table */}
+      {/* Table Section */}
       <div className="max-w-7xl mx-auto bg-white rounded shadow-md p-6">
         <h2 className="text-2xl font-bold text-center text-blue-700 mb-6">
           Shortlisted Candidates
@@ -126,14 +97,14 @@ export default function ShortList() {
                 <th className="border px-4 py-2">Availability</th>
                 <th className="border px-4 py-2">Location</th>
                 <th className="border px-4 py-2">Added On</th>
+                <th className="border px-4 py-2">Demand Code</th>
                 <th className="border px-4 py-2">Resume</th>
-                <th className="border px-4 py-2">Actions</th>
               </tr>
             </thead>
             <tbody>
               {filteredCandidates.length === 0 ? (
                 <tr>
-                  <td colSpan={15} className="text-center py-6 text-gray-400">
+                  <td colSpan={16} className="text-center py-6 text-gray-400">
                     No shortlisted candidates found.
                   </td>
                 </tr>
@@ -157,6 +128,7 @@ export default function ShortList() {
                         ? new Date(c.createdAt).toISOString().split("T")[0]
                         : ""}
                     </td>
+                    <td className="border px-4 py-2">{c.demandCode}</td>
                     <td className="border px-4 py-2">
                       {c.resumeLink ? (
                         <button
