@@ -1,0 +1,1 @@
+* * * * * cd /home/teju/crm && /home/teju/.nvm/versions/node/v22.0.0/bin/node scripts/sendDueReminders.cjs >> /home/teju/crm/cron.log 2>&1
