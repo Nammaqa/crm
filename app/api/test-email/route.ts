@@ -1,47 +1,65 @@
+// app/api/test-email/route.ts (or pages/api/test-email.ts if using Pages Router)
 import { NextResponse } from 'next/server';
 import nodemailer from 'nodemailer';
 
-// One-time test route
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+
+function mustEnv(name: string) {
+  const v = process.env[name];
+  if (!v || v.trim() === '') throw new Error(`Missing required env var: ${name}`);
+  return v;
+}
+
 export async function GET() {
   try {
-    // Create a transporter using SMTP
+    const SMTP_HOST = mustEnv('SMTP_HOST');          // smtp.gmail.com
+    const SMTP_PORT = Number(mustEnv('SMTP_PORT'));  // 465
+    const SMTP_USER = mustEnv('SMTP_USER');          // full Gmail address
+    const SMTP_PASS = mustEnv('SMTP_PASSWORD');      // app password
+    const FROM      = mustEnv('SMTP_FROM_EMAIL');    // often same as SMTP_USER
+
     const transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST,
-      port: Number(process.env.SMTP_PORT),
-      secure: true,
-      auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASSWORD,
-      },
+      host: SMTP_HOST,
+      port: SMTP_PORT,
+      secure: SMTP_PORT === 465, // true for 465 (SSL)
+      auth: { user: SMTP_USER, pass: SMTP_PASS },
     });
 
-    // Email content
-    const mailOptions = {
-      from: process.env.SMTP_FROM_EMAIL,
-      to: process.env.SMTP_USER, // Sending to the same email
-      subject: 'Test Email from CRM',
+    // Verify connectivity & credentials first (great for prod diagnostics)
+    await transporter.verify();
+
+    const info = await transporter.sendMail({
+      from: `"CRM" <${FROM}>`,      // Gmail prefers FROM === authenticated user
+      to: SMTP_USER,                 // send to yourself for this test
+      subject: 'Test Email from CRM (Prod)',
       html: `
         <h2>Test Email</h2>
-        <p>This is a test email from your CRM application.</p>
-        <p>If you're receiving this, your email configuration is working correctly!</p>
-        <p>Current time: ${new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' })}</p>
+        <p>This is a test email from your CRM application (production).</p>
+        <p>Current time (Asia/Kolkata): ${new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' })}</p>
       `,
-    };
+    });
 
-    // Send the email
-    await transporter.sendMail(mailOptions);
-
-    return NextResponse.json({ 
-      success: true, 
-      message: 'Test email sent successfully!' 
+    return NextResponse.json({
+      success: true,
+      message: 'Test email sent successfully!',
+      id: info.messageId,
     });
   } catch (error: any) {
+    // Minimal leak — no secrets
     console.error('Error sending test email:', error);
     return NextResponse.json(
-      { 
-        error: 'Failed to send test email', 
-        details: error.message || 'Unknown error occurred'
+      {
+        error: 'Failed to send test email',
+        details: error?.message ?? 'Unknown error',
+        // Helpful redacted env presence flags (remove later if you want)
+        envSeen: {
+          HOST: !!process.env.SMTP_HOST,
+          PORT: process.env.SMTP_PORT || null,
+          USER: !!process.env.SMTP_USER,
+          PASS: process.env.SMTP_PASSWORD ? '***' : null,
+          FROM: !!process.env.SMTP_FROM_EMAIL,
+        },
       },
       { status: 500 }
     );
