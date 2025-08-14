@@ -9,7 +9,7 @@ import ProspectiveLeadForm from "./BD/ProspectiveLeadForm";
 import NewLeadForm from "./BD/NewLeadForm";
 import ExistingLeadForm from "./BD/ExistingLeadForm";
 import { toast } from "sonner";
-
+ 
 export default function BdSales({ isSidebarOpen }) {
   const [leads, setLeads] = useState([]);
   const [activeTab, setActiveTab] = useState("Prospective");

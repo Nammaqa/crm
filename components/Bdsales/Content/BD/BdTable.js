@@ -23,7 +23,7 @@ export default function BdTable({ leads = [], onLeadClick, activeTab, onTabChang
     { key: "Prospective", label: "Prospective" },
     { key: "new-lead", label: "Qualified Lead"},
     { key: "existing-deal", label: "Existing Deal" },
-    { key: "deal", label: "Deal" },
+    // { key: "deal", label: "Deal" },
   ];
 
   return (
