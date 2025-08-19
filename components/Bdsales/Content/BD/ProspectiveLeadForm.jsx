@@ -71,11 +71,7 @@ const TECHNOLOGY_LABELS = {
 };
 
 // Company Type enums and labels
-const COMPANY_TYPE_ENUMS = [
-  "product",
-  "service",
-  "both",
-];
+const COMPANY_TYPE_ENUMS = ["product", "service", "both"];
 const COMPANY_TYPE_LABELS = {
   product: "Product Based",
   service: "Service Based",
@@ -85,8 +81,11 @@ const COMPANY_TYPE_LABELS = {
 // Utility function to generate Company ID: first 4 letters of company name + yyyy-mm-dd
 function generateCompanyID(companyName) {
   if (!companyName) return "";
-  // Remove non-alphabetic characters and spaces, take first 4 letters, pad if less
-  const namePart = companyName.replace(/[^a-zA-Z]/g, "").toUpperCase().padEnd(4, "X").slice(0, 4);
+  const namePart = companyName
+    .replace(/[^a-zA-Z]/g, "")
+    .toUpperCase()
+    .padEnd(4, "X")
+    .slice(0, 4);
   const today = new Date();
   const yyyy = today.getFullYear();
   const mm = String(today.getMonth() + 1).padStart(2, "0");
@@ -112,7 +111,26 @@ function isValidEmail(value) {
   return regex.test(value);
 }
 
-export default function ProspectiveLeadForm({ formData, setFormData, handleMoveToLead }) {
+// ✅ Async function to check if companyID already exists
+async function checkCompanyIDUnique(companyID) {
+  if (!companyID) return { unique: true };
+
+  try {
+    const res = await fetch(`/api/check-company-id?companyID=${companyID}`);
+    const data = await res.json();
+    // Expected response: { unique: false, addedBy: "username" }
+    return data;
+  } catch (err) {
+    console.error("Error checking company ID:", err);
+    return { unique: true };
+  }
+}
+
+export default function ProspectiveLeadForm({
+  formData,
+  setFormData,
+  handleMoveToLead,
+}) {
   const [errors, setErrors] = useState({
     companyName: "",
     companysize: "",
@@ -124,9 +142,12 @@ export default function ProspectiveLeadForm({ formData, setFormData, handleMoveT
     companyType: "",
   });
 
-  // Track if "Other" is selected for Technology/Industry
-  const [showTechnologyOther, setShowTechnologyOther] = useState(formData.technology === "other");
-  const [showIndustryOther, setShowIndustryOther] = useState(formData.industry === "other");
+  const [showTechnologyOther, setShowTechnologyOther] = useState(
+    formData.technology === "other"
+  );
+  const [showIndustryOther, setShowIndustryOther] = useState(
+    formData.industry === "other"
+  );
 
   useEffect(() => {
     setShowTechnologyOther(formData.technology === "other");
@@ -137,7 +158,7 @@ export default function ProspectiveLeadForm({ formData, setFormData, handleMoveT
   }, [formData.industry]);
 
   // Validate all fields before moving to lead
-  const validateForm = () => {
+  const validateForm = async () => {
     let valid = true;
     let newErrors = {
       companyName: "",
@@ -151,7 +172,8 @@ export default function ProspectiveLeadForm({ formData, setFormData, handleMoveT
     };
 
     if (!formData.companyName || !isAlpha(formData.companyName)) {
-      newErrors.companyName = "Company name must contain only alphabets and spaces.";
+      newErrors.companyName =
+        "Company name must contain only alphabets and spaces.";
       valid = false;
     }
 
@@ -161,28 +183,42 @@ export default function ProspectiveLeadForm({ formData, setFormData, handleMoveT
     }
 
     if (!formData.companyID || !isAlphanumeric(formData.companyID)) {
-      newErrors.companyID = "Company ID must be alphanumeric (auto-generated).";
+      newErrors.companyID =
+        "Company ID must be alphanumeric (auto-generated).";
       valid = false;
+    } else {
+      // ✅ Check uniqueness of company ID
+      const { unique, addedBy } = await checkCompanyIDUnique(
+        formData.companyID
+      );
+      if (!unique) {
+        newErrors.companyID = `The company ID already exists. Contact "${addedBy}" for further information.`;
+        valid = false;
+      }
     }
 
-    // --- Business Type required ---
     if (!formData.businessType || formData.businessType.trim() === "") {
       newErrors.businessType = "Business Type is required.";
       valid = false;
     }
 
-    // --- Company Type required ---
     if (!formData.companyType || formData.companyType.trim() === "") {
       newErrors.companyType = "Company Type is required.";
       valid = false;
     }
 
-    if (showTechnologyOther && (!formData.technologyOther || formData.technologyOther.trim() === "")) {
+    if (
+      showTechnologyOther &&
+      (!formData.technologyOther || formData.technologyOther.trim() === "")
+    ) {
       newErrors.technologyOther = "Please specify the technology.";
       valid = false;
     }
 
-    if (showIndustryOther && (!formData.industryOther || formData.industryOther.trim() === "")) {
+    if (
+      showIndustryOther &&
+      (!formData.industryOther || formData.industryOther.trim() === "")
+    ) {
       newErrors.industryOther = "Please specify the industry.";
       valid = false;
     }
@@ -198,19 +234,23 @@ export default function ProspectiveLeadForm({ formData, setFormData, handleMoveT
         valid = false;
       }
       if (!spoc.contact || !isValidPhoneNumber(spoc.contact)) {
-        spocErr.contact = "Contact must be 10 digits, start with 6/7/8/9.";
+        spocErr.contact =
+          "Contact must be 10 digits, start with 6/7/8/9.";
         valid = false;
       }
       if (spoc.altContact && !isValidPhoneNumber(spoc.altContact)) {
-        spocErr.altContact = "Alt Contact must be 10 digits, start with 6/7/8/9.";
+        spocErr.altContact =
+          "Alt Contact must be 10 digits, start with 6/7/8/9.";
         valid = false;
       }
       if (spoc.designation && !isAlpha(spoc.designation)) {
-        spocErr.designation = "Designation must contain only alphabets and spaces.";
+        spocErr.designation =
+          "Designation must contain only alphabets and spaces.";
         valid = false;
       }
       if (spoc.location && !isAlpha(spoc.location)) {
-        spocErr.location = "Location must contain only alphabets and spaces.";
+        spocErr.location =
+          "Location must contain only alphabets and spaces.";
         valid = false;
       }
       return spocErr;
@@ -221,8 +261,9 @@ export default function ProspectiveLeadForm({ formData, setFormData, handleMoveT
   };
 
   // On submit
-  const handleMoveToLeadWithValidation = () => {
-    if (validateForm()) {
+  const handleMoveToLeadWithValidation = async () => {
+    const valid = await validateForm();
+    if (valid) {
       handleMoveToLead();
     }
   };
@@ -252,27 +293,24 @@ export default function ProspectiveLeadForm({ formData, setFormData, handleMoveT
     setFormData((prev) => ({ ...prev, spocs }));
   };
 
-  // Technology select handler
   const handleTechnologyChange = (value) => {
     setFormData((prev) => ({
       ...prev,
       technology: value,
-      technologyOther: value === "other" ? (prev.technologyOther || "") : "",
+      technologyOther: value === "other" ? prev.technologyOther || "" : "",
     }));
     setShowTechnologyOther(value === "other");
   };
 
-  // Industry select handler
   const handleIndustryChange = (value) => {
     setFormData((prev) => ({
       ...prev,
       industry: value,
-      industryOther: value === "other" ? (prev.industryOther || "") : "",
+      industryOther: value === "other" ? prev.industryOther || "" : "",
     }));
     setShowIndustryOther(value === "other");
   };
 
-  // Company Type select handler
   const handleCompanyTypeChange = (value) => {
     setFormData((prev) => ({
       ...prev,
@@ -280,7 +318,6 @@ export default function ProspectiveLeadForm({ formData, setFormData, handleMoveT
     }));
   };
 
-  // Business Type input handler (now as a dropdown for consistency)
   const handleBusinessTypeChange = (value) => {
     setFormData((prev) => ({
       ...prev,
@@ -299,7 +336,9 @@ export default function ProspectiveLeadForm({ formData, setFormData, handleMoveT
           placeholder="Enter company name (alphabets only)"
         />
         {errors.companyName && (
-          <span className="text-red-500 text-xs">{errors.companyName}</span>
+          <span className="text-red-500 text-xs">
+            {errors.companyName}
+          </span>
         )}
       </div>
 
@@ -312,7 +351,9 @@ export default function ProspectiveLeadForm({ formData, setFormData, handleMoveT
           placeholder="Enter company size (numeric only)"
         />
         {errors.companysize && (
-          <span className="text-red-500 text-xs">{errors.companysize}</span>
+          <span className="text-red-500 text-xs">
+            {errors.companysize}
+          </span>
         )}
       </div>
 
@@ -361,20 +402,11 @@ export default function ProspectiveLeadForm({ formData, setFormData, handleMoveT
           </SelectContent>
         </Select>
         {errors.businessType && (
-          <span className="text-red-500 text-xs">{errors.businessType}</span>
+          <span className="text-red-500 text-xs">
+            {errors.businessType}
+          </span>
         )}
       </div>
-
-      {/* <div className="space-y-1">
-        <Label>No. of Employees</Label>
-        <Input
-          type="number"
-          value={formData.numEmployees}
-          onChange={(e) =>
-            setFormData((prev) => ({ ...prev, numEmployees: e.target.value }))
-          }
-        />
-      </div> */}
 
       {/* Company Type Dropdown */}
       <div className="space-y-1">
@@ -395,7 +427,9 @@ export default function ProspectiveLeadForm({ formData, setFormData, handleMoveT
           </SelectContent>
         </Select>
         {errors.companyType && (
-          <span className="text-red-500 text-xs">{errors.companyType}</span>
+          <span className="text-red-500 text-xs">
+            {errors.companyType}
+          </span>
         )}
       </div>
 
@@ -428,15 +462,17 @@ export default function ProspectiveLeadForm({ formData, setFormData, handleMoveT
             <Input
               placeholder="Please specify technology"
               value={formData.technologyOther || ""}
-              onChange={e =>
-                setFormData(prev => ({
+              onChange={(e) =>
+                setFormData((prev) => ({
                   ...prev,
                   technologyOther: e.target.value,
                 }))
               }
             />
             {errors.technologyOther && (
-              <span className="text-red-500 text-xs">{errors.technologyOther}</span>
+              <span className="text-red-500 text-xs">
+                {errors.technologyOther}
+              </span>
             )}
           </div>
         )}
@@ -464,15 +500,17 @@ export default function ProspectiveLeadForm({ formData, setFormData, handleMoveT
             <Input
               placeholder="Please specify industry"
               value={formData.industryOther || ""}
-              onChange={e =>
-                setFormData(prev => ({
+              onChange={(e) =>
+                setFormData((prev) => ({
                   ...prev,
                   industryOther: e.target.value,
                 }))
               }
             />
             {errors.industryOther && (
-              <span className="text-red-500 text-xs">{errors.industryOther}</span>
+              <span className="text-red-500 text-xs">
+                {errors.industryOther}
+              </span>
             )}
           </div>
         )}
@@ -480,7 +518,9 @@ export default function ProspectiveLeadForm({ formData, setFormData, handleMoveT
 
       <RemarksField
         value={formData.remarks || ""}
-        onChange={(value) => setFormData((prev) => ({ ...prev, remarks: value }))}
+        onChange={(value) =>
+          setFormData((prev) => ({ ...prev, remarks: value }))
+        }
       />
 
       <div className="pt-4 text-right">
