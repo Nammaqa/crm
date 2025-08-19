@@ -58,7 +58,7 @@ model Lead {
   salesName              String
   companyName            String
   numberOfEmployees      Int                @default(0)
-  employeeName           String?
+  employeeName           String[]
   replacementToDate      DateTime?
   replacementRequestDate DateTime?
   createdAt              DateTime           @default(now())
@@ -76,7 +76,7 @@ model Lead {
   companyID              String?
   technologyOther        String?
   leadType               LeadType
-  companyType            String?
+  companyType            String? @unique
   spocs                  Spoc[]
   reminders               Reminder[]
 }
