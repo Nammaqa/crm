@@ -183,6 +183,12 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Fix: replacementReason must be null if empty string or undefined
+    let replacementReasonValue = replacementReason;
+    if (replacementReasonValue === "" || replacementReasonValue === undefined) {
+      replacementReasonValue = null;
+    }
+
     const lead = await prisma.lead.create({
       data: {
         salesName,
@@ -193,7 +199,7 @@ export async function POST(req: NextRequest) {
         companyID: companyID ? companyID : null,
         numberOfEmployees: numberOfEmployees ? Number(numberOfEmployees) : 0,
         employeeName,
-        replacementReason,
+        replacementReason: replacementReasonValue,
         replacementToDate: replacementToDate ? new Date(replacementToDate) : null,
         replacementRequestDate: replacementRequestDate ? new Date(replacementRequestDate) : null,
         companySelect,
@@ -223,6 +229,41 @@ export async function POST(req: NextRequest) {
     return withCors(NextResponse.json(lead, { status: 201 }));
   } catch (error: unknown) {
     if (typeof error === "object" && error && "code" in error && (error as any).code === "P2002") {
+      const target = (error as any).meta?.target as string[] | undefined;
+
+      if (target && target.includes("companyID")) {
+        return withCors(
+          NextResponse.json(
+            { error: "The company ID already exists" },
+            { status: 409 }
+          )
+        );
+      }
+
+      if (target && target.includes("companyName")) {
+        // find the existing lead to get salesName
+        const existingLead = await prisma.lead.findFirst({
+          where: { companyName: (body as any).companyName },
+          select: { salesName: true },
+        });
+
+        if (existingLead) {
+          return withCors(
+            NextResponse.json(
+              { error: `The company already exists for more contact "${existingLead.salesName}"` },
+              { status: 409 }
+            )
+          );
+        }
+
+        return withCors(
+          NextResponse.json(
+            { error: "The company name already exists" },
+            { status: 409 }
+          )
+        );
+      }
+
       return withCors(
         NextResponse.json(
           { error: "Duplicate entry", details: (error as any).meta },
@@ -230,6 +271,7 @@ export async function POST(req: NextRequest) {
         )
       );
     }
+
     console.error("[POST ERROR]:", error, (error as Error)?.message, (error as Error)?.stack);
     return withCors(
       NextResponse.json(

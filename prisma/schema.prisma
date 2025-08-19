@@ -56,7 +56,7 @@ model Requirement {
 model Lead {
   id                     Int                @id @default(autoincrement())
   salesName              String
-  companyName            String
+  companyName            String @unique
   numberOfEmployees      Int                @default(0)
   employeeName           String[]
   replacementToDate      DateTime?
@@ -73,10 +73,10 @@ model Lead {
   technology             Technology?
   replacementReason      ReplacementReason?
   businessType           String?
-  companyID              String?
+  companyID              String? @unique
   technologyOther        String?
   leadType               LeadType
-  companyType            String? @unique
+  companyType            String? 
   spocs                  Spoc[]
   reminders               Reminder[]
 }
