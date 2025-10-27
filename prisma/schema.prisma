@@ -34,8 +34,15 @@ model Agreement {
   otherTechnology String?
 }
 
+enum Priority {
+  Low
+  Medium
+  High
+}
+
 model Requirement {
   id              Int      @id @default(autoincrement())
+  requirementId   String   @unique
   requirementName String
   companyName     String
   jobDescription  String
@@ -51,12 +58,13 @@ model Requirement {
   updatedAt       DateTime @updatedAt
   jdImage         String?
   budget          Int?
+  priority        Priority @default(Medium)
 }
 
 model Lead {
   id                     Int                @id @default(autoincrement())
   salesName              String
-  companyName            String @unique
+  companyName            String             @unique
   numberOfEmployees      Int                @default(0)
   employeeName           String[]
   replacementToDate      DateTime?
@@ -73,26 +81,26 @@ model Lead {
   technology             Technology?
   replacementReason      ReplacementReason?
   businessType           String?
-  companyID              String? @unique
+  companyID              String?            @unique
   technologyOther        String?
   leadType               LeadType
-  companyType            String? 
+  companyType            String?
   spocs                  Spoc[]
-  reminders               Reminder[]
+  reminders              Reminder[]
 }
 
 model Spoc {
-  id          Int      @id @default(autoincrement())
+  id          Int        @id @default(autoincrement())
   name        String
   email       String
   contact     String
   altContact  String?
   designation String
   location    String
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
   leadId      Int
-  lead        Lead     @relation(fields: [leadId], references: [id])
+  lead        Lead       @relation(fields: [leadId], references: [id])
   reminders   Reminder[]
 }
 
@@ -170,19 +178,19 @@ model Candidate {
 }
 
 model Reminder {
-  id              Int       @id @default(autoincrement())
-  clientId        Int
-  companyName     String
-  phoneNumber     String?
+  id               Int      @id @default(autoincrement())
+  clientId         Int
+  companyName      String
+  phoneNumber      String?
   followUpDateTime DateTime
-  notes           String?
-  completed       Boolean   @default(false)
-  spocId          Int?      // Optional - can have reminders without specific SPOC
-  spoc            Spoc?     @relation(fields: [spocId], references: [id])
-  creatorEmail    String    // Email of the user who created the reminder
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
-  lead            Lead      @relation(fields: [clientId], references: [id])
+  notes            String?
+  completed        Boolean  @default(false)
+  spocId           Int? // Optional - can have reminders without specific SPOC
+  spoc             Spoc?    @relation(fields: [spocId], references: [id])
+  creatorEmail     String // Email of the user who created the reminder
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  lead             Lead     @relation(fields: [clientId], references: [id])
 }
 
 enum Role {
@@ -273,7 +281,7 @@ enum PaymentTerms {
 }
 
 model Customer {
-  id                Int            @id @default(autoincrement())
+  id                Int             @id @default(autoincrement())
   customerType      CustomerType?
   primaryContact    String
   companyName       String?
@@ -284,13 +292,13 @@ model Customer {
   phoneNumberMobile String?
   pan               String?
   paymentTerms      PaymentTerms
-  documents         String[] 
-  department      String?
-  designation      String?
-  website         String?
+  documents         String[]
+  department        String?
+  designation       String?
+  website           String?
   billingAttention  String?
-  billingCountry    String? @default("India")
-  billingAddress    String      
+  billingCountry    String?         @default("India")
+  billingAddress    String
   billingCity       String
   billingState      String
   billingPinCode    String
@@ -300,40 +308,40 @@ model Customer {
   gstTreatment      String?
   shippingAttention String?
   shippingCountry   String?
-  shippingAddress   String?  
+  shippingAddress   String?
   shippingCity      String?
   shippingState     String?
   shippingPinCode   String?
   shippingPhone     String?
-  placeOfSupply    String?
-  shippingFax       String? 
+  placeOfSupply     String?
+  shippingFax       String?
   remarks           String?
-  createdAt         DateTime       @default(now())
-  updatedAt         DateTime       @updatedAt
-  ContactPerson ContactPerson[]
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  ContactPerson     ContactPerson[]
 
   Invoice Invoice[]
 }
 
 model ContactPerson {
-  id             Int      @id @default(autoincrement())
-  customerId     Int
-  customer       Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  salutation     String?
-  firstName      String
-  lastName       String
-  emailAddress   String
-  workPhone      String?
-  mobile         String?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  id           Int      @id @default(autoincrement())
+  customerId   Int
+  customer     Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  salutation   String?
+  firstName    String
+  lastName     String
+  emailAddress String
+  workPhone    String?
+  mobile       String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 }
 
 model Invoice {
   id                Int           @id @default(autoincrement())
   customerId        Int
   customer          Customer      @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  invoiceCode       String?       @unique 
+  invoiceCode       String?       @unique
   invoiceDate       DateTime?
   terms             PaymentTerms?
   dueDate           DateTime?
@@ -341,7 +349,7 @@ model Invoice {
   customerNotes     String?
   total             Float?
   Documents         String[]
-  status            String ?      @default("Draft")
+  status            String?       @default("Draft")
   isDraft           Boolean       @default(true)
   gstNumber         String?
   gstTreatment      String?
@@ -354,32 +362,32 @@ model Invoice {
   pan               String?
   taxDeducted       Boolean?
   paymentReceivedOn DateTime?
-  invoiceTemplate String?
+  invoiceTemplate   String?
   amountReceived    Float?
- paymentDocuments String[]
- paymentId      String?
- balancedDue       Float? @default(0)
+  paymentDocuments  String[]
+  paymentId         String?
+  balancedDue       Float?        @default(0)
   createdAt         DateTime      @default(now())
   updatedAt         DateTime      @updatedAt
-  writeofdate         DateTime?
-  writeofnotes         String?
-  writeofamount         Float?
-  Item Item[]
+  writeofdate       DateTime?
+  writeofnotes      String?
+  writeofamount     Float?
+  Item              Item[]
 }
 
 model Item {
-  id         Int      @id @default(autoincrement())
-  invoiceId  Int
-  invoice    Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
-  itemDetails String
-  quantity   Int
-  rate       Float
-  amount     Float
-  sac        String?
+  id                 Int      @id @default(autoincrement())
+  invoiceId          Int
+  invoice            Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  itemDetails        String
+  quantity           Int
+  rate               Float
+  amount             Float
+  sac                String?
   discountPercentage Float?
   GstPercentage      Float?
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
 }
 
 model Expense {
@@ -394,15 +402,15 @@ model Expense {
 }
 
 model Inventory {
-  id                    Int      @id @default(autoincrement())
-  serialNumber          String   @unique
-  itemName              String
-  itemQuantity          Int
-  produceBroughtDate    DateTime
-  dateOfTakeForUse      DateTime?
-  quantityBalance       Int
-  createdAt            DateTime @default(now())
-  updatedAt            DateTime @updatedAt
+  id                 Int       @id @default(autoincrement())
+  serialNumber       String    @unique
+  itemName           String
+  itemQuantity       Int
+  produceBroughtDate DateTime
+  dateOfTakeForUse   DateTime?
+  quantityBalance    Int
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
 
   @@map("inventory")
 }
