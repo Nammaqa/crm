@@ -20,10 +20,8 @@ import Adduser from "@components/Admin/Content/AddUser";
 import AgreementList from "@components/Admin/Content/AgreementList";
 import RequirementList from "@components/Admin/Content/RequirementList";
 import Customerlist from "@components/Admin/Content/Customerlist";
-import NewInvoice from "@components/Admin/Content/NewInvoice"; 
-
-// import Customerlist from "@components/Admin/Content/Customerlist";
-
+import NewInvoice from "@components/Admin/Content/NewInvoice";
+import InvoiceForm from "@components/Admin/Content/Invoice";
 
 // Import icons
 import {
@@ -44,7 +42,6 @@ import {
   FaUser,
   FaAddressBook
 } from "react-icons/fa";
-import InvoiceForm from "@components/Admin/Content/Invoice";
 
 // Sidebar sections with dynamic content
 const sections = [
@@ -61,11 +58,9 @@ const sections = [
   { id: "po", label: "Purchase Order", icon: <FaShoppingCart size={20} />, content: <Po /> },
   { id: "ac-manager", label: "A/C Manager", icon: <FaBuilding size={20} />, content: <AcManager /> },
   { id: "marketing", label: "Marketing", icon: <FaBullhorn size={20} />, content: <Marketing /> },
-  // { id: "invoice", label: "Customers", icon: <FaFileInvoice size={20} />, content: <Invoice /> },
   { id: "customer-list", label: "Customer List", icon: <FaAddressBook size={20} />, content: <Customerlist /> },
   { id: "customer", label: "Customer", icon: <FaAddressBook size={20} />, content: <InvoiceForm /> },
-  { id: "new-invoice", label: "Invoice", icon: <FaFileInvoice size={20} />, content: <NewInvoice /> }, // <-- Add this line
-
+  { id: "new-invoice", label: "Invoice", icon: <FaFileInvoice size={20} />, content: <NewInvoice /> },
 ];
 
 export default function Dashboard({ url }) {
@@ -78,45 +73,54 @@ export default function Dashboard({ url }) {
   };
 
   return (
-    <div className="flex h-screen w-full">
+    <div className="flex h-screen w-full bg-gray-50">
       {/* Sidebar (Left Side) */}
       <aside
-        className={`bg-gray-900 text-white h-full p-5 pt-8 transition-all duration-300 flex flex-col border-r border-gray-800 shadow-md ${open ? "w-64" : "w-20"
-          } relative overflow-y-auto overflow-x-hidden`} // Only vertical scroll
+        className={`bg-white h-full p-5 pt-8 transition-all duration-300 flex flex-col border-r border-gray-200 shadow-lg ${
+          open ? "w-64" : "w-20"
+        } relative overflow-y-auto overflow-x-hidden`}
       >
         {/* Toggle Button */}
         <button
-          className="absolute top-6 right-[-15px] bg-gray-800 text-white p-2 rounded-full border-2 border-gray-600 hover:bg-gray-700 focus:outline-none transition-all"
+          className="absolute top-6 right-[-15px] bg-white text-gray-700 p-2 rounded-full border-2 border-gray-200 hover:bg-gray-50 hover:border-blue-400 focus:outline-none transition-all shadow-md z-10"
           onClick={() => setOpen(!open)}
         >
           {open ? <FaTimes size={18} /> : <FaBars size={18} />}
         </button>
 
         {/* Logo */}
-        <div className="flex items-center gap-x-4 mb-6">
+        <div className="flex items-center gap-x-4 mb-8">
           <Image
             src="/Wizzybox Logo.png"
             alt="Company Logo"
             width={open ? 150 : 40}
             height={50}
-            className={`transition-all duration-300 ${!open ? "opacity-0 w-0" : "opacity-100 w-auto"}`}
+            className={`transition-all duration-300 ${
+              !open ? "opacity-0 w-0" : "opacity-100 w-auto"
+            }`}
           />
         </div>
 
         {/* Sidebar Menu Items */}
-        <ul className="flex flex-col space-y-2">
+        <ul className="flex flex-col space-y-1">
           {sections.map((section) => (
             <li
               key={section.id}
-              className={`flex items-center p-2 rounded-md cursor-pointer text-sm transition-all hover:bg-gray-700 ${selectedSection === section.id ? "bg-gray-700" : ""
-                }`}
+              className={`flex items-center p-3 rounded-lg cursor-pointer text-sm transition-all ${
+                selectedSection === section.id
+                  ? "bg-blue-50 text-blue-600 border-l-4 border-blue-600 font-medium shadow-sm"
+                  : "text-gray-700 hover:bg-gray-100 hover:text-blue-600"
+              }`}
               onClick={() => setSelectedSection(section.id)}
               tabIndex={0}
             >
-              <div className="w-8 text-center">{section.icon}</div>
+              <div className="w-8 text-center flex items-center justify-center">
+                {section.icon}
+              </div>
               <span
-                className={`transition-all duration-300 ${!open ? "opacity-0 w-0" : "opacity-100 w-auto"
-                  }`}
+                className={`ml-3 transition-all duration-300 whitespace-nowrap ${
+                  !open ? "opacity-0 w-0" : "opacity-100 w-auto"
+                }`}
               >
                 {section.label}
               </span>
@@ -127,14 +131,15 @@ export default function Dashboard({ url }) {
         {/* Logout Button */}
         <button
           onClick={handleLogout}
-          className="mt-auto flex items-center p-2 rounded-md cursor-pointer text-sm transition-all bg-red-600 hover:bg-red-700 text-white"
+          className="mt-auto flex items-center p-3 rounded-lg cursor-pointer text-sm transition-all bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 hover:border-red-300"
         >
-          <div className="w-8 text-center">
+          <div className="w-8 text-center flex items-center justify-center">
             <FaSignOutAlt size={20} />
           </div>
           <span
-            className={`transition-all duration-300 ${!open ? "opacity-0 w-0" : "opacity-100 w-auto"
-              }`}
+            className={`ml-3 transition-all duration-300 whitespace-nowrap ${
+              !open ? "opacity-0 w-0" : "opacity-100 w-auto"
+            }`}
           >
             Logout
           </span>
@@ -142,9 +147,11 @@ export default function Dashboard({ url }) {
       </aside>
 
       {/* Main Content Area (Right Side) */}
-      <main className="flex-1 h-full overflow-auto p-6 bg-gray-100">
-        <div className="w-full max-w-6xl pt-6">
-          {sections.find((s) => s.id === selectedSection)?.content}
+      <main className="flex-1 h-full overflow-auto p-8 bg-gray-50">
+        <div className="w-full max-w-7xl mx-auto">
+          <div className="bg-white rounded-xl shadow-sm p-6 min-h-[calc(100vh-4rem)]">
+            {sections.find((s) => s.id === selectedSection)?.content}
+          </div>
         </div>
       </main>
     </div>

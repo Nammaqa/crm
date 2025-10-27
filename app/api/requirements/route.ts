@@ -11,6 +11,7 @@ cloudinary.config({
 
 // Define a specific type for the `data` object
 interface RequirementData {
+  requirementId: string;  // Add this
   requirementName: string;
   companyName: string;
   jobDescription: string;
@@ -24,6 +25,7 @@ interface RequirementData {
   workLocation: string;
   budget: number;
   jdImage?: string;
+  priority: 'Low' | 'Medium' | 'High';  // Add this
 }
 
 let data: RequirementData = {} as RequirementData;
@@ -47,38 +49,24 @@ export async function GET() {
 // ✅ POST a new requirement (with optional JD image upload to Cloudinary)
 export async function POST(req: NextRequest) {
   try {
-    // Accept FormData for file upload
     const contentType = req.headers.get("content-type") || "";
     let jdImageUrl: string | null = null;
+    let formData: RequirementData;
 
     if (contentType.includes("multipart/form-data")) {
-      const formData = await req.formData();
-
-      data.requirementName = formData.get("requirementName") as string;
-      data.companyName = formData.get("companyName") as string;
-      data.jobDescription = formData.get("jobDescription") as string;
-      data.experience = Number(formData.get("experience"));
-      data.noticePeriod = Number(formData.get("noticePeriod"));
-      data.positions = Number(formData.get("positions"));
-      data.primarySkills = formData.get("primarySkills") as string;
-      data.secondarySkills = formData.get("secondarySkills") as string;
-      data.closePositions = formData.get("closePositions") as string;
-      data.requirementType = formData.get("requirementType") as string;
-      data.workLocation = formData.get("workLocation") as string;
-      data.budget = Number(formData.get("budget"));
-
-      // Handle JD image upload (optional)
-      const jdImage = formData.get("jdImage") as File | null;
+      const formDataRaw = await req.formData();
+      
+      // Handle file upload first
+      const jdImage = formDataRaw.get("jdImage") as File | null;
       if (jdImage && jdImage.size > 0) {
         const arrayBuffer = await jdImage.arrayBuffer();
         const buffer = Buffer.from(arrayBuffer);
 
-        // Upload to Cloudinary
         const uploadResult = await new Promise<{ secure_url: string }>((resolve, reject) => {
           const stream = cloudinary.uploader.upload_stream(
             { folder: "jd_images" },
             (error, result) => {
-              if (error || !result) return reject(error || new Error("Cloudinary upload failed"));
+              if (error || !result) return reject(error || new Error("Upload failed"));
               resolve(result as { secure_url: string });
             }
           );
@@ -86,31 +74,48 @@ export async function POST(req: NextRequest) {
         });
         jdImageUrl = uploadResult.secure_url;
       }
+
+      // Prepare the data object
+      formData = {
+        requirementName: formDataRaw.get("requirementName") as string,
+        companyName: formDataRaw.get("companyName") as string,
+        jobDescription: formDataRaw.get("jobDescription") as string,
+        experience: Number(formDataRaw.get("experience")),
+        noticePeriod: Number(formDataRaw.get("noticePeriod")),
+        positions: Number(formDataRaw.get("positions")),
+        primarySkills: formDataRaw.get("primarySkills") as string,
+        secondarySkills: formDataRaw.get("secondarySkills") as string,
+        closePositions: formDataRaw.get("closePositions") as string,
+        requirementType: formDataRaw.get("requirementType") as string,
+        workLocation: formDataRaw.get("workLocation") as string,
+        budget: Number(formDataRaw.get("budget")),
+        priority: (formDataRaw.get("priority") as 'Low' | 'Medium' | 'High') || 'Medium',
+        requirementId: formDataRaw.get("requirementId") as string,
+      };
     } else {
-      // Fallback: Accept JSON (no image)
-      data = await req.json();
+      formData = await req.json();
     }
 
-    // Store in DB
+    // Create requirement in database
     const newRequirement = await prisma.requirement.create({
       data: {
-        requirementName: data.requirementName,
-        companyName: data.companyName,
-        jobDescription: data.jobDescription,
-        jdImage: jdImageUrl, 
-        experience: data.experience,
-        noticePeriod: data.noticePeriod,
-        positions: data.positions,
-        primarySkills: data.primarySkills,
-        secondarySkills: data.secondarySkills,
-        closePositions: data.closePositions,
-        requirementType: data.requirementType,
-        workLocation: data.workLocation,
-        budget: data.budget,
+        requirementName: formData.requirementName,
+        companyName: formData.companyName,
+        jobDescription: formData.jobDescription,
+        experience: formData.experience,
+        noticePeriod: formData.noticePeriod,
+        positions: formData.positions,
+        primarySkills: formData.primarySkills,
+        secondarySkills: formData.secondarySkills,
+        closePositions: formData.closePositions,
+        requirementType: formData.requirementType,
+        workLocation: formData.workLocation,
+        budget: formData.budget,
+        priority: formData.priority,
+        requirementId: formData.requirementId,
+        jdImage: jdImageUrl,
       },
     });
-
-    console.log("POST /api/requirements - Created:", newRequirement);
 
     return NextResponse.json(newRequirement, { status: 201 });
 
