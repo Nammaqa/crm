@@ -13,7 +13,7 @@ export default function LeadTypeSelector({ value, onChange }) {
                 <SelectContent>
                     <SelectItem value="prospective">Add Prospective Lead</SelectItem>
                     <SelectItem value="new">Add Qualified Lead</SelectItem>
-                    <SelectItem value="existing">Add Existing Deal</SelectItem>
+                    <SelectItem value="existing">Add Deal</SelectItem>
                 </SelectContent>
             </Select>
         </div>

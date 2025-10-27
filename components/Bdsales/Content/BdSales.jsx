@@ -1,37 +1,50 @@
+"use client";
 import React, { useState, useEffect } from "react";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
-import BdTable from "./BD/BdTable";
-import LeadTypeSelector from "./BD/LeadTypeSelector";
-import ProspectiveLeadForm from "./BD/ProspectiveLeadForm";
-import NewLeadForm from "./BD/NewLeadForm";
-import ExistingLeadForm from "./BD/ExistingLeadForm";
 import { toast } from "sonner";
+import BdTable from "./BD/BdTable";
+import ProspectiveLeadForm from "./BD/ProspectiveLeadForm";
+import QualifiedLeadForm from "./BD/QualifiedLeadForm";
+import ExistingDealForm from "./BD/ExistingDealForm";
+import SearchFilters from "./BD/SearchFilters";
+
 
 export default function BdSales({ isSidebarOpen }) {
   const [leads, setLeads] = useState([]);
+  const [filteredLeads, setFilteredLeads] = useState([]);
   const [activeTab, setActiveTab] = useState("Prospective");
   const [selectedLead, setSelectedLead] = useState(null);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [salesName, setSalesName] = useState("");
+  
+  // Filter states
+  const [filters, setFilters] = useState({
+    companyName: "",
+    salesOwner: "",
+    status: "",
+    industry: "",
+    dateFrom: "",
+    dateTo: "",
+  });
+
 
   const [formData, setFormData] = useState({
     id: "",
     salesName: "",
     leadType: "prospective",
-    dealType: "",
-    businessType: "",
-    companyType: "",
-    technology: "",
-    technologyOther: "",
+    status: "prospective",
     companyName: "",
     companysize: "",
     companyID: "",
-    numEmployees: "",
-    percentage: "",
-    remarks: "",
+    companyType: "",
+    technology: "",
+    technologyOther: "",
     industry: "",
     industryOther: "",
+    businessType: "",
+    numberOfEmployees: "",
+    percentage: "",
+    remarks: "",
     spocs: [
       {
         id: 1,
@@ -43,17 +56,15 @@ export default function BdSales({ isSidebarOpen }) {
         location: "",
       },
     ],
-    existingLeadDetails: {
-      employeeID: "",
-      employeeName: "",
-      replacementReason: "",
-      replacementToDate: "",
-      replacementRequestDate: "",
-      companySelect: "",
-      companyNameGST: "",
-    },
-    status: "prospective",
+    dealType: "",
+    replacementReason: "",
+    replacementToDate: "",
+    replacementRequestDate: "",
+    employeeName: "",
+    companySelect: "",
+    companyNameGST: "",
   });
+
 
   // Fetch initial data
   useEffect(() => {
@@ -66,62 +77,153 @@ export default function BdSales({ isSidebarOpen }) {
         });
         const userData = await userRes.json();
 
+
         if (!userRes.ok) {
           throw new Error(userData.message || "Failed to fetch user data");
         }
 
-        const loggedInSalesName =
-          userData?.data?.userName || userData?.userName;
+
+        const loggedInSalesName = userData?.data?.userName || userData?.userName;
         if (!loggedInSalesName) {
           throw new Error("Failed to fetch user name");
         }
 
+
+        setSalesName(loggedInSalesName);
         setFormData((prev) => ({
           ...prev,
           salesName: loggedInSalesName,
         }));
 
+
         const leadRes = await fetch("/api/lead");
         const leadData = await leadRes.json();
+
 
         if (!leadRes.ok) {
           console.error("Failed to fetch leads:", leadData.error);
           return;
         }
 
+
         const filteredLeads = leadData.filter(
-          (lead) =>
-            lead.salesName?.toLowerCase() ===
-            loggedInSalesName.toLowerCase()
+          (lead) => lead.salesName?.toLowerCase() === loggedInSalesName.toLowerCase()
         );
         setLeads(filteredLeads);
+        setFilteredLeads(filteredLeads);
       } catch (err) {
         console.error("Initialization error:", err);
+        toast.error("Failed to load initial data");
       }
     };
+
+
     fetchInitialData();
   }, []);
 
-  // When user clicks a table row
+
+  // Apply filters whenever filters or leads change
+  useEffect(() => {
+    applyFilters();
+  }, [filters, leads]);
+
+
+  const applyFilters = () => {
+    let filtered = [...leads];
+
+
+    // Company Name filter
+    if (filters.companyName) {
+      filtered = filtered.filter((lead) =>
+        lead.companyName?.toLowerCase().includes(filters.companyName.toLowerCase())
+      );
+    }
+
+
+    // Sales Owner filter
+    if (filters.salesOwner) {
+      filtered = filtered.filter((lead) =>
+        lead.salesName?.toLowerCase().includes(filters.salesOwner.toLowerCase())
+      );
+    }
+
+
+    // Status filter
+    if (filters.status) {
+      filtered = filtered.filter((lead) => lead.status === filters.status);
+    }
+
+
+    // Industry filter
+    if (filters.industry) {
+      filtered = filtered.filter((lead) => lead.industry === filters.industry);
+    }
+
+
+    // Date Range filter
+    if (filters.dateFrom) {
+      filtered = filtered.filter((lead) => {
+        const leadDate = new Date(lead.createdAt);
+        const fromDate = new Date(filters.dateFrom);
+        return leadDate >= fromDate;
+      });
+    }
+
+
+    if (filters.dateTo) {
+      filtered = filtered.filter((lead) => {
+        const leadDate = new Date(lead.createdAt);
+        const toDate = new Date(filters.dateTo);
+        toDate.setHours(23, 59, 59, 999);
+        return leadDate <= toDate;
+      });
+    }
+
+
+    setFilteredLeads(filtered);
+  };
+
+
+  const handleFilterChange = (newFilters) => {
+    setFilters(newFilters);
+  };
+
+
+  const clearFilters = () => {
+    setFilters({
+      companyName: "",
+      salesOwner: "",
+      status: "",
+      industry: "",
+      dateFrom: "",
+      dateTo: "",
+    });
+  };
+
+
+  // Handle lead click from table
   const handleLeadClick = (lead) => {
     setSelectedLead(lead);
+    setIsEditMode(true);
+
+
     setFormData({
       id: lead.id || "",
       salesName: lead.salesName || "",
       leadType: lead.leadType || "prospective",
-      dealType: lead.dealType || "",
-      businessType: lead.businessType || "",
-      companyType: lead.companyType || "",
-      technology: lead.technology || "",
-      technologyOther: lead.technologyOther || "",
+      status: lead.status || "prospective",
       companyName: lead.companyName || "",
       companysize: lead.companysize || "",
       companyID: lead.companyID || "",
-      numEmployees: lead.numberOfEmployees || "",
-      percentage: lead.percentage || "",
-      remarks: lead.remarks || "",
+      companyType: lead.companyType || "",
+      technology: lead.technology || "",
+      technologyOther: lead.technologyOther || "",
       industry: lead.industry || "",
       industryOther: lead.industryOther || "",
+      businessType: lead.businessType || "",
+      numberOfEmployees: lead.numberOfEmployees || "",
+      percentage: lead.percentage || "",
+      remarks: lead.remarks || "",
       spocs:
         Array.isArray(lead.spocs) && lead.spocs.length > 0
           ? lead.spocs.map((spoc, idx) => ({
@@ -144,64 +246,125 @@ export default function BdSales({ isSidebarOpen }) {
                 location: "",
               },
             ],
-      existingLeadDetails: {
-        employeeID: lead.employeeID || "",
-        employeeName: lead.employeeName || "",
-        replacementReason: lead.replacementReason || "",
-        replacementToDate: lead.replacementToDate
-          ? lead.replacementToDate.slice(0, 10)
-          : "",
-        replacementRequestDate: lead.replacementRequestDate
-          ? lead.replacementRequestDate.slice(0, 10)
-          : "",
-        companySelect: String(lead.id || ""),
-        companyNameGST: lead.companyNameGST || lead.companyName || "",
-      },
-      status: lead.status || "prospective",
+      dealType: lead.dealType || "",
+      replacementReason: lead.replacementReason || "",
+      replacementToDate: lead.replacementToDate
+        ? lead.replacementToDate.slice(0, 10)
+        : "",
+      replacementRequestDate: lead.replacementRequestDate
+        ? lead.replacementRequestDate.slice(0, 10)
+        : "",
+      employeeName: Array.isArray(lead.employeeName) 
+        ? lead.employeeName.join(", ") 
+        : lead.employeeName || "",
+      companySelect: String(lead.id || ""),
+      companyNameGST: lead.companyNameGST || lead.companyName || "",
     });
 
+
+    // Switch to appropriate tab
     if (lead.leadType === "prospective") setActiveTab("Prospective");
-    if (lead.leadType === "new") setActiveTab("new-lead");
-    if (lead.leadType === "existing" || lead.leadType === "deal")
-      setActiveTab("deal");
+    if (lead.leadType === "new") setActiveTab("QualifiedLead");
+    if (lead.leadType === "existing") setActiveTab("ExistingDeal");
   };
 
-  // Submit
-  const handleSubmit = async (e) => {
-    if (e && typeof e.preventDefault === "function") e.preventDefault();
-    const token = localStorage.getItem("token");
-    const { id, existingLeadDetails, ...cleanedFormData } = formData;
 
-    // Fix: Ensure employeeName is always an array
+  // Handle tab change
+  const handleTabChange = (tab) => {
+    if (tab === activeTab) return;
+    setActiveTab(tab);
+    setSelectedLead(null);
+    setIsEditMode(false);
+
+
+    setFormData((prev) => ({
+      ...prev,
+      id: "",
+      leadType:
+        tab === "Prospective"
+          ? "prospective"
+          : tab === "QualifiedLead"
+          ? "new"
+          : "existing",
+      status:
+        tab === "Prospective"
+          ? "prospective"
+          : tab === "QualifiedLead"
+          ? "newlead"
+          : "deal",
+      companyName: "",
+      companysize: "",
+      companyID: "",
+      companyType: "",
+      technology: "",
+      technologyOther: "",
+      industry: "",
+      industryOther: "",
+      businessType: "",
+      numberOfEmployees: "",
+      percentage: "",
+      remarks: "",
+      spocs: [
+        {
+          id: 1,
+          name: "",
+          email: "",
+          contact: "",
+          altContact: "",
+          designation: "",
+          location: "",
+        },
+      ],
+      dealType: "",
+      replacementReason: "",
+      replacementToDate: "",
+      replacementRequestDate: "",
+      employeeName: "",
+      companySelect: "",
+      companyNameGST: "",
+    }));
+  };
+
+
+  // Submit Prospective Lead
+  const handleSubmitProspective = async (validateOnly = false) => {
+    const token = localStorage.getItem("token");
+
+
     const payload = {
-      ...cleanedFormData,
-      ...existingLeadDetails,
-      numberOfEmployees: parseInt(formData.numEmployees, 10) || 0,
+      salesName: formData.salesName,
+      leadType: "prospective",
+      status: "prospective",
+      companyName: formData.companyName,
+      companysize: formData.companysize,
+      companyID: formData.companyID,
+      companyType: formData.companyType,
+      technology: formData.technology,
+      technologyOther: formData.technologyOther || null,
+      industry: formData.industry,
+      industryOther: formData.industryOther || null,
+      businessType: formData.businessType,
+      numberOfEmployees: parseInt(formData.numberOfEmployees, 10) || 0,
       percentage: parseInt(formData.percentage, 10) || 0,
+      remarks: formData.remarks || null,
       spocs: formData.spocs.map((spoc) => ({
         name: spoc.name,
         email: spoc.email,
         contact: spoc.contact,
-        altContact: spoc.altContact,
+        altContact: spoc.altContact || null,
         designation: spoc.designation,
         location: spoc.location,
       })),
-      employeeName: Array.isArray(formData.existingLeadDetails?.employeeName)
-        ? formData.existingLeadDetails.employeeName
-        : formData.existingLeadDetails?.employeeName
-        ? [formData.existingLeadDetails.employeeName]
-        : [],
-      // Fix: replacementReason must be null if empty string
-      replacementReason:
-        existingLeadDetails.replacementReason === "" ||
-        existingLeadDetails.replacementReason === undefined
-          ? null
-          : existingLeadDetails.replacementReason,
     };
 
+
+    if (validateOnly) return true;
+
+
     try {
-      const method = id ? "PUT" : "POST";
-      const endpoint = id ? `/api/lead/${id}` : "/api/lead";
+      const method = isEditMode && formData.id ? "PUT" : "POST";
+      const endpoint = isEditMode && formData.id ? `/api/lead/${formData.id}` : "/api/lead";
+
 
       const res = await fetch(endpoint, {
         method,
@@ -212,47 +375,15 @@ export default function BdSales({ isSidebarOpen }) {
         body: JSON.stringify(payload),
       });
 
+
       const data = await res.json();
 
+
       if (res.ok) {
-        toast.success("Lead submitted successfully!");
-        setFormData((prev) => ({
-          ...prev,
-          id: "",
-          dealType: "",
-          businessType: "",
-          companyType: "",
-          technology: "",
-          technologyOther: "",
-          companyName: "",
-          companysize: "",
-          companyID: "",
-          numEmployees: "",
-          percentage: "",
-          remarks: "",
-          industry: "",
-          industryOther: "",
-          spocs: [
-            {
-              id: 1,
-              name: "",
-              email: "",
-              contact: "",
-              altContact: "",
-              designation: "",
-              location: "",
-            },
-          ],
-          existingLeadDetails: {
-            employeeID: "",
-            employeeName: "",
-            replacementReason: "",
-            replacementToDate: "",
-            replacementRequestDate: "",
-            companySelect: "",
-            companyNameGST: "",
-          },
-        }));
+        toast.success(
+          isEditMode ? "Prospective Lead updated successfully!" : "Prospective Lead saved successfully!"
+        );
+
 
         setLeads((prev) => {
           const index = prev.findIndex((l) => l.id === data.id);
@@ -263,20 +394,31 @@ export default function BdSales({ isSidebarOpen }) {
           }
           return [...prev, data];
         });
+
+
+        setFormData((prev) => ({ ...prev, id: data.id }));
+        setIsEditMode(true);
+
+
+        return true;
       } else {
-        toast.error(`Submission failed: ${data.error}`);
+        toast.error(`Failed to save: ${data.error}`);
+        return false;
       }
     } catch (err) {
       toast.error(`Network error: ${err.message}`);
+      return false;
     }
   };
 
-  // Move prospective → new
-  const handleMoveToLead = async () => {
+
+  // Move Prospective to Qualified Lead
+  const handleMoveToQualifiedLead = async () => {
     if (!formData.id) {
-      toast.error("Lead ID missing. Submit the form first.");
+      toast.error("Please save the Prospective Lead first.");
       return;
     }
+
 
     try {
       const response = await fetch(`/api/lead/${formData.id}`, {
@@ -285,103 +427,98 @@ export default function BdSales({ isSidebarOpen }) {
         body: JSON.stringify({ leadType: "new", status: "newlead" }),
       });
 
+
       const updatedLead = await response.json();
+
 
       if (response.ok) {
         toast.success("Moved to Qualified Lead!");
-        setFormData((prev) => ({ ...prev, leadType: "new", status: "newlead" }));
+        setFormData((prev) => ({
+          ...prev,
+          leadType: "new",
+          status: "newlead",
+        }));
         setLeads((prev) =>
           prev.map((l) => (l.id === updatedLead.id ? updatedLead : l))
         );
-        setActiveTab("new-lead");
+        setActiveTab("QualifiedLead");
+      } else {
+        toast.error(`Error: ${updatedLead.error}`);
       }
     } catch (err) {
-      toast.error("Error moving to lead");
+      toast.error("Error moving to Qualified Lead");
     }
   };
 
-  // Move to deal (fix: always flatten payload, remove nested objects, only send primitives/arrays)
-  const handleMoveToDeal = async (payload = null) => {
+
+  // Submit Qualified Lead and Move to  Deal
+  const handleMoveToExistingDeal = async () => {
     if (!formData.id) {
-      toast.error("Submit the lead first before moving to Deal.");
+      toast.error("Please ensure the lead is saved first.");
       return;
     }
 
-    // Always flatten payload and remove nested objects
-    let updatePayload;
-    if (payload) {
-      // If payload is provided (from ExistingLeadForm), flatten it
-      updatePayload = { ...payload };
-      Object.keys(updatePayload).forEach((key) => {
-        const val = updatePayload[key];
-        if (
-          typeof val === "object" &&
-          val !== null &&
-          (val instanceof HTMLElement ||
-            (val && val.$$typeof) ||
-            (val && val._reactInternals) ||
-            Array.isArray(val) === false
-          )
-        ) {
-          delete updatePayload[key];
-        }
-      });
-      delete updatePayload.existingLeadDetails;
-      // Fix: replacementReason must be null if empty string
-      if (
-        updatePayload.replacementReason === "" ||
-        updatePayload.replacementReason === undefined
-      ) {
-        updatePayload.replacementReason = null;
-      }
-    } else {
-      updatePayload = {
-        ...formData,
-        ...formData.existingLeadDetails,
-        numberOfEmployees: parseInt(formData.numEmployees, 10) || 0,
-        percentage: parseInt(formData.percentage, 10) || 0,
-        spocs: Array.isArray(formData.spocs)
-          ? formData.spocs.map((spoc) => ({
-              name: spoc.name,
-              email: spoc.email,
-              contact: spoc.contact,
-              altContact: spoc.altContact,
-              designation: spoc.designation,
-              location: spoc.location,
-            }))
-          : [],
-        // Fix: replacementReason must be null if empty string
-        replacementReason:
-          formData.existingLeadDetails.replacementReason === "" ||
-          formData.existingLeadDetails.replacementReason === undefined
-            ? null
-            : formData.existingLeadDetails.replacementReason,
-      };
-      delete updatePayload.existingLeadDetails;
-    }
 
-    // Ensure percentage is at least 90 before moving to deal
-    const percentageValue =
-      updatePayload.percentage !== undefined
-        ? parseInt(updatePayload.percentage, 10)
-        : parseInt(formData.percentage, 10);
-
+    const percentageValue = parseInt(formData.percentage, 10);
     if (isNaN(percentageValue) || percentageValue < 90) {
-      toast.error("Percentage must be at least 90% to move to Deal/Closure.");
+      toast.error("Percentage must be at least 90% to move to Deal.");
       return;
     }
+
 
     try {
-      const updateResponse = await fetch(`/api/lead/${formData.id}`, {
+      const token = localStorage.getItem("token");
+      const updatePayload = {
+        salesName: formData.salesName,
+        companyName: formData.companyName,
+        companysize: formData.companysize,
+        companyID: formData.companyID,
+        companyType: formData.companyType,
+        technology: formData.technology,
+        technologyOther: formData.technologyOther || null,
+        industry: formData.industry,
+        industryOther: formData.industryOther || null,
+        businessType: formData.businessType,
+        numberOfEmployees: parseInt(formData.numberOfEmployees, 10) || 0,
+        percentage: percentageValue,
+        remarks: formData.remarks || null,
+        dealType: formData.dealType || null,
+        replacementReason: formData.replacementReason || null,
+        replacementToDate: formData.replacementToDate || null,
+        replacementRequestDate: formData.replacementRequestDate || null,
+        employeeName: formData.employeeName
+          ? [formData.employeeName]
+          : [],
+        companySelect: formData.companySelect || null,
+        companyNameGST: formData.companyNameGST || null,
+        spocs: formData.spocs.map((spoc) => ({
+          name: spoc.name,
+          email: spoc.email,
+          contact: spoc.contact,
+          altContact: spoc.altContact || null,
+          designation: spoc.designation,
+          location: spoc.location,
+        })),
+      };
+
+
+      const updateRes = await fetch(`/api/lead/${formData.id}`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(token && { Authorization: `Bearer ${token}` }),
+        },
         body: JSON.stringify(updatePayload),
       });
 
-      const updateData = await updateResponse.json();
-      if (!updateResponse.ok) {
-        throw new Error(updateData.error || "Failed to update lead data");
+
+      const updateData = await updateRes.json();
+
+
+      if (!updateRes.ok) {
+        throw new Error(updateData.error || "Failed to update lead");
       }
+
 
       const response = await fetch(`/api/lead/${formData.id}`, {
         method: "PATCH",
@@ -389,108 +526,169 @@ export default function BdSales({ isSidebarOpen }) {
         body: JSON.stringify({ leadType: "existing", status: "deal" }),
       });
 
+
       const updatedLead = await response.json();
 
+
       if (response.ok) {
-        toast.success("Lead moved to Deal!");
-        setFormData((prev) => ({ ...prev, leadType: "existing", status: "deal" }));
+        toast.success("Moved to  Deal!");
+        setFormData((prev) => ({
+          ...prev,
+          leadType: "existing",
+          status: "deal",
+        }));
         setLeads((prev) =>
           prev.map((l) => (l.id === updatedLead.id ? updatedLead : l))
         );
-        setActiveTab("existing-deal");
+        setActiveTab("ExistingDeal");
       } else {
-        toast.error(`Error moving to deal: ${updatedLead.error || "Unknown error"}`);
+        toast.error(`Error: ${updatedLead.error}`);
       }
     } catch (err) {
-      let msg = err && err.message ? err.message : String(err);
-      if (msg.includes("circular structure")) {
-        msg = "Internal error: Please check your form data for invalid values.";
-      }
-      toast.error(`Error moving to deal: ${msg}`);
+      toast.error(`Error moving to  Deal: ${err.message}`);
     }
   };
 
-  const handleTabChange = (tab) => {
-    if (tab === activeTab) return;
-    setActiveTab(tab);
-    setSelectedLead(null);
 
-    if (tab === "Prospective")
-      setFormData((prev) => ({
-        ...prev,
-        leadType: "prospective",
-        status: "prospective",
-      }));
-    if (tab === "new-lead")
-      setFormData((prev) => ({
-        ...prev,
-        leadType: "new",
-        status: "newlead",
-      }));
-    if (tab === "deal" || tab === "existing-deal")
-      setFormData((prev) => ({
-        ...prev,
-        leadType: "existing",
-        status: "deal",
-      }));
+  // Move Lead (Generic function for moving leads between stages)
+  const handleMoveLead = async (leadId, newStatus, newLeadType) => {
+    try {
+      const response = await fetch(`/api/lead/${leadId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ 
+          status: newStatus,
+          leadType: newLeadType 
+        }),
+      });
+
+
+      const updatedLead = await response.json();
+
+
+      if (response.ok) {
+        // Update the leads state with the new lead data
+        setLeads(prev => prev.map(lead => 
+          lead.id === updatedLead.id ? updatedLead : lead
+        ));
+
+
+        // Show success message
+        toast.success(`Lead moved to ${newStatus === 'newlead' ? 'Qualified Lead' : 'Existing Deal'} successfully!`);
+
+
+        // Switch to the appropriate tab
+        if (newStatus === 'newlead') {
+          setActiveTab('QualifiedLead');
+        } else if (newStatus === 'deal') {
+          setActiveTab('ExistingDeal');
+        }
+      } else {
+        throw new Error(updatedLead.error || 'Failed to move lead');
+      }
+    } catch (error) {
+      toast.error(`Failed to move lead: ${error.message}`);
+      throw error;
+    }
   };
 
+
+  const handleUpdatePercentage = (updatedLead) => {
+    setLeads((prev) =>
+      prev.map((lead) => (lead.id === updatedLead.id ? updatedLead : lead))
+    );
+    setFilteredLeads((prev) =>
+      prev.map((lead) => (lead.id === updatedLead.id ? updatedLead : lead))
+    );
+  };
+
+
   return (
-    <div
-      className={`transition-all duration-300 ${
-        isSidebarOpen ? "ml-64" : "ml-0"
-      } p-6 bg-gray-50 min-h-screen overflow-hidden`}
-    >
-      <Card className="max-w-full mx-auto shadow-lg">
-        <CardHeader>
-          <CardTitle>BD/Sales Details</CardTitle>
+    <div className="transition-all duration-300 min-h-screen w-full m-0 p-0">
+      <Card className="w-full shadow-lg">
+        <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-gray-200">
+          <div className="flex justify-between items-center w-full py-2">
+            {/* Title Section */}
+            <div className="flex flex-col space-y-1">
+              <CardTitle className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+                Business Development & Sales
+              </CardTitle>
+              <p className="text-sm text-gray-500 font-medium">
+                Lead Management Dashboard
+              </p>
+            </div>
+
+            {/* Sales Owner Badge */}
+            <div className="flex items-center space-x-3">
+              <div className="flex flex-col items-end">
+                <span className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">
+                  Lead Owner
+                </span>
+                <div className="bg-white px-4 py-2 rounded-lg shadow-sm border border-blue-100">
+                  <div className="flex items-center space-x-2">
+                    <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                    <span className="text-base font-semibold text-gray-800">
+                      {salesName || "Loading..."}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </CardHeader>
-        <CardContent>
-          {/* Sales Name field at the top */}
-          <div className="mb-4">
-            <Label className="mb-1 block">Sales Name:</Label>
-            <Input
-              id="salesName"
-              value={formData.salesName || ""}
-              readOnly
-              className="bg-gray-100 cursor-not-allowed"
+
+        <CardContent className="pt-6">
+          {/* Forms with full width */}
+          <div className="w-full">
+            {activeTab === "Prospective" && (
+              <ProspectiveLeadForm
+                formData={formData}
+                setFormData={setFormData}
+                isEditMode={isEditMode}
+                handleSubmit={handleSubmitProspective}
+                handleMoveToQualifiedLead={handleMoveToQualifiedLead}
+              />
+            )}
+
+            {activeTab === "QualifiedLead" && (
+              <QualifiedLeadForm
+                formData={formData}
+                setFormData={setFormData}
+                isEditMode={isEditMode}
+                leads={leads}
+                handleMoveToExistingDeal={handleMoveToExistingDeal}
+              />
+            )}
+
+            {activeTab === "ExistingDeal" && (
+              <ExistingDealForm
+                formData={formData}
+                setFormData={setFormData}
+                isEditMode={isEditMode}
+                leads={leads}
+              />
+            )}
+          </div>
+
+          {/* Search & Filters - Now above the table */}
+          <div className="w-full mt-6">
+            <SearchFilters
+              filters={filters}
+              onFilterChange={handleFilterChange}
+              onClearFilters={clearFilters}
             />
           </div>
 
-          <BdTable
-            leads={leads}
-            onLeadClick={handleLeadClick}
-            activeTab={activeTab}
-            onTabChange={handleTabChange}
-          />
-
-          {activeTab === "Prospective" && (
-            <ProspectiveLeadForm
-              formData={formData}
-              setFormData={setFormData}
-              handleMoveToLead={handleMoveToLead}
+          {/* Table with full width */}
+          <div className="w-full">
+            <BdTable
+              leads={filteredLeads}
+              onLeadClick={handleLeadClick}
+              activeTab={activeTab}
+              onTabChange={handleTabChange}
+              onMoveLead={handleMoveLead}
+              onUpdatePercentage={handleUpdatePercentage}
             />
-          )}
-          {activeTab === "new-lead" && (
-            <NewLeadForm
-              formData={formData}
-              setFormData={setFormData}
-              handleMoveToDeal={handleMoveToDeal}
-              handleSubmitLead={handleSubmit}
-            />
-          )}
-          {(activeTab === "deal" || activeTab === "existing-deal") && (
-            <ExistingLeadForm
-              leads={leads}
-              formData={formData}
-              setFormData={setFormData}
-              handleMoveToDeal={handleMoveToDeal}
-              selectedTableData={selectedLead}
-            />
-          )}
-
-          <div className="mt-6 flex justify-end">
-            <Button onClick={handleSubmit}>Submit Lead</Button>
           </div>
         </CardContent>
       </Card>

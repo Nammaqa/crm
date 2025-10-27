@@ -28,7 +28,7 @@ function BdTable() {
                     variant={activeTab === 'existing-lead' ? "default" : "ghost"}
                     className="py-2 px-4"
                 >
-                    Existing Deal
+                     Deal
                 </Button>
                 <Button
                     onClick={() => setActiveTab('deal')}

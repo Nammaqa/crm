@@ -9,6 +9,17 @@ function withCors(response: NextResponse) {
   return response;
 }
 
+// Enum value mapping
+const REPLACEMENT_REASON_MAP: Record<string, string | null> = {
+  "resignation": "resigned",
+  "termination": "performance_issue",
+  "performance": "performance_issue",
+  "concern": "employee_concern",
+  "employee_concern": "employee_concern",
+  "resigned": "resigned",
+  "performance_issue": "performance_issue",
+};
+
 // GET handler
 export async function GET(
   req: NextRequest,
@@ -73,7 +84,13 @@ export async function PUT(
     const safeTechnology = !body.technology || body.technology === "" ? null : body.technology;
     const safeLeadType = !body.leadType || body.leadType === "" ? null : body.leadType;
     const safeStatus = !body.status || body.status === "" ? null : body.status;
-    const safeReplacementReason = !body.replacementReason || body.replacementReason === "" ? null : body.replacementReason;
+    
+    // FIX: Map replacement reason to correct enum value
+    let safeReplacementReason = null;
+    if (body.replacementReason && body.replacementReason !== "") {
+      const mappedValue = REPLACEMENT_REASON_MAP[body.replacementReason.toLowerCase()];
+      safeReplacementReason = mappedValue || null;
+    }
 
     // If spocs are provided, delete old ones before creating new
     if (body.spocs) {
@@ -107,7 +124,6 @@ export async function PUT(
         remarks: body.remarks ?? existingLead.remarks,
         companyType: body.companyType ?? existingLead.companyType,
         technologyOther: body.technologyOther ?? existingLead.technologyOther,
-        // industryOther: body.industryOther ?? existingLead.industryOther,
         updatedAt: new Date(),
         ...(body.spocs && {
           spocs: {
@@ -177,10 +193,18 @@ export async function PATCH(
   }
 
   try {
+    // FIX: Map replacement reason for PATCH as well
+    let safeReplacementReason = body.replacementReason;
+    if (safeReplacementReason && safeReplacementReason !== "") {
+      const mappedValue = REPLACEMENT_REASON_MAP[safeReplacementReason.toLowerCase()];
+      safeReplacementReason = mappedValue || null;
+    }
+
     const updatedLead = await prisma.lead.update({
       where: { id: leadId },
       data: {
         ...body,
+        replacementReason: safeReplacementReason,
         employeeName: body.employeeName,
         replacementToDate: body.replacementToDate ? new Date(body.replacementToDate) : undefined,
         replacementRequestDate: body.replacementRequestDate ? new Date(body.replacementRequestDate) : undefined,
