@@ -15,7 +15,16 @@ import AgreementList from "@components/Admin/Content/AgreementList";
 import RequirementList from "@components/Admin/Content/RequirementList";
 import Shorlisted from "@components/Bdsales/Content/Shorlisted";
 import Reminder from "@components/Bdsales/Content/Reminder";
-import {FaChartPie,FaHandshake,FaUsers,FaFileContract,FaClipboardList,FaShoppingCart,FaListAlt,FaBell,} from "react-icons/fa";
+import {
+  FaChartPie,
+  FaHandshake,
+  FaUsers,
+  FaFileContract,
+  FaClipboardList,
+  FaShoppingCart,
+  FaListAlt,
+  FaBell,
+} from "react-icons/fa";
 
 // Sidebar sections with dynamic content
 const sections = [
@@ -54,13 +63,13 @@ export default function Bdsles() {
   };
 
   return (
-    <div className="flex h-screen w-full overflow-hidden">
+    <div className="flex h-screen w-full overflow-hidden bg-gray-50">
       {/* Static Sidebar */}
-      <div className="bg-gray-900 text-white h-full w-64 flex flex-col relative">
+      <div className="bg-white h-full w-64 flex flex-col border-r border-gray-200 shadow-lg">
         {/* Sidebar content */}
         <div className="flex flex-col h-full">
           {/* Logo Section */}
-          <div className="flex items-center gap-x-4 mb-6 p-5 pt-8">
+          <div className="flex items-center gap-x-4 mb-6 p-5 pt-8 border-b border-gray-100">
             <Image
               src="/Wizzybox Logo.png"
               alt="Company Logo"
@@ -70,28 +79,34 @@ export default function Bdsles() {
             />
           </div>
 
-          {/* Menu Items container without overflow scroll */}
-          <div className="flex-1 px-5">
-            <ul className="flex flex-col space-y-2">
+          {/* Menu Items container */}
+          <div className="flex-1 px-5 overflow-y-auto">
+            <ul className="flex flex-col space-y-1">
               {sections.map((section) => (
                 <li
                   key={section.id}
-                  className={`flex items-center p-2 rounded-md cursor-pointer text-sm transition-all hover:bg-gray-700 ${selectedSection === section.id && !section.isLink ? "bg-gray-700" : ""}`}
+                  className={`flex items-center p-3 rounded-lg cursor-pointer text-sm transition-all ${
+                    selectedSection === section.id && !section.isLink
+                      ? "bg-blue-50 text-blue-600 border-l-4 border-blue-600 font-medium shadow-sm"
+                      : "text-gray-700 hover:bg-gray-100 hover:text-blue-600"
+                  }`}
                   onClick={() => handleSectionClick(section)}
                   tabIndex={0}
                 >
-                  <div className="w-8 text-center">{section.icon}</div>
-                  <span className="ml-2">{section.label}</span>
+                  <div className="w-8 text-center flex items-center justify-center">
+                    {section.icon}
+                  </div>
+                  <span className="ml-3 whitespace-nowrap">{section.label}</span>
                 </li>
               ))}
             </ul>
           </div>
 
           {/* Logout Button at the Bottom */}
-          <div className="mt-auto p-5 pt-0">
+          <div className="p-5 pt-3 border-t border-gray-100">
             <button
               onClick={handleLogout}
-              className="w-full flex items-center justify-center gap-2 p-2 rounded-md bg-red-600 hover:bg-red-700 text-white transition-all text-sm pl-8 pr-4"
+              className="w-full flex items-center justify-center gap-3 p-3 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 transition-all text-sm border border-red-200 hover:border-red-300 font-medium"
             >
               <FaSignOutAlt size={18} />
               <span>Logout</span>
@@ -101,10 +116,12 @@ export default function Bdsles() {
       </div>
 
       {/* Main Content Area */}
-      <main className="max-h-screen flex-1 flex justify-center items-start p-6 overflow-y-scroll scrollbar-hide">
-        <div className="w-full max-w-6xl pt-6">
-          {/* Render content for selected section */}
-          {sections.find((s) => s.id === selectedSection && !s.isLink)?.content}
+      <main className="max-h-screen flex-1 flex justify-center items-start p-8 overflow-y-auto bg-gray-50">
+        <div className="w-full max-w-7xl">
+          <div className="bg-white rounded-xl shadow-sm p-6 min-h-[calc(100vh-4rem)]">
+            {/* Render content for selected section */}
+            {sections.find((s) => s.id === selectedSection && !s.isLink)?.content}
+          </div>
         </div>
       </main>
     </div>
