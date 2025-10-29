@@ -123,7 +123,7 @@ const CandidateForm = () => {
   useEffect(() => {
     async function fetchCompanyIds() {
       try {
-        const res = await fetch("/api/company-ids");
+        const res = await fetch("/api/company-idss");
         const data = await res.json();
         setCompanyIds(Array.isArray(data) ? data : []);
       } catch (err) {
