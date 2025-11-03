@@ -71,6 +71,18 @@ async function checkCompanyIDUnique(companyID) {
   }
 }
 
+// Add this function after the existing validation functions
+async function checkCompanyNameUnique(companyName) {
+  if (!companyName) return { unique: true };
+  try {
+    const res = await fetch(`/api/check-company?companyName=${encodeURIComponent(companyName)}`);
+    return await res.json();
+  } catch (err) {
+    console.error("Error checking company name:", err);
+    return { unique: true };
+  }
+}
+
 export default function ProspectiveLeadForm({ formData, setFormData, isEditMode, handleSubmit, handleMoveToQualifiedLead }) {
   const [errors, setErrors] = useState({ companyName: "", companysize: "", companyID: "", spocs: [], technologyOther: "", industryOther: "", businessType: "", companyType: "" });
   const [spocErrors, setSpocErrors] = useState([]);
@@ -130,6 +142,42 @@ export default function ProspectiveLeadForm({ formData, setFormData, isEditMode,
     return valid;
   };
 
+  // Add debounce function to prevent too many API calls
+  const debounce = (func, wait) => {
+    let timeout;
+    return (...args) => {
+      clearTimeout(timeout);
+      timeout = setTimeout(() => func(...args), wait);
+    };
+  };
+
+  // Add company name check
+  const checkCompanyNameDebounced = debounce(async (name) => {
+    if (name && isAlpha(name)) {
+      const { unique, addedBy } = await checkCompanyNameUnique(name);
+      if (!unique) {
+        setErrors(prev => ({
+          ...prev,
+          companyName: `This company is already added by "${addedBy}". Please contact them for further information.`
+        }));
+        toast.error("Company already exists!");
+      } else {
+        setErrors(prev => ({ ...prev, companyName: "" }));
+      }
+    }
+  }, 500);
+
+  // Modify the company name input handler
+  const handleCompanyNameChange = (e) => {
+    const value = e.target.value.toUpperCase();
+    if (value === "" || isAlpha(value.toLowerCase())) {
+      setFormData((prev) => ({ ...prev, companyName: value }));
+      if (!isEditMode) {
+        checkCompanyNameDebounced(value);
+      }
+    }
+  };
+
   const handleSaveProspective = async () => { if (await validateForm()) await handleSubmit(false); };
   const handleMoveToQualified = async () => { if (await validateForm()) { const saved = await handleSubmit(false); if (saved) handleMoveToQualifiedLead(); } };
 
@@ -140,7 +188,13 @@ export default function ProspectiveLeadForm({ formData, setFormData, isEditMode,
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div>
           <Label>Company Name *</Label>
-          <Input value={formData.companyName} onChange={(e) => { const v = e.target.value; if (v === "" || isAlpha(v)) setFormData((p) => ({ ...p, companyName: v })); }} placeholder="Enter company name" className={errors.companyName ? "border-red-500" : ""} />
+          <Input 
+            value={formData.companyName}
+            onChange={handleCompanyNameChange}
+            placeholder="ENTER COMPANY NAME" 
+            className={errors.companyName ? "border-red-500" : ""} 
+            style={{ textTransform: 'uppercase' }}
+          />
           {errors.companyName && <p className="text-red-500 text-sm mt-1">{errors.companyName}</p>}
         </div>
 
