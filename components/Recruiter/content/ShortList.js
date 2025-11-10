@@ -88,21 +88,21 @@ export default function ShortList() {
     }
     router.push(`/ACmanager/${id}`);
   }
-
-  function handleReject(id) {
-    if (confirm("Are you sure you want to reject this candidate?")) {
-      fetch(`/api/candidates/${id}/reject`, {
-        method: "PUT",
-      })
-        .then((res) => res.json())
-        .then(() => {
-          setCandidates((prev) => prev.filter((c) => c.id !== id));
-        })
-        .catch((err) => {
-          console.error("Error rejecting candidate:", err);
-        });
-    }
-  }
+//this is not working in future if u want use it
+  // function handleReject(id) {
+  //   if (confirm("Are you sure you want to reject this candidate?")) {
+  //     fetch(`/api/candidates/${id}/reject`, {
+  //       method: "PUT",
+  //     })
+  //       .then((res) => res.json())
+  //       .then(() => {
+  //         setCandidates((prev) => prev.filter((c) => c.id !== id));
+  //       })
+  //       .catch((err) => {
+  //         console.error("Error rejecting candidate:", err);
+  //       });
+  //   }
+  // }
 
   const clearSearch = () => {
     setSearchTerm("");

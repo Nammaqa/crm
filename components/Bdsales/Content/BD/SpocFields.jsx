@@ -267,7 +267,7 @@ export default function SpocFields({
               {/* Designation */}
               <div>
                 <label className="block text-sm font-medium mb-1">
-                  Designation <span className="text-red-500">*</span>
+                  Designation <span className="text-red-500"></span>
                 </label>
                 <Input
                   value={spoc.designation}
@@ -287,7 +287,7 @@ export default function SpocFields({
               {/* Location */}
               <div>
                 <label className="block text-sm font-medium mb-1">
-                  Location <span className="text-red-500">*</span>
+                  Location <span className="text-red-500"></span>
                 </label>
                 <Input
                   value={spoc.location}
