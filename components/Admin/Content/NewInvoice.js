@@ -817,7 +817,7 @@ export default function InvoiceForm() {
     setIsGeneratingPDF(true);
     try {
       const { doc } = await generatePDF();
-      doc.save(`Invoice_${formData.invoiceNumber || 'Draft'}.pdf`);
+      doc.save(`${formData.invoiceNumber || 'Draft'}_${formData.companyName || 'Unknown'}.pdf`);
     } catch (error) {
       console.error('Error generating PDF:', error);
       alert('Failed to generate PDF. Please try again.');

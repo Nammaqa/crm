@@ -61,6 +61,7 @@ model Requirement {
   jdImage         String?
   budget          Int?
   priority        Priority @default(Medium)
+  updatedBy      String?
 }
 
 model Lead {

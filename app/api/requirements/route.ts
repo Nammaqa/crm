@@ -25,7 +25,8 @@ interface RequirementData {
   workLocation: string;
   budget: number;
   jdImage?: string;
-  priority: 'Low' | 'Medium' | 'High';  // Add this
+  priority: 'Low' | 'Medium' | 'High';
+  updatedBy?: string;
 }
 
 let data: RequirementData = {} as RequirementData;
@@ -91,6 +92,7 @@ export async function POST(req: NextRequest) {
         budget: Number(formDataRaw.get("budget")),
         priority: (formDataRaw.get("priority") as 'Low' | 'Medium' | 'High') || 'Medium',
         requirementId: formDataRaw.get("requirementId") as string,
+        updatedBy: (formDataRaw.get("updatedBy") as string) || undefined,
       };
     } else {
       formData = await req.json();
@@ -114,6 +116,7 @@ export async function POST(req: NextRequest) {
         priority: formData.priority,
         requirementId: formData.requirementId,
         jdImage: jdImageUrl,
+        updatedBy: formData.updatedBy || null,
       },
     });
 
