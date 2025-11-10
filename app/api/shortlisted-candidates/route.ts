@@ -1,36 +1,64 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { NextRequest, NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
 
 export async function GET(req: NextRequest) {
   try {
-    // Get the logged-in user's name from the session/cookie (assuming JWT in cookie named 'token')
-    // You may need to adjust this logic based on your actual auth implementation
-    const userName = req.nextUrl.searchParams.get('userName');
+    const userName = req.nextUrl.searchParams.get("userName");
+
     if (!userName) {
-      return NextResponse.json({ success: false, message: 'Missing userName' }, { status: 400 });
+      return NextResponse.json(
+        { success: false, message: "Missing userName" },
+        { status: 400 }
+      );
     }
 
-    // 1. Get all companyIDs for this sales user from Lead table
-    const userLeads = await prisma.lead.findMany({
-      where: { salesName: userName },
-      select: { companyID: true },
+    // 1) Find requirements created by this BD (updatedBy). Use case-insensitive match.
+    const userRequirements = await prisma.requirement.findMany({
+      where: {
+        updatedBy: {
+          equals: userName,
+          mode: "insensitive"
+        }
+      },
+      select: { requirementId: true } // <--- MATCHES your schema field name
     });
-    const userCompanyIDs = userLeads.map((lead) => lead.companyID).filter(Boolean);
-    console.log('API shortlisted-candidates:', { userName, userCompanyIDs });
 
-    // 2. Get all shortlisted candidates whose demandCode is in userCompanyIDs
+    const userRequirementIds = userRequirements
+      .map(r => r.requirementId?.trim())
+      .filter(Boolean);
+
+    if (userRequirementIds.length === 0) {
+      console.log(`[shortlisted-candidates] no requirements found for user=${userName}`);
+      return NextResponse.json({
+        success: true,
+        data: [],
+        message: "No requirements found for this user."
+      });
+    }
+
+    // 2) Fetch candidates whose demandCode is in the user's requirement IDs,
+    //    and whose acmanagerStatus is Selected or Shortlisted.
     const candidates = await prisma.candidate.findMany({
       where: {
-        acmanagerStatus: 'Selected',
-        demandCode: { in: userCompanyIDs },
+        demandCode: { in: userRequirementIds },
+        acmanagerStatus: {
+          in: ["Selected", "Shortlisted"],
+          mode: "insensitive"
+        }
       },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { createdAt: "desc" }
     });
-    console.log('API shortlisted-candidates: candidates', candidates);
+
+    console.log(`[shortlisted-candidates] user=${userName} reqCount=${userRequirementIds.length} candidates=${candidates.length}`);
 
     return NextResponse.json({ success: true, data: candidates });
   } catch (error) {
-    console.error('Error fetching shortlisted candidates:', error);
-    return NextResponse.json({ success: false, message: 'Server error' }, { status: 500 });
+    // Log full error server-side for debugging
+    console.error("[shortlisted-candidates] error:", error);
+    // Return safe message to client
+    return NextResponse.json(
+      { success: false, message: "Server error" },
+      { status: 500 }
+    );
   }
 }
