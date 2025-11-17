@@ -21,6 +21,7 @@ export default function QualifiedLeadForm({
   isEditMode,
   leads,
   handleMoveToExistingDeal,
+  onSaveSuccess, // NEW: callback to refresh table
 }) {
   const [errors, setErrors] = useState({});
   const [spocErrors, setSpocErrors] = useState([]);
@@ -61,7 +62,7 @@ export default function QualifiedLeadForm({
 
     const percentageValue = parseInt(formData.percentage, 10);
     if (percentageValue < 90) {
-      toast.error("Percentage must be at least 90% to move to  Deal");
+      toast.error("Percentage must be at least 90% to move to Deal");
       return;
     }
 
@@ -133,7 +134,6 @@ export default function QualifiedLeadForm({
         method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
-        // ensure same-origin cookie behavior if needed
         credentials: "same-origin",
       });
 
@@ -167,6 +167,11 @@ export default function QualifiedLeadForm({
       }
 
       toast.success("Saved successfully");
+      
+      // NEW: Call the callback to refresh the table immediately
+      if (onSaveSuccess) {
+        onSaveSuccess(data);
+      }
     } catch (err) {
       console.error("Save error:", err);
       toast.error("Failed to save. Try again.");
@@ -366,7 +371,7 @@ export default function QualifiedLeadForm({
             <p className="text-red-500 text-sm mt-1">{errors.percentage}</p>
           )}
           <p className="text-sm text-gray-500 mt-1">
-            Must be at least 90% to move to  Deal
+            Must be at least 90% to move to Deal
           </p>
         </div>
       </div>
@@ -378,7 +383,7 @@ export default function QualifiedLeadForm({
           variant="default"
           disabled={!formData.id || parseInt(formData.percentage, 10) < 90}
         >
-          Move to  Deal
+          Move to Deal
         </Button>
         <Button onClick={handleSave} variant="primary" disabled={saving}>
           {saving ? "Saving..." : "Save"}
