@@ -68,6 +68,8 @@ const CandidateEditForm = () => {
     "Relevant Experience in Secondary Skill": data.secondarySkillExp,
     "NammaQA update": data.nammaqaUpdate,
     "Feedback": data.feedback,
+    "LinkedIn Profile": data.linkedinProfile,
+    "Other Links": data.otherLinks,
     "Upload Resume": data.resumeLink,
     "Offer Details": data.offerDetails || ""
   });
@@ -413,6 +415,15 @@ const CandidateEditForm = () => {
               {renderSelect("Ready to Relocate for Other Location", relocateOptions, "Select option")}
               {renderInput("Prefered Location (City)", "Enter preferred cities (comma separated)")}
               {renderInput("Availability for the Interview", "e.g., Immediate, After 3 days, Weekends only")}
+            </div>
+          </div>
+
+          {/* Professional Links Section */}
+          <div style={styles.section}>
+            <h2 style={styles.sectionTitle}>Professional Links</h2>
+            <div style={styles.formGrid}>
+              {renderInput("LinkedIn Profile", "https://linkedin.com/in/yourprofile", "url")}
+              {renderInput("Other Links", "GitHub, Portfolio, etc. (comma separated)", "text")}
             </div>
           </div>
 

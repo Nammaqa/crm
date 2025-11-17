@@ -87,6 +87,8 @@ export async function POST(req) {
           nammaqaUpdate: data['NammaQA update'],
           clientInterviewStatus: data['Client Interview Status'],
           feedback: data['Feedback'],
+          linkedinProfile: data['LinkedIn Profile'],
+          otherLinks: data['Other Links'],
           resumeLink: resumeUrl
         }
       });

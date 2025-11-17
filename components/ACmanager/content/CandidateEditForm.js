@@ -23,8 +23,6 @@ const CandidateEditForm = () => {
     "Domain Experience (Primary)": data.domainExperience,
     "Current / Previous Company": data.company,
     "Role": data.role,
-    "Current CTC (In LPA)": data.currentCTC,
-    "Expected CTC (In LPA)": data.expectedCTC,
     "Current Working Status": data.workingStatus,
     "Notice Period (In Days)": data.noticePeriod,
     "Current Location (Nearest City)": data.location,
@@ -47,6 +45,8 @@ const CandidateEditForm = () => {
     "NammaQA update": data.nammaqaUpdate,
     "Client Interview Status": data.clientInterviewStatus,
     "Feedback": data.feedback,
+    "LinkedIn Profile": data.linkedinProfile,
+    "Other Links": data.otherLinks,
     "Upload Resume": data.resumeLink,
     "Offer Details": data.offerDetails || ""
   });
@@ -128,8 +128,8 @@ const CandidateEditForm = () => {
 
   const fields = [
     "Name", "Contact Number", "Alternate Contact Number", "Email ID", "Sourced From", "Employment Type",
-    "Domain Experience (Primary)", "Current / Previous Company", "Role", "Current CTC (In LPA)",
-    "Expected CTC (In LPA)", "Current Working Status", "Notice Period (In Days)",
+    "Domain Experience (Primary)", "Current / Previous Company", "Role", 
+    "Current Working Status", "Notice Period (In Days)",
     "Current Location (Nearest City)", "Ready to Relocate for Other Location", "Prefered Location (City)",
     "Availability for the Interview", "Client Name", "Demand Code", "Status", "Interview taken by",
     "Follow Ups", "Updated By", "Offers Any", "Technical Skills", "Relavant Experience",
