@@ -1,6 +1,7 @@
 'use client';
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import CircularProgress from '@/components/CircularIndeterminate';
 
 const sourcedFromOptions = [
   "LinkedIn",
@@ -41,6 +42,7 @@ const statusOptions = [
 
 const CandidateForm = () => {
   const [hasOffer, setHasOffer] = useState('No');
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     "Offers Any": "No"
   });
@@ -250,8 +252,16 @@ const CandidateForm = () => {
     // Mark all fields as touched
     const allFields = [
       "Name", "Contact Number", "Alternate Contact Number", "Email ID",
-      "Sourced From", "Employment Type", "Technical Skills", "Relavant Experience",
-      "Upload Resume", "Demand Code"
+      "Sourced From", "Employment Type", "Domain Experience (Primary)",
+      "Current / Previous Company", "Role", "Current CTC (In LPA)",
+      "Expected CTC (In LPA)", "Current Working Status", "Notice Period (In Days)",
+      "Current Location (Nearest City)", "Ready to Relocate for Other Location",
+      "Prefered Location (City)", "Availability for the Interview", "Client Name",
+      "Demand Code", 
+      "Updated By", "Offers Any", "Technical Skills", "Secondary Skill",
+      "Relavant Experience", "Relevant Experience in Primary Skill",
+      "Relevant Experience in Secondary Skill", "NammaQA update", "Feedback",
+      "LinkedIn Profile", "Other Links", "Upload Resume"
     ];
     const touchedFields = {};
     allFields.forEach(field => touchedFields[field] = true);
@@ -264,6 +274,8 @@ const CandidateForm = () => {
       alert('Please fix all validation errors before submitting');
       return;
     }
+
+    setIsSubmitting(true);
 
     try {
       const form = new FormData();
@@ -300,6 +312,8 @@ const CandidateForm = () => {
     } catch (error) {
       console.error('Submission error:', error);
       alert('An error occurred. Please try again.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -430,6 +444,15 @@ const CandidateForm = () => {
             </div>
           </div>
 
+          {/* Professional Links Section */}
+          <div style={styles.section}>
+            <h2 style={styles.sectionTitle}>Professional Links</h2>
+            <div style={styles.formGrid}>
+              {renderInput("LinkedIn Profile", "https://linkedin.com/in/yourprofile", "url")}
+              {renderInput("Other Links", "GitHub, Portfolio, etc. (comma separated)", "text")}
+            </div>
+          </div>
+
           {/* Technical Skills Section */}
           <div style={styles.section}>
             <h2 style={styles.sectionTitle}>Technical Skills & Experience</h2>
@@ -536,10 +559,33 @@ const CandidateForm = () => {
 
           {/* Submit and Clear Buttons */}
           <div style={styles.buttonContainer}>
-            <button type="submit" style={styles.submitButton}>
-              Submit Candidate
+            <button 
+              type="submit" 
+              onClick={handleSubmit}
+              disabled={isSubmitting}
+              style={{
+                ...styles.submitButton,
+                ...(isSubmitting ? styles.submitButtonDisabled : {})
+              }}
+            >
+              {isSubmitting ? (
+                <div style={styles.buttonContent}>
+                  <CircularProgress />
+                  <span style={styles.loadingText}>Submitting...</span>
+                </div>
+              ) : (
+                'Submit Candidate'
+              )}
             </button>
-            <button type="button" onClick={handleClearForm} style={styles.clearButton}>
+            <button 
+              type="button" 
+              onClick={handleClearForm}
+              disabled={isSubmitting}
+              style={{
+                ...styles.clearButton,
+                ...(isSubmitting ? styles.clearButtonDisabled : {})
+              }}
+            >
               Clear Form
             </button>
           </div>
@@ -597,10 +643,7 @@ const styles = {
   formGrid: {
     display: 'grid',
     gridTemplateColumns: 'repeat(2, 1fr)',
-    gap: '24px',
-    '@media (max-width: 768px)': {
-      gridTemplateColumns: '1fr'
-    }
+    gap: '24px'
   },
   inputGroup: {
     display: 'flex',
@@ -669,7 +712,9 @@ const styles = {
   fileInput: {
     padding: '12px 16px',
     fontSize: '15px',
-    border: '1.5px solid #d1d5db',
+    borderWidth: '1.5px',
+    borderStyle: 'solid',
+    borderColor: '#d1d5db',
     borderRadius: '8px',
     backgroundColor: '#ffffff',
     cursor: 'pointer',
@@ -720,11 +765,31 @@ const styles = {
     cursor: 'pointer',
     transition: 'all 0.3s ease',
     boxShadow: '0 2px 4px rgba(0, 51, 102, 0.2)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '8px',
     ':hover': {
       backgroundColor: '#002244',
       transform: 'translateY(-1px)',
       boxShadow: '0 4px 8px rgba(0, 51, 102, 0.3)'
     }
+  },
+  submitButtonDisabled: {
+    backgroundColor: '#9ca3af',
+    cursor: 'not-allowed',
+    opacity: 0.6,
+    transform: 'none',
+    boxShadow: 'none'
+  },
+  buttonContent: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '8px'
+  },
+  loadingText: {
+    marginLeft: '8px'
   },
   clearButton: {
     padding: '14px 48px',
@@ -732,15 +797,18 @@ const styles = {
     fontWeight: '600',
     backgroundColor: '#ffffff',
     color: '#6b7280',
-    border: '2px solid #d1d5db',
+    borderWidth: '2px',
+    borderStyle: 'solid',
+    borderColor: '#d1d5db',
     borderRadius: '8px',
     cursor: 'pointer',
-    transition: 'all 0.3s ease',
-    ':hover': {
-      backgroundColor: '#f9fafb',
-      borderColor: '#9ca3af',
-      color: '#374151'
-    }
+    transition: 'all 0.3s ease'
+  },
+  clearButtonDisabled: {
+    backgroundColor: '#f9fafb',
+    cursor: 'not-allowed',
+    opacity: 0.6,
+    borderColor: '#e5e7eb'
   }
 };
 

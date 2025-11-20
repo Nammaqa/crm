@@ -1,6 +1,6 @@
 generator client {
-  provider     = "prisma-client-js"
-  engineType   = "binary"
+  provider      = "prisma-client-js"
+  engineType    = "binary"
   binaryTargets = ["native"]
 }
 
@@ -61,7 +61,7 @@ model Requirement {
   jdImage         String?
   budget          Int?
   priority        Priority @default(Medium)
-  updatedBy      String?
+  updatedBy       String?
 }
 
 model Lead {
@@ -172,6 +172,8 @@ model Candidate {
   nammaqaUpdate          String?
   clientInterviewStatus  String?
   feedback               String?
+  linkedinProfile        String?
+  otherLinks             String?
   resumeLink             String?
   createdAt              DateTime @default(now())
   updatedAt              DateTime @updatedAt

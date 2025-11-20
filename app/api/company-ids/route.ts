@@ -10,12 +10,23 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const withIds = new URL(req.url).searchParams.get("withIds");
+    const url = new URL(req.url);
+    const withIds = url.searchParams.get("withIds");
+    const statusFilter = url.searchParams.get("status"); // optional, e.g. ?status=Active
+
+    // include both existing and new lead types
+    const where: any = {
+      salesName: valid.userName,
+      leadType: { in: ["existing", "new"] },
+    };
+
+    // optionally filter by companyStatus if provided
+    if (statusFilter) {
+      where.companyStatus = statusFilter;
+    }
+
     const leads = await prisma.lead.findMany({
-      where: {
-        salesName: valid.userName,
-        leadType: "existing"
-      },
+      where,
       select: {
         companyName: true,
         companyID: true,

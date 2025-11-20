@@ -8,7 +8,6 @@ import QualifiedLeadForm from "./BD/QualifiedLeadForm";
 import ExistingDealForm from "./BD/ExistingDealForm";
 import SearchFilters from "./BD/SearchFilters";
 
-
 export default function BdSales({ isSidebarOpen }) {
   const [leads, setLeads] = useState([]);
   const [filteredLeads, setFilteredLeads] = useState([]);
@@ -26,7 +25,6 @@ export default function BdSales({ isSidebarOpen }) {
     dateFrom: "",
     dateTo: "",
   });
-
 
   const [formData, setFormData] = useState({
     id: "",
@@ -65,7 +63,6 @@ export default function BdSales({ isSidebarOpen }) {
     companyNameGST: "",
   });
 
-
   // Fetch initial data
   useEffect(() => {
     const fetchInitialData = async () => {
@@ -77,17 +74,14 @@ export default function BdSales({ isSidebarOpen }) {
         });
         const userData = await userRes.json();
 
-
         if (!userRes.ok) {
           throw new Error(userData.message || "Failed to fetch user data");
         }
-
 
         const loggedInSalesName = userData?.data?.userName || userData?.userName;
         if (!loggedInSalesName) {
           throw new Error("Failed to fetch user name");
         }
-
 
         setSalesName(loggedInSalesName);
         setFormData((prev) => ({
@@ -95,16 +89,13 @@ export default function BdSales({ isSidebarOpen }) {
           salesName: loggedInSalesName,
         }));
 
-
         const leadRes = await fetch("/api/lead");
         const leadData = await leadRes.json();
-
 
         if (!leadRes.ok) {
           console.error("Failed to fetch leads:", leadData.error);
           return;
         }
-
 
         const filteredLeads = leadData.filter(
           (lead) => lead.salesName?.toLowerCase() === loggedInSalesName.toLowerCase()
@@ -117,20 +108,16 @@ export default function BdSales({ isSidebarOpen }) {
       }
     };
 
-
     fetchInitialData();
   }, []);
-
 
   // Apply filters whenever filters or leads change
   useEffect(() => {
     applyFilters();
   }, [filters, leads]);
 
-
   const applyFilters = () => {
     let filtered = [...leads];
-
 
     // Company Name filter
     if (filters.companyName) {
@@ -139,7 +126,6 @@ export default function BdSales({ isSidebarOpen }) {
       );
     }
 
-
     // Sales Owner filter
     if (filters.salesOwner) {
       filtered = filtered.filter((lead) =>
@@ -147,18 +133,15 @@ export default function BdSales({ isSidebarOpen }) {
       );
     }
 
-
     // Status filter
     if (filters.status) {
       filtered = filtered.filter((lead) => lead.status === filters.status);
     }
 
-
     // Industry filter
     if (filters.industry) {
       filtered = filtered.filter((lead) => lead.industry === filters.industry);
     }
-
 
     // Date Range filter
     if (filters.dateFrom) {
@@ -169,7 +152,6 @@ export default function BdSales({ isSidebarOpen }) {
       });
     }
 
-
     if (filters.dateTo) {
       filtered = filtered.filter((lead) => {
         const leadDate = new Date(lead.createdAt);
@@ -179,15 +161,12 @@ export default function BdSales({ isSidebarOpen }) {
       });
     }
 
-
     setFilteredLeads(filtered);
   };
-
 
   const handleFilterChange = (newFilters) => {
     setFilters(newFilters);
   };
-
 
   const clearFilters = () => {
     setFilters({
@@ -200,12 +179,10 @@ export default function BdSales({ isSidebarOpen }) {
     });
   };
 
-
   // Handle lead click from table
   const handleLeadClick = (lead) => {
     setSelectedLead(lead);
     setIsEditMode(true);
-
 
     setFormData({
       id: lead.id || "",
@@ -261,13 +238,11 @@ export default function BdSales({ isSidebarOpen }) {
       companyNameGST: lead.companyNameGST || lead.companyName || "",
     });
 
-
     // Switch to appropriate tab
     if (lead.leadType === "prospective") setActiveTab("Prospective");
     if (lead.leadType === "new") setActiveTab("QualifiedLead");
     if (lead.leadType === "existing") setActiveTab("ExistingDeal");
   };
-
 
   // Handle tab change
   const handleTabChange = (tab) => {
@@ -275,7 +250,6 @@ export default function BdSales({ isSidebarOpen }) {
     setActiveTab(tab);
     setSelectedLead(null);
     setIsEditMode(false);
-
 
     setFormData((prev) => ({
       ...prev,
@@ -325,11 +299,9 @@ export default function BdSales({ isSidebarOpen }) {
     }));
   };
 
-
   // Submit Prospective Lead
   const handleSubmitProspective = async (validateOnly = false) => {
     const token = localStorage.getItem("token");
-
 
     const payload = {
       salesName: formData.salesName,
@@ -357,14 +329,11 @@ export default function BdSales({ isSidebarOpen }) {
       })),
     };
 
-
     if (validateOnly) return true;
-
 
     try {
       const method = isEditMode && formData.id ? "PUT" : "POST";
       const endpoint = isEditMode && formData.id ? `/api/lead/${formData.id}` : "/api/lead";
-
 
       const res = await fetch(endpoint, {
         method,
@@ -375,15 +344,12 @@ export default function BdSales({ isSidebarOpen }) {
         body: JSON.stringify(payload),
       });
 
-
       const data = await res.json();
-
 
       if (res.ok) {
         toast.success(
           isEditMode ? "Prospective Lead updated successfully!" : "Prospective Lead saved successfully!"
         );
-
 
         setLeads((prev) => {
           const index = prev.findIndex((l) => l.id === data.id);
@@ -395,10 +361,8 @@ export default function BdSales({ isSidebarOpen }) {
           return [...prev, data];
         });
 
-
         setFormData((prev) => ({ ...prev, id: data.id }));
         setIsEditMode(true);
-
 
         return true;
       } else {
@@ -411,14 +375,12 @@ export default function BdSales({ isSidebarOpen }) {
     }
   };
 
-
   // Move Prospective to Qualified Lead
   const handleMoveToQualifiedLead = async () => {
     if (!formData.id) {
       toast.error("Please save the Prospective Lead first.");
       return;
     }
-
 
     try {
       const response = await fetch(`/api/lead/${formData.id}`, {
@@ -427,9 +389,7 @@ export default function BdSales({ isSidebarOpen }) {
         body: JSON.stringify({ leadType: "new", status: "newlead" }),
       });
 
-
       const updatedLead = await response.json();
-
 
       if (response.ok) {
         toast.success("Moved to Qualified Lead!");
@@ -450,21 +410,18 @@ export default function BdSales({ isSidebarOpen }) {
     }
   };
 
-
-  // Submit Qualified Lead and Move to  Deal
+  // Submit Qualified Lead and Move to Deal
   const handleMoveToExistingDeal = async () => {
     if (!formData.id) {
       toast.error("Please ensure the lead is saved first.");
       return;
     }
 
-
     const percentageValue = parseInt(formData.percentage, 10);
     if (isNaN(percentageValue) || percentageValue < 90) {
       toast.error("Percentage must be at least 90% to move to Deal.");
       return;
     }
-
 
     try {
       const token = localStorage.getItem("token");
@@ -501,7 +458,6 @@ export default function BdSales({ isSidebarOpen }) {
         })),
       };
 
-
       const updateRes = await fetch(`/api/lead/${formData.id}`, {
         method: "PUT",
         headers: {
@@ -511,14 +467,11 @@ export default function BdSales({ isSidebarOpen }) {
         body: JSON.stringify(updatePayload),
       });
 
-
       const updateData = await updateRes.json();
-
 
       if (!updateRes.ok) {
         throw new Error(updateData.error || "Failed to update lead");
       }
-
 
       const response = await fetch(`/api/lead/${formData.id}`, {
         method: "PATCH",
@@ -526,12 +479,10 @@ export default function BdSales({ isSidebarOpen }) {
         body: JSON.stringify({ leadType: "existing", status: "deal" }),
       });
 
-
       const updatedLead = await response.json();
 
-
       if (response.ok) {
-        toast.success("Moved to  Deal!");
+        toast.success("Moved to Deal!");
         setFormData((prev) => ({
           ...prev,
           leadType: "existing",
@@ -545,10 +496,9 @@ export default function BdSales({ isSidebarOpen }) {
         toast.error(`Error: ${updatedLead.error}`);
       }
     } catch (err) {
-      toast.error(`Error moving to  Deal: ${err.message}`);
+      toast.error(`Error moving to Deal: ${err.message}`);
     }
   };
-
 
   // Move Lead (Generic function for moving leads between stages)
   const handleMoveLead = async (leadId, newStatus, newLeadType) => {
@@ -562,9 +512,7 @@ export default function BdSales({ isSidebarOpen }) {
         }),
       });
 
-
       const updatedLead = await response.json();
-
 
       if (response.ok) {
         // Update the leads state with the new lead data
@@ -572,10 +520,8 @@ export default function BdSales({ isSidebarOpen }) {
           lead.id === updatedLead.id ? updatedLead : lead
         ));
 
-
         // Show success message
         toast.success(`Lead moved to ${newStatus === 'newlead' ? 'Qualified Lead' : 'Existing Deal'} successfully!`);
-
 
         // Switch to the appropriate tab
         if (newStatus === 'newlead') {
@@ -592,7 +538,6 @@ export default function BdSales({ isSidebarOpen }) {
     }
   };
 
-
   const handleUpdatePercentage = (updatedLead) => {
     setLeads((prev) =>
       prev.map((lead) => (lead.id === updatedLead.id ? updatedLead : lead))
@@ -602,6 +547,21 @@ export default function BdSales({ isSidebarOpen }) {
     );
   };
 
+  // Add this function after handleUpdatePercentage
+  const handleQualifiedLeadSaveSuccess = (updatedLead) => {
+    // Update leads state with the saved data
+    setLeads((prev) => {
+      const index = prev.findIndex((l) => l.id === updatedLead.id);
+      if (index >= 0) {
+        const updated = [...prev];
+        updated[index] = updatedLead;
+        return updated;
+      }
+      return [...prev, updatedLead];
+    });
+    
+    toast.success("Lead saved and table updated!");
+  };
 
   return (
     <div className="transition-all duration-300 min-h-screen w-full m-0 p-0">
@@ -638,7 +598,28 @@ export default function BdSales({ isSidebarOpen }) {
         </CardHeader>
 
         <CardContent className="pt-6">
-          {/* Forms with full width */}
+          {/* Search & Filters - Now at the top */}
+          <div className="w-full mb-6">
+            <SearchFilters
+              filters={filters}
+              onFilterChange={handleFilterChange}
+              onClearFilters={clearFilters}
+            />
+          </div>
+
+          {/* Table with full width - Now positioned at the top */}
+          <div className="w-full mb-6">
+            <BdTable
+              leads={filteredLeads}
+              onLeadClick={handleLeadClick}
+              activeTab={activeTab}
+              onTabChange={handleTabChange}
+              onMoveLead={handleMoveLead}
+              onUpdatePercentage={handleUpdatePercentage}
+            />
+          </div>
+
+          {/* Forms with full width - Now positioned below the table */}
           <div className="w-full">
             {activeTab === "Prospective" && (
               <ProspectiveLeadForm
@@ -657,6 +638,7 @@ export default function BdSales({ isSidebarOpen }) {
                 isEditMode={isEditMode}
                 leads={leads}
                 handleMoveToExistingDeal={handleMoveToExistingDeal}
+                onSaveSuccess={handleQualifiedLeadSaveSuccess}
               />
             )}
 
@@ -668,27 +650,6 @@ export default function BdSales({ isSidebarOpen }) {
                 leads={leads}
               />
             )}
-          </div>
-
-          {/* Search & Filters - Now above the table */}
-          <div className="w-full mt-6">
-            <SearchFilters
-              filters={filters}
-              onFilterChange={handleFilterChange}
-              onClearFilters={clearFilters}
-            />
-          </div>
-
-          {/* Table with full width */}
-          <div className="w-full">
-            <BdTable
-              leads={filteredLeads}
-              onLeadClick={handleLeadClick}
-              activeTab={activeTab}
-              onTabChange={handleTabChange}
-              onMoveLead={handleMoveLead}
-              onUpdatePercentage={handleUpdatePercentage}
-            />
           </div>
         </CardContent>
       </Card>
