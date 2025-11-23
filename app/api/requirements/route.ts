@@ -36,7 +36,11 @@ export async function GET() {
   try {
     console.log("GET /api/requirements - Fetching all requirements");
 
-    const requirements = await prisma.requirement.findMany();
+    const requirements = await prisma.requirement.findMany({
+      orderBy: {
+        id: 'desc', // Sort by ID in descending order (newest first)
+      },
+    });
 
     console.log("GET /api/requirements - Success", requirements.length, "items found");
 

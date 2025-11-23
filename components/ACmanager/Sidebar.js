@@ -10,7 +10,7 @@ import CandidateForm from "@components/ACmanager/content/CandidateForm";
 import CandidateList from "@components/ACmanager/content/CandidateList";
 import ShortList from "@components/Recruiter/content/ShortList";
 import RejectedList from "@components/Recruiter/content/RejectedList";
-import Acmanager from "@components/ACmanager/content/Acmanager"; // <-- Added
+import Acmanager from "@components/ACmanager/content/Acmanager"; 
 // import Link from 'next/link'
 // Import icons
 import {

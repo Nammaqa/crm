@@ -4,12 +4,13 @@ import { getRoleFromToken } from "@/lib/decodeRoleFromToken";
 const TABS = [{ key: "requirement", label: "Requirement" }];
 
 export default function AgreementList() {
-  const [activeTab, setActiveTab] = useState("requirement");
+  const [activeTab] = useState("requirement");
   const [data, setData] = useState({ requirement: [] });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [role, setRole] = useState(null);
   const [modalFile, setModalFile] = useState(null);
+  const [detailView, setDetailView] = useState(null);
 
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
@@ -23,11 +24,9 @@ export default function AgreementList() {
     async function fetchAll() {
       setLoading(true);
       setError("");
-
       try {
         const resRequirements = await fetch(`${BASE_URL}/api/requirements`);
         if (!resRequirements.ok) throw new Error("Failed to fetch requirements");
-
         const jsonRequirements = await resRequirements.json();
         setData({ requirement: Array.isArray(jsonRequirements) ? jsonRequirements : [] });
       } catch (err) {
@@ -36,7 +35,6 @@ export default function AgreementList() {
         setLoading(false);
       }
     }
-
     fetchAll();
   }, []);
 
@@ -46,18 +44,16 @@ export default function AgreementList() {
 
   const getPriorityColor = (priority) => {
     const colors = {
-      High: "text-red-600 font-semibold",
-      Medium: "text-yellow-600 font-semibold",
-      Low: "text-green-600 font-semibold",
+      High: "bg-red-50 text-red-700 border border-red-100",
+      Medium: "bg-yellow-50 text-yellow-700 border border-yellow-100",
+      Low: "bg-green-50 text-green-700 border border-green-100",
     };
-    return colors[priority] || "text-gray-700";
+    return colors[priority] || "bg-gray-50 text-gray-700 border border-gray-100";
   };
 
   const filteredData = data[activeTab]?.filter((item) => {
     if (!searchTerm) return true;
-
     const s = searchTerm.toLowerCase();
-
     if (searchField === "all") {
       return (
         item.requirementId?.toLowerCase().includes(s) ||
@@ -97,117 +93,212 @@ export default function AgreementList() {
 
   const SecureDocumentViewer = ({ fileUrl, onClose }) => {
     const isPDF = fileUrl?.toLowerCase().endsWith(".pdf");
-
     return (
-      <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex justify-center items-center">
-        <div className="bg-white rounded-xl shadow-2xl w-[85%] max-w-5xl p-5 relative">
-          <button
-            className="absolute top-3 right-3 text-gray-600 hover:text-black text-xl"
-            onClick={onClose}
-          >
-            ✖
-          </button>
-
-          <div className="h-[75vh] border rounded-lg overflow-hidden shadow-inner">
-            {isPDF ? (
-              <iframe
-                src={`https://docs.google.com/gview?url=${encodeURIComponent(fileUrl)}&embedded=true`}
-                className="w-full h-full"
-              />
-            ) : (
-              <iframe src={fileUrl} className="w-full h-full" />
-            )}
+      <div className="fixed inset-0 bg-black/50 z-50 flex justify-center items-center p-2">
+        <div className="bg-white rounded-lg shadow-2xl w-full max-w-5xl flex flex-col max-h-[96vh]">
+          <div className="flex items-center justify-between px-6 py-3 border-b">
+            <h3 className="text-lg font-medium">Document Viewer</h3>
+            <button onClick={onClose} className="text-gray-400 hover:text-gray-700 p-1" aria-label="Close">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
           </div>
-
-          <p className="text-center text-xs mt-3 text-gray-500">
-            Secure View Mode • Download Disabled
-          </p>
+          <div className="flex-1 p-2 overflow-hidden">
+            <div className="h-full border border-gray-200 rounded">
+              {isPDF ? (
+                <iframe
+                  src={`https://docs.google.com/gview?url=${encodeURIComponent(fileUrl)}&embedded=true`}
+                  className="w-full h-full"
+                  title="Document Viewer"
+                />
+              ) : (
+                <iframe src={fileUrl} className="w-full h-full" title="Document Viewer" />
+              )}
+            </div>
+          </div>
         </div>
       </div>
     );
   };
 
-  /** FIXED: renderTable MOVED BACK INSIDE */
+  const DetailViewModal = ({ requirement, onClose }) => {
+    if (!requirement) return null;
+    return (
+      <div className="fixed inset-0 bg-black/50 z-50 flex justify-center items-center p-5">
+        <div className="bg-white rounded-xl shadow-2xl w-full max-w-5xl max-h-[95vh] flex flex-col">
+          <div className="flex items-center justify-between px-8 py-5 border-b">
+            <h2 className="text-2xl font-semibold text-gray-900">Requirement Details</h2>
+            <button
+              onClick={onClose}
+              className="text-gray-400 hover:text-gray-600 transition-colors p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              aria-label="Close"
+            >
+              <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+
+          <div className="flex-1 overflow-y-auto px-8 py-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+              {/* Left Column */}
+              <div>
+                <section className="mb-8">
+                  <h3 className="uppercase tracking-wide text-xs font-bold text-gray-500 mb-4">Basic Information</h3>
+                  <div className="grid grid-cols-2 gap-y-4 gap-x-6 border border-gray-100 bg-gray-50 rounded-lg p-6">
+                    <LabelValue label="Requirement ID" value={requirement.requirementId} />
+                    <LabelValue label="Requirement Name" value={requirement.requirementName} />
+                    <LabelValue label="Company Name" value={requirement.companyName} />
+                    <LabelValue
+                      label="Priority"
+                      value={
+                        <span
+                          className={`inline-flex px-4 py-1 rounded-full text-xs font-semibold ${getPriorityColor(
+                            requirement.priority
+                          )}`}
+                        >
+                          {requirement.priority}
+                        </span>
+                      }
+                    />
+                    <LabelValue label="Experience Required" value={requirement.experience} />
+                    <LabelValue label="Notice Period" value={requirement.noticePeriod} />
+                    <LabelValue label="Number of Positions" value={requirement.positions} />
+                    <LabelValue label="Position Type" value={requirement.closePositions} />
+                    <LabelValue label="Budget" value={requirement.budget} />
+                    <LabelValue label="Requirement Type" value={requirement.requirementType} />
+                    <LabelValue label="Work Location" value={requirement.workLocation} />
+                  </div>
+                </section>
+                <section>
+                  <h3 className="uppercase tracking-wide text-xs font-bold text-gray-500 mb-4">Skills</h3>
+                  <div className="grid grid-cols-1 gap-y-4 border border-gray-100 bg-gray-50 rounded-lg p-6">
+                    <LabelValue label="Primary Skills" value={requirement.primarySkills || "Not specified"} />
+                    <LabelValue label="Secondary Skills" value={requirement.secondarySkills || "Not specified"} />
+                  </div>
+                </section>
+              </div>
+
+              {/* Right Column */}
+              <div>
+                <section className="mb-6">
+                  <h3 className="uppercase tracking-wide text-xs font-bold text-gray-500 mb-4">Job Description</h3>
+                  <div className="border border-gray-100 rounded-lg bg-gray-50 p-6 min-h-[130px] whitespace-pre-wrap text-gray-800 text-sm">
+                    {requirement.jobDescription || <span className="text-gray-400">No description provided</span>}
+                  </div>
+                </section>
+
+                {requirement.jdImage && (
+                  <section>
+                    <button
+                      onClick={() => {
+                        setDetailView(null);
+                        setModalFile(requirement.jdImage);
+                      }}
+                      className="w-full px-6 py-3 bg-blue-600 rounded-lg text-white font-semibold text-base hover:bg-blue-700 transition-colors"
+                    >
+                      View JD Document
+                    </button>
+                  </section>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  function LabelValue({ label, value }) {
+    return (
+      <div className="flex flex-col">
+        <span className="font-semibold text-gray-700">{label}</span>
+        <span className="text-sm text-gray-900 mt-1">{value || "—"}</span>
+      </div>
+    );
+  }
+
   const renderTable = () => {
     if (!currentItems || currentItems.length === 0) {
-      return <div className="text-center py-8 text-gray-500">No data found.</div>;
+      return (
+        <div className="text-center py-10">
+          <svg className="mx-auto h-8 w-8 text-gray-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          </svg>
+          <p className="text-gray-500 text-sm">No requirements found</p>
+        </div>
+      );
     }
-
     return (
-      <table className="min-w-full text-sm border-collapse">
-        <thead className="bg-gray-50 text-gray-700 border-b">
-          <tr>
-            {[
-              "Req ID",
-              "Name",
-              "Company",
-              "Description",
-              "Experience",
-              "Notice",
-              "Positions",
-              "Primary Skills",
-              "Secondary Skills",
-              "Type",
-              "Location",
-              "Pos Type",
-              "Budget",
-              "Priority",
-              "JD File",
-            ].map((header) => (
-              <th key={header} className="px-4 py-3 border text-left font-medium">
-                {header}
-              </th>
-            ))}
-          </tr>
-        </thead>
-
-        <tbody className="bg-white">
-          {currentItems.map((row, idx) => (
-            <tr key={idx} className="hover:bg-gray-100 transition">
-              <td className="border px-4 py-2">{row.requirementId}</td>
-              <td className="border px-4 py-2">{row.requirementName}</td>
-              <td className="border px-4 py-2">{row.companyName}</td>
-              <td className="border px-4 py-2">{row.jobDescription}</td>
-              <td className="border px-4 py-2">{row.experience}</td>
-              <td className="border px-4 py-2">{row.noticePeriod}</td>
-              <td className="border px-4 py-2">{row.positions}</td>
-              <td className="border px-4 py-2">{row.primarySkills}</td>
-              <td className="border px-4 py-2">{row.secondarySkills}</td>
-              <td className="border px-4 py-2">{row.requirementType}</td>
-              <td className="border px-4 py-2">{row.workLocation}</td>
-              <td className="border px-4 py-2">{row.closePositions}</td>
-              <td className="border px-4 py-2">{row.budget}</td>
-              <td className={`border px-4 py-2 ${getPriorityColor(row.priority)}`}>
-                {row.priority}
-              </td>
-              <td className="border px-4 py-2">
-                {row.jdImage && (
-                  <button
-                    onClick={() => setModalFile(row.jdImage)}
-                    className="text-blue-600 hover:text-blue-800 underline"
-                  >
-                    View
-                  </button>
-                )}
-              </td>
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="bg-gray-100 border-b border-gray-200">
+              <th className="px-4 py-2 text-left font-semibold text-gray-700 uppercase">Req ID</th>
+              <th className="px-4 py-2 text-left font-semibold text-gray-700 uppercase">Name</th>
+              <th className="px-4 py-2 text-left font-semibold text-gray-700 uppercase">Company</th>
+              <th className="px-4 py-2 text-left font-semibold text-gray-700 uppercase">Experience</th>
+              <th className="px-4 py-2 text-left font-semibold text-gray-700 uppercase">Primary Skills</th>
+              <th className="px-4 py-2 text-left font-semibold text-gray-700 uppercase">Secondary Skills</th>
+              <th className="px-4 py-2 text-left font-semibold text-gray-700 uppercase">Priority</th>
+              <th className="px-4 py-2 text-center font-semibold text-gray-700 uppercase">JD File</th>
+              <th className="px-4 py-2 text-center font-semibold text-gray-700 uppercase">Action</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody className="bg-white">
+            {currentItems.map((row, idx) => (
+              <tr key={idx} className="hover:bg-gray-50">
+                <td className="px-4 py-2 font-semibold text-gray-900">{row.requirementId}</td>
+                <td className="px-4 py-2">{row.requirementName}</td>
+                <td className="px-4 py-2">{row.companyName}</td>
+                <td className="px-4 py-2">{row.experience}</td>
+                <td className="px-4 py-2">{row.primarySkills}</td>
+                <td className="px-4 py-2">{row.secondarySkills}</td>
+                <td className="px-4 py-2">
+                  <span className={`inline-flex px-3 py-1 rounded-full text-xs font-semibold ${getPriorityColor(row.priority)}`}>
+                    {row.priority}
+                  </span>
+                </td>
+                <td className="px-4 py-2 text-center">
+                  {row.jdImage ? (
+                    <button
+                      onClick={() => setModalFile(row.jdImage)}
+                      className="text-blue-600 hover:text-blue-800 text-xs font-semibold"
+                    >
+                      View
+                    </button>
+                  ) : (
+                    <span className="text-gray-400 text-xs">—</span>
+                  )}
+                </td>
+                <td className="px-4 py-2 text-center">
+                  <button
+                    onClick={() => setDetailView(row)}
+                    className="px-3 py-1 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-lg transition"
+                  >
+                    Details
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     );
   };
 
   const Pagination = () => (
-    <div className="flex justify-between items-center py-4 px-2 text-sm w-full">
-      <p className="text-gray-600">
-        Showing <b>{(currentPage - 1) * itemsPerPage + 1}</b> to{" "}
-        <b>{Math.min(currentPage * itemsPerPage, totalItems)}</b> of{" "}
-        <b>{totalItems}</b>
-      </p>
-
+    <div className="flex flex-col sm:flex-row justify-between items-center gap-2 px-2 py-2 bg-gray-100 border-t">
+      <div className="text-xs text-gray-600">
+        Showing <span className="font-bold text-gray-900">{(currentPage - 1) * itemsPerPage + 1}</span> to{" "}
+        <span className="font-bold text-gray-900">{Math.min(currentPage * itemsPerPage, totalItems)}</span> of{" "}
+        <span className="font-bold text-gray-900">{totalItems}</span>
+      </div>
       <div className="flex items-center gap-2">
+        <span className="text-xs text-gray-600">Rows:</span>
         <select
-          className="border rounded px-2 py-1"
+          className="border border-gray-300 rounded px-2 py-1 text-xs bg-white"
           value={itemsPerPage}
           onChange={(e) => {
             setItemsPerPage(Number(e.target.value));
@@ -218,19 +309,17 @@ export default function AgreementList() {
             <option key={v}>{v}</option>
           ))}
         </select>
-
         <button
           disabled={currentPage === 1}
           onClick={() => setCurrentPage((p) => p - 1)}
-          className="border px-3 py-1 rounded disabled:opacity-40"
+          className="px-2 py-1 border border-gray-300 rounded text-xs bg-white hover:bg-gray-50 disabled:opacity-40"
         >
           Prev
         </button>
-
         <button
           disabled={currentPage === totalPages}
           onClick={() => setCurrentPage((p) => p + 1)}
-          className="border px-3 py-1 rounded disabled:opacity-40"
+          className="px-2 py-1 border border-gray-300 rounded text-xs bg-white hover:bg-gray-50 disabled:opacity-40"
         >
           Next
         </button>
@@ -239,61 +328,72 @@ export default function AgreementList() {
   );
 
   return (
-    <div className="w-full min-h-screen bg-gray-100 flex flex-col">
-
-      <div className="w-full bg-white shadow-sm px-8 py-5 border-b">
-        <h1 className="text-2xl font-semibold text-gray-800">Requirement List</h1>
+    <div className="w-full min-h-screen bg-gray-50">
+      {/* Header */}
+      <div className="bg-white border-b sticky top-0 z-10">
+        <div className="px-10 py-4 max-w-[1800px] mx-auto">
+          <h1 className="text-3xl font-bold text-gray-900">Requirement List</h1>
+          <p className="text-gray-500 text-base">Manage and view all job requirements</p>
+        </div>
       </div>
 
-      <div className="w-full p-6">
-
-        <div className="bg-white border rounded-xl shadow-sm p-5 mb-6">
-          <div className="flex flex-col md:flex-row justify-between gap-4">
-
-            <div className="flex gap-3 w-full md:w-auto">
-              <select
-                className="border rounded-lg px-3 py-2 text-sm"
-                value={searchField}
-                onChange={(e) => setSearchField(e.target.value)}
-              >
-                {searchFields.map((field) => (
-                  <option key={field.value} value={field.value}>
-                    {field.label}
-                  </option>
-                ))}
-              </select>
-
-              <input
-                type="text"
-                placeholder="Search anything..."
-                className="border rounded-lg px-3 py-2 text-sm w-full md:w-64"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
-
-            <div className="text-gray-700 text-sm">
+      <div className="p-5 max-w-[1800px] mx-auto">
+        {/* Search Bar */}
+        <div className="bg-white border border-gray-200 rounded-lg p-4 mb-4 flex flex-col md:flex-row items-center gap-3 shadow-sm w-full">
+          <div className="flex gap-3 w-full md:w-auto items-center">
+            <select
+              className="border border-gray-300 rounded px-3 py-2 text-base bg-white"
+              value={searchField}
+              onChange={(e) => setSearchField(e.target.value)}
+            >
+              {searchFields.map((field) => (
+                <option key={field.value} value={field.value}>
+                  {field.label}
+                </option>
+              ))}
+            </select>
+            <input
+              type="text"
+              placeholder="Search requirements..."
+              className="border border-gray-300 rounded px-3 py-2 text-base w-64 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+          <div className="flex items-center gap-2 bg-indigo-50 px-4 py-2 rounded border border-indigo-100 text-base">
+            <span className="font-semibold text-indigo-900">
               {searchTerm ? `Found: ${totalItems}` : `Total: ${totalItems}`}
-            </div>
+            </span>
           </div>
         </div>
-
-        <div className="bg-white border rounded-xl shadow-sm overflow-hidden">
+        {/* Table */}
+        <div className="bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm w-full">
           {loading ? (
-            <div className="py-16 text-center text-gray-500">Loading…</div>
+            <div className="py-20 text-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto mb-2"></div>
+              <p className="text-gray-500 text-lg">Loading requirements...</p>
+            </div>
           ) : error ? (
-            <div className="py-16 text-center text-red-600">{error}</div>
+            <div className="py-20 text-center">
+              <svg className="mx-auto h-8 w-8 text-red-500 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+              <p className="text-red-600 font-semibold text-lg">{error}</p>
+            </div>
           ) : (
             <>
-              <div className="overflow-x-auto">{renderTable()}</div>
+              {renderTable()}
               <Pagination />
             </>
           )}
         </div>
       </div>
-
+      {/* Modals */}
       {modalFile && (
         <SecureDocumentViewer fileUrl={modalFile} onClose={() => setModalFile(null)} />
+      )}
+      {detailView && (
+        <DetailViewModal requirement={detailView} onClose={() => setDetailView(null)} />
       )}
     </div>
   );
