@@ -185,6 +185,42 @@ export default function CandidateList() {
                 </div>
               )}
 
+              {/* Demand Code Assignments */}
+              {candidate.demandCodeAssignments && candidate.demandCodeAssignments.length > 0 && (
+                <div>
+                  <h3 className="text-sm font-medium text-gray-500 mb-3">Demand Code Assignments</h3>
+                  <div className="space-y-2">
+                    {candidate.demandCodeAssignments.map((dc) => (
+                      <div key={dc.id} className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <p className="font-semibold text-blue-900">{dc.demandCode}</p>
+                            {dc.status && (
+                              <p className="text-xs text-blue-700 mt-1">
+                                <span className="font-medium">Status:</span> {dc.status}
+                              </p>
+                            )}
+                            {dc.clientInterviewStatus && (
+                              <p className="text-xs text-blue-700">
+                                <span className="font-medium">Interview:</span> {dc.clientInterviewStatus}
+                              </p>
+                            )}
+                            {dc.feedback && (
+                              <p className="text-xs text-blue-700 mt-1">
+                                <span className="font-medium">Feedback:</span> {dc.feedback}
+                              </p>
+                            )}
+                            <p className="text-xs text-gray-600 mt-2">
+                              Assigned: {new Date(dc.assignedDate).toLocaleDateString("en-GB")}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* Additional Information */}
               <div>
                 <h3 className="text-sm font-medium text-gray-500 mb-3">Additional Information</h3>
@@ -371,6 +407,9 @@ export default function CandidateList() {
                   <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                     Skills
                   </th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                    Demand Codes
+                  </th>
                   <th className="px-6 py-4 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider">
                     Resume
                   </th>
@@ -407,6 +446,25 @@ export default function CandidateList() {
                           {c.technicalSkills}
                         </div>
                       </td>
+                      <td className="px-6 py-4">
+                        {c.demandCodeAssignments && c.demandCodeAssignments.length > 0 ? (
+                          <div className="flex flex-col gap-1">
+                            {c.demandCodeAssignments.slice(0, 2).map((dc) => (
+                              <div key={dc.id} className="text-xs bg-blue-50 border border-blue-200 rounded px-2 py-1">
+                                <div className="font-semibold text-blue-900">{dc.demandCode}</div>
+                                {dc.status && <div className="text-blue-700 text-xs">{dc.status}</div>}
+                              </div>
+                            ))}
+                            {c.demandCodeAssignments.length > 2 && (
+                              <div className="text-xs text-gray-600 font-medium">
+                                +{c.demandCodeAssignments.length - 2} more
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="text-xs text-gray-400">—</span>
+                        )}
+                      </td>
                       <td className="px-6 py-4 text-center">
                         {c.resumeLink ? (
                           <a
@@ -436,7 +494,7 @@ export default function CandidateList() {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={8} className="px-4 py-16 text-center">
+                    <td colSpan={9} className="px-4 py-16 text-center">
                       <div className="text-gray-500">
                         <svg className="mx-auto h-12 w-12 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />

@@ -23,14 +23,21 @@ async function uploadToCloudinary(fileBuffer, fileName) {
 
 // ✅ GET handler
 export async function GET(req, context) {
-  const { params } = context;
+  const params = await context.params;
   const id = parseInt(params.id);
   if (isNaN(id)) {
     return new Response(JSON.stringify({ error: "Invalid candidate ID" }), { status: 400 });
   }
 
   try {
-    const candidate = await prisma.candidate.findUnique({ where: { id } });
+    const candidate = await prisma.candidate.findUnique({
+      where: { id },
+      include: {
+        demandCodeAssignments: {
+          orderBy: { assignedDate: 'desc' }
+        }
+      }
+    });
 
     if (!candidate) {
       return new Response(JSON.stringify({ error: "Candidate not found" }), { status: 404 });
@@ -48,7 +55,7 @@ export async function GET(req, context) {
 
 // ✅ PUT handler
 export async function PUT(req, context) {
-  const { params } = context;
+  const params = await context.params;
   const id = parseInt(params.id);
   if (isNaN(id)) {
     return new Response(JSON.stringify({ error: "Invalid candidate ID" }), { status: 400 });
@@ -95,10 +102,8 @@ export async function PUT(req, context) {
         preferredLocation: data['Prefered Location (City)'],
         interviewAvailability: data['Availability for the Interview'],
         clientName: data['Client Name'],
-        demandCode: data['Demand Code'],
         interviewTakenBy: data['Interview taken by'],
         comments: data['Comments'] ? [data['Comments']] : [],
-        status: data['Status'],
         followUps: data['Follow Ups'],
         updatedBy: data['Updated By'],
         offersAny: data['Offers Any'] === 'Yes',
@@ -109,12 +114,15 @@ export async function PUT(req, context) {
         primarySkillExp: data['Relevant Experience in Primary Skill'],
         secondarySkillExp: data['Relevant Experience in Secondary Skill'],
         nammaqaUpdate: data['NammaQA update'],
-        clientInterviewStatus: data['Client Interview Status'],
-        feedback: data['Feedback'],
         linkedinProfile: data['LinkedIn Profile'],
         otherLinks: data['Other Links'],
         resumeLink: typeof resumeUrl === 'string' ? resumeUrl : null,
       },
+      include: {
+        demandCodeAssignments: {
+          orderBy: { assignedDate: 'desc' }
+        }
+      }
     });
 
     return new Response(JSON.stringify(updated), {
@@ -129,7 +137,7 @@ export async function PUT(req, context) {
 
 // ✅ DELETE handler
 export async function DELETE(req, context) {
-  const { params } = context;
+  const params = await context.params;
   const id = parseInt(params.id);
   if (isNaN(id)) {
     return new Response(JSON.stringify({ error: "Invalid candidate ID" }), { status: 400 });

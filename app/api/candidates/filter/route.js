@@ -14,6 +14,11 @@ export async function GET(req) {
   try {
     const candidates = await prisma.candidate.findMany({
       where,
+      include: {
+        demandCodeAssignments: {
+          orderBy: { assignedDate: 'desc' }
+        }
+      },
       orderBy: { createdAt: 'desc' }
     });
     return new Response(JSON.stringify(candidates));

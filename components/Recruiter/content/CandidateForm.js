@@ -51,6 +51,13 @@ const CandidateForm = () => {
   const [companyIds, setCompanyIds] = useState([]);
   const [userName, setUserName] = useState("");
   const [touched, setTouched] = useState({});
+  const [demandCodes, setDemandCodes] = useState([]);
+  const [currentDemandCode, setCurrentDemandCode] = useState({
+    demandCode: "",
+    status: "",
+    feedback: "",
+    clientInterviewStatus: ""
+  });
   const router = useRouter();
 
   useEffect(() => {
@@ -65,6 +72,30 @@ const CandidateForm = () => {
       .catch((err) => console.error("Failed to load user info", err));
   }, []);
 
+  // Auto-save demand code when fields are filled
+  useEffect(() => {
+    // Only auto-save if demand code is selected and not already in the list
+    if (currentDemandCode.demandCode && currentDemandCode.demandCode.trim()) {
+      const existingIndex = demandCodes.findIndex(
+        dc => dc.demandCode === currentDemandCode.demandCode
+      );
+
+      if (existingIndex >= 0) {
+        // Update existing demand code
+        setDemandCodes(prev => prev.map((dc, idx) => 
+          idx === existingIndex ? { ...currentDemandCode, id: dc.id } : dc
+        ));
+      } else {
+        // Add new demand code
+        const newAssignment = {
+          id: Date.now(),
+          ...currentDemandCode
+        };
+        setDemandCodes(prev => [...prev, newAssignment]);
+      }
+    }
+  }, [currentDemandCode]);
+
   const handleInputChange = (field, value) => {
     if (field === "Upload Resume") {
       setFormData({ ...formData, [field]: value.target.files[0] });
@@ -77,6 +108,13 @@ const CandidateForm = () => {
     if (touched[field]) {
       setFormErrors(prev => ({ ...prev, [field]: null }));
     }
+  };
+
+  const handleDemandCodeChange = (field, value) => {
+    setCurrentDemandCode(prev => ({
+      ...prev,
+      [field]: value
+    }));
   };
 
   const handleBlur = (field) => {
@@ -95,6 +133,13 @@ const CandidateForm = () => {
     if (confirmClear) {
       setFormData({ "Offers Any": "No", "Updated By": userName });
       setHasOffer('No');
+      setDemandCodes([]);
+      setCurrentDemandCode({
+        demandCode: "",
+        status: "",
+        feedback: "",
+        clientInterviewStatus: ""
+      });
       setTouched({});
       setFormErrors({});
       
@@ -184,10 +229,6 @@ const CandidateForm = () => {
         if (!value || !value.trim()) return "Please select employment type";
         break;
 
-      case "Demand Code":
-        if (!value || !value.trim()) return "Please select a requirement code";
-        break;
-
       default:
         return null;
     }
@@ -204,8 +245,7 @@ const CandidateForm = () => {
       "Relavant Experience",
       "Upload Resume",
       "Sourced From",
-      "Employment Type",
-      "Demand Code"
+      "Employment Type"
     ];
 
     requiredFields.forEach(field => {
@@ -219,6 +259,11 @@ const CandidateForm = () => {
       if (offerError) errors["Offer Details"] = offerError;
     }
 
+    // Check demand codes - at least one required
+    if (demandCodes.length === 0) {
+      errors["Demand Code"] = "Please add at least one demand code assignment";
+    }
+
     return errors;
   };
 
@@ -230,6 +275,44 @@ const CandidateForm = () => {
     } catch (err) {
       console.error('Error fetching candidates:', err);
     }
+  };
+
+  // Remove demand code
+  const removeDemandCode = (demandCodeValue) => {
+    setDemandCodes(demandCodes.filter(dc => dc.demandCode !== demandCodeValue));
+    
+    // If removing the currently selected one, clear the current form
+    if (currentDemandCode.demandCode === demandCodeValue) {
+      setCurrentDemandCode({
+        demandCode: "",
+        status: "",
+        feedback: "",
+        clientInterviewStatus: ""
+      });
+    }
+  };
+
+  // Load demand code for editing
+  const editDemandCode = (demandCodeValue) => {
+    const dcToEdit = demandCodes.find(dc => dc.demandCode === demandCodeValue);
+    if (dcToEdit) {
+      setCurrentDemandCode({
+        demandCode: dcToEdit.demandCode,
+        status: dcToEdit.status,
+        feedback: dcToEdit.feedback,
+        clientInterviewStatus: dcToEdit.clientInterviewStatus
+      });
+    }
+  };
+
+  // Clear current demand code fields
+  const clearCurrentDemandCode = () => {
+    setCurrentDemandCode({
+      demandCode: "",
+      status: "",
+      feedback: "",
+      clientInterviewStatus: ""
+    });
   };
 
   useEffect(() => {
@@ -257,7 +340,6 @@ const CandidateForm = () => {
       "Expected CTC (In LPA)", "Current Working Status", "Notice Period (In Days)",
       "Current Location (Nearest City)", "Ready to Relocate for Other Location",
       "Prefered Location (City)", "Availability for the Interview", "Client Name",
-      "Demand Code", 
       "Updated By", "Offers Any", "Technical Skills", "Secondary Skill",
       "Relavant Experience", "Relevant Experience in Primary Skill",
       "Relevant Experience in Secondary Skill", "NammaQA update", "Feedback",
@@ -272,6 +354,12 @@ const CandidateForm = () => {
     
     if (Object.keys(errors).length > 0) {
       alert('Please fix all validation errors before submitting');
+      return;
+    }
+
+    // Check if at least one demand code is added
+    if (demandCodes.length === 0) {
+      alert('Please add at least one demand code');
       return;
     }
 
@@ -293,9 +381,34 @@ const CandidateForm = () => {
       });
 
       if (res.ok) {
+        const candidateData = await res.json();
+        
+        // Add all demand code assignments
+        for (const dc of demandCodes) {
+          await fetch('/api/demand-code-assignments', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              candidateId: candidateData.id,
+              demandCode: dc.demandCode,
+              status: dc.status || null,
+              feedback: dc.feedback || null,
+              clientInterviewStatus: dc.clientInterviewStatus || null,
+              updatedBy: userName
+            })
+          });
+        }
+
         alert('Candidate submitted successfully!');
         setFormData({ "Offers Any": "No", "Updated By": userName });
         setHasOffer('No');
+        setDemandCodes([]);
+        setCurrentDemandCode({
+          demandCode: "",
+          status: "",
+          feedback: "",
+          clientInterviewStatus: ""
+        });
         setTouched({});
         setFormErrors({});
         
@@ -327,7 +440,7 @@ const CandidateForm = () => {
     <div style={styles.inputGroup}>
       <label htmlFor={field} style={styles.label}>
         {field}
-        {["Name", "Contact Number", "Email ID", "Technical Skills", "Relavant Experience", "Upload Resume", "Sourced From", "Employment Type", "Demand Code"].includes(field) && 
+        {["Name", "Contact Number", "Email ID", "Technical Skills", "Relavant Experience", "Upload Resume", "Sourced From", "Employment Type"].includes(field) && 
           <span style={styles.required}> *</span>
         }
       </label>
@@ -466,11 +579,144 @@ const CandidateForm = () => {
 
           {/* Requirement Information Section */}
           <div style={styles.section}>
-            <h2 style={styles.sectionTitle}>Requirement Details</h2>
+            <h2 style={styles.sectionTitle}>Requirement & Demand Code Assignments</h2>
+            
+            {/* Add/Edit Demand Code Form */}
+            <div style={{ ...styles.formGrid, marginBottom: '24px', paddingBottom: '24px', borderBottom: '1px solid #e5e7eb' }}>
+              <div style={styles.inputGroup}>
+                <label htmlFor="Demand Code" style={styles.label}>
+                  Demand Code<span style={styles.required}> *</span>
+                </label>
+                <select
+                  id="Demand Code"
+                  name="Demand Code"
+                  style={styles.select}
+                  onChange={(e) => handleDemandCodeChange("demandCode", e.target.value)}
+                  value={currentDemandCode.demandCode || ''}
+                >
+                  <option value="">Select requirement code</option>
+                  {companyIds.map(option => (
+                    <option key={option} value={option}>{option}</option>
+                  ))}
+                </select>
+                <p style={styles.helpText}>Auto-saves when you select a code</p>
+              </div>
+
+              <div style={styles.inputGroup}>
+                <label htmlFor="Status" style={styles.label}>Status</label>
+                <select
+                  id="Status"
+                  name="Status"
+                  style={styles.select}
+                  onChange={(e) => handleDemandCodeChange("status", e.target.value)}
+                  value={currentDemandCode.status || ''}
+                  disabled={!currentDemandCode.demandCode}
+                >
+                  <option value="">Select status</option>
+                  {statusOptions.map(option => (
+                    <option key={option} value={option}>{option}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div style={styles.inputGroup}>
+                <label htmlFor="Client Interview Status" style={styles.label}>Client Interview Status</label>
+                <input
+                  type="text"
+                  id="Client Interview Status"
+                  name="Client Interview Status"
+                  style={styles.input}
+                  placeholder="e.g., Pending, Completed, Selected"
+                  value={currentDemandCode.clientInterviewStatus || ''}
+                  onChange={(e) => handleDemandCodeChange("clientInterviewStatus", e.target.value)}
+                  disabled={!currentDemandCode.demandCode}
+                />
+              </div>
+
+              <div style={styles.inputGroupFull}>
+                <label htmlFor="Feedback" style={styles.label}>Feedback</label>
+                <textarea
+                  id="Feedback"
+                  name="Feedback"
+                  rows="3"
+                  style={styles.textarea}
+                  placeholder="Enter feedback for this demand code"
+                  value={currentDemandCode.feedback || ''}
+                  onChange={(e) => handleDemandCodeChange("feedback", e.target.value)}
+                  disabled={!currentDemandCode.demandCode}
+                />
+              </div>
+
+              {currentDemandCode.demandCode && (
+                <div style={{ gridColumn: '1 / -1' }}>
+                  <button
+                    type="button"
+                    onClick={clearCurrentDemandCode}
+                    style={styles.clearDemandButton}
+                  >
+                    Clear to Add Another
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Display Added Demand Codes */}
+            {demandCodes.length > 0 && (
+              <div style={styles.demandCodesList}>
+                <h3 style={styles.listTitle}>Added Demand Code Assignments ({demandCodes.length})</h3>
+                {demandCodes.map((dc) => (
+                  <div key={dc.id} style={styles.demandCodeItem}>
+                    <div style={styles.demandCodeHeader}>
+                      <div>
+                        <p style={styles.demandCodeLabel}><strong>Demand Code:</strong> {dc.demandCode}</p>
+                        {dc.status && <p style={styles.demandCodeLabel}><strong>Status:</strong> {dc.status}</p>}
+                        {dc.clientInterviewStatus && <p style={styles.demandCodeLabel}><strong>Interview Status:</strong> {dc.clientInterviewStatus}</p>}
+                      </div>
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        <button
+                          type="button"
+                          onClick={() => editDemandCode(dc.demandCode)}
+                          style={styles.editButton}
+                          title="Edit this assignment"
+                        >
+                          ✎ Edit
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => removeDemandCode(dc.demandCode)}
+                          style={styles.removeButton}
+                          title="Remove this assignment"
+                        >
+                          ✕ Remove
+                        </button>
+                      </div>
+                    </div>
+                    {dc.feedback && (
+                      <p style={styles.demandCodeFeedback}><strong>Feedback:</strong> {dc.feedback}</p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {formErrors["Demand Code"] && (
+              <span style={{ ...styles.error, gridColumn: '1 / -1', marginBottom: '16px' }}>{formErrors["Demand Code"]}</span>
+            )}
+
             <div style={styles.formGrid}>
-              {renderInput("Client Name", "Enter client name")}
-              {renderSelect("Demand Code", companyIds, "Select requirement code", true)}
-              
+              <div style={styles.inputGroup}>
+                <label htmlFor="Client Name" style={styles.label}>Client Name</label>
+                <input
+                  type="text"
+                  id="Client Name"
+                  name="Client Name"
+                  style={styles.input}
+                  placeholder="Enter client name"
+                  value={formData["Client Name"] || ''}
+                  onChange={(e) => handleInputChange("Client Name", e.target.value)}
+                />
+              </div>
+
               <div style={styles.inputGroup}>
                 <label htmlFor="Updated By" style={styles.label}>Updated By</label>
                 <input
@@ -561,7 +807,6 @@ const CandidateForm = () => {
           <div style={styles.buttonContainer}>
             <button 
               type="submit" 
-              onClick={handleSubmit}
               disabled={isSubmitting}
               style={{
                 ...styles.submitButton,
@@ -674,11 +919,7 @@ const styles = {
     transition: 'all 0.2s ease',
     backgroundColor: '#ffffff',
     color: '#1f2937',
-    outline: 'none',
-    ':focus': {
-      borderColor: '#003366',
-      boxShadow: '0 0 0 3px rgba(0, 51, 102, 0.1)'
-    }
+    outline: 'none'
   },
   select: {
     padding: '12px 16px',
@@ -768,12 +1009,7 @@ const styles = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: '8px',
-    ':hover': {
-      backgroundColor: '#002244',
-      transform: 'translateY(-1px)',
-      boxShadow: '0 4px 8px rgba(0, 51, 102, 0.3)'
-    }
+    gap: '8px'
   },
   submitButtonDisabled: {
     backgroundColor: '#9ca3af',
@@ -809,6 +1045,82 @@ const styles = {
     cursor: 'not-allowed',
     opacity: 0.6,
     borderColor: '#e5e7eb'
+  },
+  clearDemandButton: {
+    padding: '10px 20px',
+    fontSize: '14px',
+    fontWeight: '600',
+    backgroundColor: '#6366f1',
+    color: '#ffffff',
+    border: 'none',
+    borderRadius: '6px',
+    cursor: 'pointer',
+    transition: 'all 0.2s ease',
+    marginTop: '8px'
+  },
+  demandCodesList: {
+    marginBottom: '24px',
+    padding: '16px',
+    backgroundColor: '#f0fdf4',
+    borderRadius: '8px',
+    border: '1px solid #bbf7d0'
+  },
+  listTitle: {
+    fontSize: '16px',
+    fontWeight: '600',
+    color: '#1f2937',
+    marginTop: 0,
+    marginBottom: '16px'
+  },
+  demandCodeItem: {
+    backgroundColor: '#ffffff',
+    padding: '12px 16px',
+    borderRadius: '6px',
+    marginBottom: '12px',
+    border: '1px solid #d1d5db',
+    boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)'
+  },
+  demandCodeHeader: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: '8px'
+  },
+  demandCodeLabel: {
+    margin: '0 0 6px 0',
+    fontSize: '14px',
+    color: '#374151',
+    fontWeight: '500'
+  },
+  demandCodeFeedback: {
+    margin: '8px 0 0 0',
+    fontSize: '13px',
+    color: '#6b7280',
+    fontStyle: 'italic'
+  },
+  editButton: {
+    padding: '6px 12px',
+    fontSize: '13px',
+    fontWeight: '600',
+    backgroundColor: '#3b82f6',
+    color: '#ffffff',
+    border: 'none',
+    borderRadius: '4px',
+    cursor: 'pointer',
+    transition: 'all 0.2s ease',
+    whiteSpace: 'nowrap'
+  },
+  removeButton: {
+    padding: '6px 12px',
+    fontSize: '13px',
+    fontWeight: '600',
+    backgroundColor: '#ef4444',
+    color: '#ffffff',
+    border: 'none',
+    borderRadius: '4px',
+    cursor: 'pointer',
+    transition: 'all 0.2s ease',
+    whiteSpace: 'nowrap'
   }
 };
 

@@ -23,7 +23,13 @@ async function uploadToCloudinary(fileBuffer, fileName) {
 
 export async function GET() {
   try {
-    const candidates = await prisma.candidate.findMany();
+    const candidates = await prisma.candidate.findMany({
+      include: {
+        demandCodeAssignments: {
+          orderBy: { assignedDate: 'desc' }
+        }
+      }
+    });
     return Response.json(candidates);
   } catch (error) {
     return new Response('Failed to fetch candidates', { status: 500 });
@@ -71,10 +77,8 @@ export async function POST(req) {
           preferredLocation: data['Prefered Location (City)'],
           interviewAvailability: data['Availability for the Interview'],
           clientName: data['Client Name'],
-          demandCode: data['Demand Code'],
           interviewTakenBy: data['Interview taken by'],
           comments: data['Comments'] ? [data['Comments']] : [],
-          status: data['Status'],
           followUps: data['Follow Ups'],
           updatedBy: data['Updated By'],
           offersAny: data['Offers Any'] === 'Yes',
@@ -85,11 +89,23 @@ export async function POST(req) {
           primarySkillExp: data['Relevant Experience in Primary Skill'],
           secondarySkillExp: data['Relevant Experience in Secondary Skill'],
           nammaqaUpdate: data['NammaQA update'],
-          clientInterviewStatus: data['Client Interview Status'],
-          feedback: data['Feedback'],
           linkedinProfile: data['LinkedIn Profile'],
           otherLinks: data['Other Links'],
-          resumeLink: resumeUrl
+          resumeLink: resumeUrl,
+          demandCodeAssignments: data['Demand Code']
+            ? {
+                create: {
+                  demandCode: data['Demand Code'],
+                  status: data['Status'] || null,
+                  clientInterviewStatus: data['Client Interview Status'] || null,
+                  feedback: data['Feedback'] || null,
+                  updatedBy: data['Updated By'] || null
+                }
+              }
+            : undefined
+        },
+        include: {
+          demandCodeAssignments: true
         }
       });
 

@@ -138,7 +138,7 @@ model Device {
 }
 
 model Candidate {
-  id                     Int      @id @default(autoincrement())
+  id                     Int                    @id @default(autoincrement())
   name                   String
   contactNumber          String
   alternateContactNumber String?
@@ -157,10 +157,8 @@ model Candidate {
   preferredLocation      String?
   interviewAvailability  String?
   clientName             String?
-  demandCode             String?
   interviewTakenBy       String?
   comments               String[]
-  status                 String?
   followUps              String?
   updatedBy              String?
   offersAny              Boolean
@@ -171,15 +169,30 @@ model Candidate {
   secondarySkillExp      String?
   nammaqaUpdate          String?
   clientInterviewStatus  String?
-  feedback               String?
   linkedinProfile        String?
   otherLinks             String?
   resumeLink             String?
-  createdAt              DateTime @default(now())
-  updatedAt              DateTime @updatedAt
+  createdAt              DateTime               @default(now())
+  updatedAt              DateTime               @updatedAt
   offerDetails           String?
   acmanagerStatus        String?
   acupdateby             String?
+  demandCodeAssignments  DemandCodeAssignment[]
+}
+
+model DemandCodeAssignment {
+  id                    Int       @id @default(autoincrement())
+  candidateId           Int
+  candidate             Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  demandCode            String
+  assignedDate          DateTime  @default(now())
+  status                String?
+  feedback              String?
+  clientInterviewStatus String?
+  notes                 String?
+  updatedBy             String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
 }
 
 model Reminder {
