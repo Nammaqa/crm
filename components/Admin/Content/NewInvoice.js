@@ -493,7 +493,7 @@ export default function InvoiceForm() {
     // Load the Wizzybox logo
     let logoBase64 = null;
     try {
-      logoBase64 = await getImageAsBase64('/Wizzybox Logo.png');
+      logoBase64 = await getImageAsBase64('/Wizzybox-logo.png');
     } catch (error) {}
     // Load the background template image
     let backgroundBase64 = null;

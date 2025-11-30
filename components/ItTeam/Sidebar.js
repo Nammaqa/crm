@@ -76,11 +76,14 @@ export default function Dashboard() {
         {/* Logo */}
        <div className="flex items-center gap-x-4 mb-6">
           <Image
-            src="/Wizzybox Logo.png"
+            src="/Wizzybox-logo.png"
             alt="Company Logo"
-            width={open ? 150 : 40}
+            width={150}
             height={50}
-            className={`transition-all duration-300 ${!open ? "opacity-0 w-0" : "opacity-100 w-auto"}`}
+            unoptimized
+            priority
+            className={`transition-all duration-300 ${open ? "w-auto h-auto" : "w-0 h-0 opacity-0"}`}
+            style={{ width: open ? 'auto' : 0, height: 'auto' }}
           />
         </div>
 

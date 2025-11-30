@@ -245,7 +245,7 @@ const InvoicePayment = ({ invoice, onClone, onClose }) => {
           <div className="flex flex-wrap justify-between mb-6 items-start">
             <div>
               <img
-                src="/Wizzybox Logo.png"
+                src="/Wizzybox-logo.png"
                 alt="WizzyBox Logo"
                 className="h-11 w-auto mb-2"
                 style={{ maxHeight: "48px" }}

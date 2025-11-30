@@ -309,7 +309,7 @@ const PaidInvoicesTable = () => {
       // Try to get the logo as base64
       let logoBase64 = '';
       try {
-        logoBase64 = await imageToBase64('/Wizzybox Logo.png');
+        logoBase64 = await imageToBase64('/Wizzybox-logo.png');
       } catch (error) {
         console.log('Logo not found, using text fallback');
       }
@@ -352,7 +352,7 @@ const PaidInvoicesTable = () => {
     try {
       let logoBase64 = '';
       try {
-        logoBase64 = await imageToBase64('/Wizzybox Logo.png');
+        logoBase64 = await imageToBase64('/Wizzybox-logo.png');
       } catch (error) {
         console.log('Logo not found, using text fallback');
       }
@@ -926,7 +926,7 @@ const PaidInvoicesTable = () => {
             <div className="flex-1">
               <div className="mb-3">
                 <img 
-                  src="/Wizzybox Logo.png" 
+                  src="/Wizzybox-logo.png" 
                   alt="Wizzybox Logo" 
                   className="h-10 w-auto"
                   onError={(e) => {
