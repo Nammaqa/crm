@@ -12,17 +12,15 @@ import {
   FaCog,
 } from "react-icons/fa";
 
-import Overview        from "@components/Admin/Content/Overview";
-import Customerlist    from "@components/Admin/Content/Customerlist";
-import NewInvoice      from "@components/Admin/Content/NewInvoice";
+import Overview from "@components/Admin/Content/Overview";
+import Customerlist from "@components/Admin/Content/Customerlist";
+import NewInvoice from "@components/Admin/Content/NewInvoice";
 import AddCustomerForm from "@components/Admin/Content/Invoice";
 import Invoicelist from "@components/Invoice/Content/invoicelist";
 import Expenses from "@components/Invoice/Content/expenses";
 import Paymentlist from "@/components/Invoice/Content/receivedpaymentlist";
 
-// ──────────────────────────────────────────────────────────────
 // Dummy Settings section (kept for reference)
-// ──────────────────────────────────────────────────────────────
 function SettingsSection() {
   return (
     <div className="flex flex-col items-center justify-center h-full text-center">
@@ -158,10 +156,11 @@ export default function InvoiceSidebar() {
           {/* Logo - switches between full and small */}
           <div className={`flex items-center ${open ? "" : "mb-3"}`}>
             <Image
-              src={open ? "/Wizzybox Logo.png" : "/smalllogo.png"}
+              src={open ? "/Wizzybox-logo.png" : "/smalllogo.png"}
               alt="Company Logo"
               width={logoDims.width}
               height={logoDims.height}
+              unoptimized
               className="transition-all duration-300"
               priority
             />

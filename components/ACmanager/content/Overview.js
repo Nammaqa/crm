@@ -79,10 +79,12 @@ export default function Overview() {
       <div className="w-full max-w-6xl bg-white p-6 m-6 rounded-lg shadow-lg flex flex-col sm:flex-row items-center justify-between">
         <div className="logo-container flex flex-col items-center gap-4">
           <Image
-            src="/Wizzybox Logo.png"
+            src="/Wizzybox-logo.png"
             alt="CRM Logo"
             width={150}
             height={50}
+            unoptimized
+            priority
             className="w-auto max-w-full"
           />
           <h1 className="text-2xl font-bold text-gray-800 text-center sm:text-left">

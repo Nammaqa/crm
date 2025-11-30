@@ -80,7 +80,7 @@ export default function Bdsles() {
         {/* Logo Section */}
         <div className="flex items-center gap-x-4 mb-6">
           <Image
-            src="/Wizzybox Logo.png"
+            src="/Wizzybox-logo.png"
             alt="Company Logo"
             width={open ? 150 : 40}
             height={50}

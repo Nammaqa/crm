@@ -73,7 +73,7 @@ export default function Dashboard() {
       <aside
         className={`bg-gray-900 text-white h-full p-5 pt-8 transition-all duration-300 flex flex-col border-r border-gray-800 shadow-md ${
           open ? "w-64" : "w-20"
-        } relative overflow-y-auto overflow-x-hidden`} // Only vertical scroll
+        } relative overflow-y-auto overflow-x-hidden`}
       >
         {/* Toggle Button */}
         <button
@@ -84,13 +84,16 @@ export default function Dashboard() {
         </button>
 
         {/* Logo */}
-       <div className="flex items-center gap-x-4 mb-6">
+        <div className="flex items-center gap-x-4 mb-6">
           <Image
-            src="/Wizzybox Logo.png"
+            src="/Wizzybox-logo.png"
             alt="Company Logo"
-            width={open ? 150 : 40}
+            width={150}
             height={50}
-            className={`transition-all duration-300 ${!open ? "opacity-0 w-0" : "opacity-100 w-auto"}`}
+            unoptimized
+            priority
+            className={`transition-all duration-300 ${open ? "w-auto h-auto" : "w-0 h-0 opacity-0"}`}
+            style={{ width: open ? 'auto' : 0, height: 'auto' }}
           />
         </div>
 

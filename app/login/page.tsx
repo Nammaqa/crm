@@ -86,7 +86,7 @@ function Page() {
         <div className="container">
             {/* Left Side */}
             <div className="welcome-section">
-                <Image src="/Wizzybox Logo.png" alt="Company Logo" className="welcome-logo" width={180} height={50} />
+                <Image src="/Wizzybox-logo.png" alt="Company Logo" className="welcome-logo" width={180} height={50} />
                 <h1>Welcome Back</h1>
                 <p>We&apos;re glad to see you again! Login to continue.</p>
                 <Image src="/login.webp" alt="Login Illustration" className="login-logo" width={200} height={200} />

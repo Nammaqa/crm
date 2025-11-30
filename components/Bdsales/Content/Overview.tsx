@@ -224,7 +224,7 @@ export default function Overview() {
       {/* Header */}
       <div className="w-full max-w-6xl bg-white p-6 m-6 rounded-lg shadow-md flex flex-col sm:flex-row items-center justify-between">
         <div className="flex flex-col items-center gap-4">
-          <Image src="/Wizzybox Logo.png" alt="CRM Logo" width={150} height={50} className="w-auto max-w-full" />
+          <Image src="/Wizzybox-logo.png" alt="CRM Logo" width={150} height={50} unoptimized priority className=" max-w-full" />
           <h1 className="text-xl sm:text-2xl font-bold text-gray-800 text-center sm:text-left">
             {userName.charAt(0).toUpperCase() + userName.slice(1)}
           </h1>
