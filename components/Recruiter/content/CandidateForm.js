@@ -4,22 +4,11 @@ import { useRouter } from 'next/navigation';
 import CircularProgress from '@/components/CircularIndeterminate';
 
 const sourcedFromOptions = [
-  "LinkedIn",
-  "Walk-in",
-  "Email",
-  "Naukri",
-  "Glassdoor",
-  "Foundit",
-  "CutShort",
-  "Indeed",
-  "Shine",
-  "Others"
+  "LinkedIn", "Walk-in","Email","Naukri","Glassdoor","Foundit","CutShort","Indeed","Shine","Others"
 ];
 
 const employmentTypeOptions = [
-  "Permanent",
-  "Contract",
-  "C2H (Contract to Hire)"
+  "Permanent","Contract","C2H (Contract to Hire)"
 ];
 
 const relocateOptions = [
@@ -28,12 +17,7 @@ const relocateOptions = [
 ];
 
 const statusOptions = [
-  "Screened",
-  "Not Screened",
-  "Internal Screening Rejected",
-  "Internal Screening Selected",
-  "L1 Accepted",
-  "L1 Rejected",
+  "Screened","Not Screened","Internal Screening Rejected","Internal Screening Selected","L1 Accepted","L1 Rejected",
   "L2 Accepted",
   "L2 Rejected",
   "Offer Accepted",
@@ -74,19 +58,16 @@ const CandidateForm = () => {
 
   // Auto-save demand code when fields are filled
   useEffect(() => {
-    // Only auto-save if demand code is selected and not already in the list
     if (currentDemandCode.demandCode && currentDemandCode.demandCode.trim()) {
       const existingIndex = demandCodes.findIndex(
         dc => dc.demandCode === currentDemandCode.demandCode
       );
 
       if (existingIndex >= 0) {
-        // Update existing demand code
         setDemandCodes(prev => prev.map((dc, idx) => 
           idx === existingIndex ? { ...currentDemandCode, id: dc.id } : dc
         ));
       } else {
-        // Add new demand code
         const newAssignment = {
           id: Date.now(),
           ...currentDemandCode
@@ -104,7 +85,6 @@ const CandidateForm = () => {
       if (field === 'Offers Any') setHasOffer(value);
     }
     
-    // Clear error when user starts typing
     if (touched[field]) {
       setFormErrors(prev => ({ ...prev, [field]: null }));
     }
@@ -143,7 +123,6 @@ const CandidateForm = () => {
       setTouched({});
       setFormErrors({});
       
-      // Clear file input
       const fileInput = document.getElementById("Upload Resume");
       if (fileInput) {
         fileInput.value = "";
@@ -253,13 +232,11 @@ const CandidateForm = () => {
       if (error) errors[field] = error;
     });
 
-    // Check Offer Details if Offers Any is Yes
     if (formData["Offers Any"] === "Yes") {
       const offerError = validateField("Offer Details", formData["Offer Details"]);
       if (offerError) errors["Offer Details"] = offerError;
     }
 
-    // Check demand codes - at least one required
     if (demandCodes.length === 0) {
       errors["Demand Code"] = "Please add at least one demand code assignment";
     }
@@ -277,11 +254,9 @@ const CandidateForm = () => {
     }
   };
 
-  // Remove demand code
   const removeDemandCode = (demandCodeValue) => {
     setDemandCodes(demandCodes.filter(dc => dc.demandCode !== demandCodeValue));
     
-    // If removing the currently selected one, clear the current form
     if (currentDemandCode.demandCode === demandCodeValue) {
       setCurrentDemandCode({
         demandCode: "",
@@ -292,7 +267,6 @@ const CandidateForm = () => {
     }
   };
 
-  // Load demand code for editing
   const editDemandCode = (demandCodeValue) => {
     const dcToEdit = demandCodes.find(dc => dc.demandCode === demandCodeValue);
     if (dcToEdit) {
@@ -305,7 +279,6 @@ const CandidateForm = () => {
     }
   };
 
-  // Clear current demand code fields
   const clearCurrentDemandCode = () => {
     setCurrentDemandCode({
       demandCode: "",
@@ -332,7 +305,6 @@ const CandidateForm = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    // Mark all fields as touched
     const allFields = [
       "Name", "Contact Number", "Alternate Contact Number", "Email ID",
       "Sourced From", "Employment Type", "Domain Experience (Primary)",
@@ -357,7 +329,6 @@ const CandidateForm = () => {
       return;
     }
 
-    // Check if at least one demand code is added
     if (demandCodes.length === 0) {
       alert('Please add at least one demand code');
       return;
@@ -383,7 +354,6 @@ const CandidateForm = () => {
       if (res.ok) {
         const candidateData = await res.json();
         
-        // Add all demand code assignments
         for (const dc of demandCodes) {
           await fetch('/api/demand-code-assignments', {
             method: 'POST',
@@ -412,7 +382,6 @@ const CandidateForm = () => {
         setTouched({});
         setFormErrors({});
         
-        // Clear file input
         const fileInput = document.getElementById("Upload Resume");
         if (fileInput) {
           fileInput.value = "";
@@ -470,7 +439,7 @@ const CandidateForm = () => {
       <textarea
         id={field}
         name={field}
-        rows="4"
+        rows="3"
         style={{
           ...styles.textarea,
           ...(touched[field] && formErrors[field] ? styles.inputError : {})
@@ -582,7 +551,7 @@ const CandidateForm = () => {
             <h2 style={styles.sectionTitle}>Requirement & Demand Code Assignments</h2>
             
             {/* Add/Edit Demand Code Form */}
-            <div style={{ ...styles.formGrid, marginBottom: '24px', paddingBottom: '24px', borderBottom: '1px solid #e5e7eb' }}>
+            <div style={{ ...styles.formGrid, marginBottom: '16px', paddingBottom: '16px', borderBottom: '1px solid #e5e7eb' }}>
               <div style={styles.inputGroup}>
                 <label htmlFor="Demand Code" style={styles.label}>
                   Demand Code<span style={styles.required}> *</span>
@@ -638,7 +607,7 @@ const CandidateForm = () => {
                 <textarea
                   id="Feedback"
                   name="Feedback"
-                  rows="3"
+                  rows="2"
                   style={styles.textarea}
                   placeholder="Enter feedback for this demand code"
                   value={currentDemandCode.feedback || ''}
@@ -672,7 +641,7 @@ const CandidateForm = () => {
                         {dc.status && <p style={styles.demandCodeLabel}><strong>Status:</strong> {dc.status}</p>}
                         {dc.clientInterviewStatus && <p style={styles.demandCodeLabel}><strong>Interview Status:</strong> {dc.clientInterviewStatus}</p>}
                       </div>
-                      <div style={{ display: 'flex', gap: '8px' }}>
+                      <div style={{ display: 'flex', gap: '6px' }}>
                         <button
                           type="button"
                           onClick={() => editDemandCode(dc.demandCode)}
@@ -700,7 +669,7 @@ const CandidateForm = () => {
             )}
 
             {formErrors["Demand Code"] && (
-              <span style={{ ...styles.error, gridColumn: '1 / -1', marginBottom: '16px' }}>{formErrors["Demand Code"]}</span>
+              <span style={{ ...styles.error, gridColumn: '1 / -1', marginBottom: '12px' }}>{formErrors["Demand Code"]}</span>
             )}
 
             <div style={styles.formGrid}>
@@ -843,52 +812,51 @@ const CandidateForm = () => {
 const styles = {
   pageWrapper: {
     minHeight: '100vh',
-    backgroundColor: '#f5f7fa',
+    backgroundColor: '#f8f9fa',
     padding: '0',
     fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif'
   },
   container: {
-    maxWidth: '1400px',
+    maxWidth: '1200px',
     margin: '0 auto',
     backgroundColor: '#ffffff',
-    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)',
-    overflow: 'hidden'
+    boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'
   },
   header: {
     backgroundColor: '#003366',
     color: '#ffffff',
-    padding: '32px 40px',
-    borderBottom: '4px solid #0055a5'
+    padding: '20px 24px',
+    borderBottom: '3px solid #0055a5'
   },
   heading: {
-    margin: '0 0 8px 0',
-    fontSize: '28px',
+    margin: '0 0 4px 0',
+    fontSize: '22px',
     fontWeight: '600',
-    letterSpacing: '-0.5px'
+    letterSpacing: '-0.3px'
   },
   subheading: {
     margin: 0,
-    fontSize: '14px',
+    fontSize: '13px',
     color: '#e0e7ff',
     fontWeight: '400'
   },
   section: {
-    padding: '32px 40px',
+    padding: '20px 24px',
     borderBottom: '1px solid #e5e7eb'
   },
   sectionTitle: {
-    fontSize: '18px',
+    fontSize: '15px',
     fontWeight: '600',
     color: '#1f2937',
     marginTop: 0,
-    marginBottom: '24px',
-    paddingBottom: '12px',
+    marginBottom: '16px',
+    paddingBottom: '8px',
     borderBottom: '2px solid #e5e7eb'
   },
   formGrid: {
     display: 'grid',
     gridTemplateColumns: 'repeat(2, 1fr)',
-    gap: '24px'
+    gap: '16px'
   },
   inputGroup: {
     display: 'flex',
@@ -900,10 +868,10 @@ const styles = {
     gridColumn: '1 / -1'
   },
   label: {
-    fontSize: '14px',
+    fontSize: '13px',
     fontWeight: '600',
     color: '#374151',
-    marginBottom: '8px',
+    marginBottom: '6px',
     display: 'flex',
     alignItems: 'center'
   },
@@ -912,20 +880,20 @@ const styles = {
     marginLeft: '2px'
   },
   input: {
-    padding: '12px 16px',
-    fontSize: '15px',
-    border: '1.5px solid #d1d5db',
-    borderRadius: '8px',
+    padding: '9px 12px',
+    fontSize: '14px',
+    border: '1px solid #d1d5db',
+    borderRadius: '6px',
     transition: 'all 0.2s ease',
     backgroundColor: '#ffffff',
     color: '#1f2937',
     outline: 'none'
   },
   select: {
-    padding: '12px 16px',
-    fontSize: '15px',
-    border: '1.5px solid #d1d5db',
-    borderRadius: '8px',
+    padding: '9px 12px',
+    fontSize: '14px',
+    border: '1px solid #d1d5db',
+    borderRadius: '6px',
     transition: 'all 0.2s ease',
     backgroundColor: '#ffffff',
     color: '#1f2937',
@@ -934,38 +902,38 @@ const styles = {
     appearance: 'none',
     backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23374151' d='M6 9L1 4h10z'/%3E%3C/svg%3E")`,
     backgroundRepeat: 'no-repeat',
-    backgroundPosition: 'right 16px center',
-    paddingRight: '40px'
+    backgroundPosition: 'right 12px center',
+    paddingRight: '36px'
   },
   textarea: {
-    padding: '12px 16px',
-    fontSize: '15px',
-    border: '1.5px solid #d1d5db',
-    borderRadius: '8px',
+    padding: '9px 12px',
+    fontSize: '14px',
+    border: '1px solid #d1d5db',
+    borderRadius: '6px',
     transition: 'all 0.2s ease',
     backgroundColor: '#ffffff',
     color: '#1f2937',
     outline: 'none',
     resize: 'vertical',
     fontFamily: 'inherit',
-    minHeight: '100px'
+    minHeight: '70px'
   },
   fileInput: {
-    padding: '12px 16px',
-    fontSize: '15px',
-    borderWidth: '1.5px',
+    padding: '9px 12px',
+    fontSize: '14px',
+    borderWidth: '1px',
     borderStyle: 'solid',
     borderColor: '#d1d5db',
-    borderRadius: '8px',
+    borderRadius: '6px',
     backgroundColor: '#ffffff',
     cursor: 'pointer',
     transition: 'all 0.2s ease'
   },
   inputReadOnly: {
-    padding: '12px 16px',
-    fontSize: '15px',
-    border: '1.5px solid #e5e7eb',
-    borderRadius: '8px',
+    padding: '9px 12px',
+    fontSize: '14px',
+    border: '1px solid #e5e7eb',
+    borderRadius: '6px',
     backgroundColor: '#f9fafb',
     color: '#6b7280',
     cursor: 'not-allowed'
@@ -976,36 +944,36 @@ const styles = {
   },
   error: {
     color: '#dc2626',
-    fontSize: '13px',
-    marginTop: '6px',
+    fontSize: '12px',
+    marginTop: '4px',
     display: 'flex',
     alignItems: 'center',
     fontWeight: '500'
   },
   helpText: {
-    fontSize: '13px',
+    fontSize: '12px',
     color: '#6b7280',
-    marginTop: '6px',
+    marginTop: '4px',
     fontStyle: 'italic'
   },
   buttonContainer: {
-    padding: '32px 40px',
+    padding: '20px 24px',
     backgroundColor: '#f9fafb',
     display: 'flex',
     justifyContent: 'center',
-    gap: '16px'
+    gap: '12px'
   },
   submitButton: {
-    padding: '14px 48px',
-    fontSize: '16px',
+    padding: '10px 32px',
+    fontSize: '14px',
     fontWeight: '600',
     backgroundColor: '#003366',
     color: '#ffffff',
     border: 'none',
-    borderRadius: '8px',
+    borderRadius: '6px',
     cursor: 'pointer',
     transition: 'all 0.3s ease',
-    boxShadow: '0 2px 4px rgba(0, 51, 102, 0.2)',
+    boxShadow: '0 1px 3px rgba(0, 51, 102, 0.2)',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
@@ -1015,7 +983,6 @@ const styles = {
     backgroundColor: '#9ca3af',
     cursor: 'not-allowed',
     opacity: 0.6,
-    transform: 'none',
     boxShadow: 'none'
   },
   buttonContent: {
@@ -1028,15 +995,15 @@ const styles = {
     marginLeft: '8px'
   },
   clearButton: {
-    padding: '14px 48px',
-    fontSize: '16px',
+    padding: '10px 32px',
+    fontSize: '14px',
     fontWeight: '600',
     backgroundColor: '#ffffff',
     color: '#6b7280',
-    borderWidth: '2px',
+    borderWidth: '1px',
     borderStyle: 'solid',
     borderColor: '#d1d5db',
-    borderRadius: '8px',
+    borderRadius: '6px',
     cursor: 'pointer',
     transition: 'all 0.3s ease'
   },
@@ -1047,60 +1014,60 @@ const styles = {
     borderColor: '#e5e7eb'
   },
   clearDemandButton: {
-    padding: '10px 20px',
-    fontSize: '14px',
+    padding: '8px 16px',
+    fontSize: '13px',
     fontWeight: '600',
     backgroundColor: '#6366f1',
     color: '#ffffff',
     border: 'none',
-    borderRadius: '6px',
+    borderRadius: '5px',
     cursor: 'pointer',
     transition: 'all 0.2s ease',
-    marginTop: '8px'
+    marginTop: '4px'
   },
   demandCodesList: {
-    marginBottom: '24px',
-    padding: '16px',
+    marginBottom: '16px',
+    padding: '12px',
     backgroundColor: '#f0fdf4',
-    borderRadius: '8px',
+    borderRadius: '6px',
     border: '1px solid #bbf7d0'
   },
   listTitle: {
-    fontSize: '16px',
+    fontSize: '14px',
     fontWeight: '600',
     color: '#1f2937',
     marginTop: 0,
-    marginBottom: '16px'
+    marginBottom: '12px'
   },
   demandCodeItem: {
     backgroundColor: '#ffffff',
-    padding: '12px 16px',
-    borderRadius: '6px',
-    marginBottom: '12px',
+    padding: '10px 12px',
+    borderRadius: '5px',
+    marginBottom: '10px',
     border: '1px solid #d1d5db',
-    boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)'
+    boxShadow: '0 1px 2px rgba(0, 0, 0, 0.04)'
   },
   demandCodeHeader: {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: '8px'
+    marginBottom: '6px'
   },
   demandCodeLabel: {
-    margin: '0 0 6px 0',
-    fontSize: '14px',
+    margin: '0 0 4px 0',
+    fontSize: '13px',
     color: '#374151',
     fontWeight: '500'
   },
   demandCodeFeedback: {
-    margin: '8px 0 0 0',
-    fontSize: '13px',
+    margin: '6px 0 0 0',
+    fontSize: '12px',
     color: '#6b7280',
     fontStyle: 'italic'
   },
   editButton: {
-    padding: '6px 12px',
-    fontSize: '13px',
+    padding: '5px 10px',
+    fontSize: '12px',
     fontWeight: '600',
     backgroundColor: '#3b82f6',
     color: '#ffffff',
@@ -1111,8 +1078,8 @@ const styles = {
     whiteSpace: 'nowrap'
   },
   removeButton: {
-    padding: '6px 12px',
-    fontSize: '13px',
+    padding: '5px 10px',
+    fontSize: '12px',
     fontWeight: '600',
     backgroundColor: '#ef4444',
     color: '#ffffff',
