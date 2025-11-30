@@ -29,6 +29,19 @@ const relocateOptions = [
   "No"
 ];
 
+const statusOptions = [
+  "Screened",
+  "Not Screened",
+  "Internal Screening Rejected",
+  "Internal Screening Selected",
+  "L1 Accepted",
+  "L1 Rejected",
+  "L2 Accepted",
+  "L2 Rejected",
+  "Offer Accepted",
+  "Didn't Accept Offer"
+];
+
 const CandidateEditForm = () => {
   const router = useRouter();
   const { id: candidateId } = useParams(); 
@@ -37,6 +50,16 @@ const CandidateEditForm = () => {
   const [formErrors, setFormErrors] = useState({});
   const [touched, setTouched] = useState({});
   const [companyIds, setCompanyIds] = useState([]);
+  const [demandCodeAssignments, setDemandCodeAssignments] = useState([]);
+  const [currentDemandCode, setCurrentDemandCode] = useState({
+    id: null,
+    demandCode: "",
+    status: "",
+    feedback: "",
+    clientInterviewStatus: ""
+  });
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [demandCodeError, setDemandCodeError] = useState("");
 
   const mapBackendToFrontend = (data) => ({
     "Name": data.name,
@@ -82,6 +105,11 @@ const CandidateEditForm = () => {
         const mapped = mapBackendToFrontend(data);
         setFormData(mapped);
         setHasOffer(mapped["Offers Any"]);
+        
+        // Load demand code assignments
+        if (data.demandCodeAssignments && Array.isArray(data.demandCodeAssignments)) {
+          setDemandCodeAssignments(data.demandCodeAssignments);
+        }
       } catch (err) {
         console.error("Error fetching candidate:", err);
       }
@@ -104,6 +132,132 @@ const CandidateEditForm = () => {
     }
     fetchCompanyIds();
   }, []);
+
+  // Auto-save demand code when fields change
+  useEffect(() => {
+    const autoSaveDemandCode = async () => {
+      // Only auto-save if demand code is selected
+      if (!currentDemandCode.demandCode || !currentDemandCode.demandCode.trim()) {
+        return;
+      }
+
+      try {
+        if (isEditMode && currentDemandCode.id) {
+          // Update existing assignment
+          const res = await fetch('/api/demand-code-assignments', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              id: currentDemandCode.id,
+              demandCode: currentDemandCode.demandCode,
+              status: currentDemandCode.status || null,
+              feedback: currentDemandCode.feedback || null,
+              clientInterviewStatus: currentDemandCode.clientInterviewStatus || null
+            })
+          });
+
+          if (res.ok) {
+            const updatedAssignment = await res.json();
+            setDemandCodeAssignments(prev => prev.map(dc =>
+              dc.id === currentDemandCode.id ? updatedAssignment : dc
+            ));
+          }
+        } else {
+          // Check if this demand code already exists in the list
+          const existingAssignment = demandCodeAssignments.find(
+            dc => dc.demandCode === currentDemandCode.demandCode
+          );
+
+          if (!existingAssignment) {
+            // Add new assignment
+            const res = await fetch('/api/demand-code-assignments', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                candidateId: parseInt(candidateId),
+                demandCode: currentDemandCode.demandCode,
+                status: currentDemandCode.status || null,
+                feedback: currentDemandCode.feedback || null,
+                clientInterviewStatus: currentDemandCode.clientInterviewStatus || null,
+                updatedBy: formData["Updated By"]
+              })
+            });
+
+            if (res.ok) {
+              const newAssignment = await res.json();
+              setDemandCodeAssignments(prev => [...prev, newAssignment]);
+              setCurrentDemandCode(prev => ({ ...prev, id: newAssignment.id }));
+              setIsEditMode(true);
+            }
+          }
+        }
+        setDemandCodeError("");
+      } catch (error) {
+        console.error("Error auto-saving demand code:", error);
+      }
+    };
+
+    // Debounce auto-save to avoid too many API calls
+    const timeoutId = setTimeout(() => {
+      autoSaveDemandCode();
+    }, 500);
+
+    return () => clearTimeout(timeoutId);
+  }, [currentDemandCode.demandCode, currentDemandCode.status, currentDemandCode.feedback, currentDemandCode.clientInterviewStatus]);
+
+  const handleDemandCodeChange = (field, value) => {
+    setCurrentDemandCode(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  // Clear current demand code fields
+  const clearCurrentDemandCode = () => {
+    setCurrentDemandCode({
+      id: null,
+      demandCode: "",
+      status: "",
+      feedback: "",
+      clientInterviewStatus: ""
+    });
+    setIsEditMode(false);
+    setDemandCodeError("");
+  };
+
+  // Load demand code for editing
+  const editDemandCode = (assignment) => {
+    setCurrentDemandCode({
+      id: assignment.id,
+      demandCode: assignment.demandCode,
+      status: assignment.status || "",
+      feedback: assignment.feedback || "",
+      clientInterviewStatus: assignment.clientInterviewStatus || ""
+    });
+    setIsEditMode(true);
+  };
+
+  // Delete demand code assignment
+  const deleteDemandCodeAssignment = async (assignmentId) => {
+    if (window.confirm("Are you sure you want to delete this assignment?")) {
+      try {
+        const res = await fetch(`/api/demand-code-assignments?id=${assignmentId}`, {
+          method: 'DELETE'
+        });
+
+        if (res.ok) {
+          setDemandCodeAssignments(demandCodeAssignments.filter(dc => dc.id !== assignmentId));
+          
+          // Clear the current form if we're editing the deleted assignment
+          if (currentDemandCode.id === assignmentId) {
+            clearCurrentDemandCode();
+          }
+        }
+      } catch (error) {
+        console.error("Error deleting demand code:", error);
+      }
+    }
+  };
 
   const validateField = (field, value) => {
     const phonePattern = /^[6-9]\d{9}$/;
@@ -180,10 +334,6 @@ const CandidateEditForm = () => {
         if (!value || !value.trim()) return "Please select employment type";
         break;
 
-      case "Demand Code":
-        if (!value || !value.trim()) return "Please select a requirement code";
-        break;
-
       default:
         return null;
     }
@@ -199,8 +349,7 @@ const CandidateEditForm = () => {
       "Technical Skills",
       "Relavant Experience",
       "Sourced From",
-      "Employment Type",
-      "Demand Code"
+      "Employment Type"
     ];
 
     requiredFields.forEach(field => {
@@ -242,8 +391,7 @@ const CandidateEditForm = () => {
     
     const allFields = [
       "Name", "Contact Number", "Alternate Contact Number", "Email ID",
-      "Sourced From", "Employment Type", "Technical Skills", "Relavant Experience",
-      "Demand Code"
+      "Sourced From", "Employment Type", "Technical Skills", "Relavant Experience"
     ];
     const touchedFields = {};
     allFields.forEach(field => touchedFields[field] = true);
@@ -298,7 +446,7 @@ const CandidateEditForm = () => {
     <div style={styles.inputGroup}>
       <label htmlFor={field} style={styles.label}>
         {field}
-        {["Name", "Contact Number", "Email ID", "Technical Skills", "Relavant Experience", "Sourced From", "Employment Type", "Demand Code"].includes(field) && 
+        {["Name", "Contact Number", "Email ID", "Technical Skills", "Relavant Experience", "Sourced From", "Employment Type"].includes(field) && 
           <span style={styles.required}> *</span>
         }
       </label>
@@ -438,12 +586,151 @@ const CandidateEditForm = () => {
             </div>
           </div>
 
-          {/* Requirement Information Section */}
+          {/* Requirement & Demand Code Assignments Section */}
           <div style={styles.section}>
-            <h2 style={styles.sectionTitle}>Requirement Details</h2>
+            <h2 style={styles.sectionTitle}>Requirement & Demand Code Assignments</h2>
+            
+            {/* Add/Edit Demand Code Form */}
+            <div style={{ ...styles.formGrid, marginBottom: '24px', paddingBottom: '24px', borderBottom: '1px solid #e5e7eb' }}>
+              <div style={styles.inputGroup}>
+                <label htmlFor="current-demand-code" style={styles.label}>
+                  {isEditMode ? 'Edit Demand Code' : 'Add Demand Code'}
+                  {!isEditMode && <span style={styles.required}> *</span>}
+                </label>
+                <select
+                  id="current-demand-code"
+                  style={styles.select}
+                  value={currentDemandCode.demandCode}
+                  onChange={(e) => handleDemandCodeChange("demandCode", e.target.value)}
+                  disabled={isEditMode}
+                >
+                  <option value="">Select requirement code</option>
+                  {companyIds.map(option => (
+                    <option key={option} value={option}>{option}</option>
+                  ))}
+                </select>
+                <p style={styles.helpText}>
+                  {isEditMode ? 'Editing existing assignment - changes save automatically' : 'Auto-saves when you select a code'}
+                </p>
+              </div>
+
+              <div style={styles.inputGroup}>
+                <label htmlFor="current-status" style={styles.label}>Status</label>
+                <select
+                  id="current-status"
+                  style={styles.select}
+                  value={currentDemandCode.status}
+                  onChange={(e) => handleDemandCodeChange("status", e.target.value)}
+                  disabled={!currentDemandCode.demandCode}
+                >
+                  <option value="">Select status</option>
+                  {statusOptions.map(option => (
+                    <option key={option} value={option}>{option}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div style={styles.inputGroup}>
+                <label htmlFor="current-interview-status" style={styles.label}>Client Interview Status</label>
+                <input
+                  type="text"
+                  id="current-interview-status"
+                  style={styles.input}
+                  placeholder="e.g., Pending, Completed"
+                  value={currentDemandCode.clientInterviewStatus}
+                  onChange={(e) => handleDemandCodeChange("clientInterviewStatus", e.target.value)}
+                  disabled={!currentDemandCode.demandCode}
+                />
+              </div>
+
+              <div style={styles.inputGroupFull}>
+                <label htmlFor="current-feedback" style={styles.label}>Feedback</label>
+                <textarea
+                  id="current-feedback"
+                  rows="3"
+                  style={styles.textarea}
+                  placeholder="Enter feedback for this demand code"
+                  value={currentDemandCode.feedback}
+                  onChange={(e) => handleDemandCodeChange("feedback", e.target.value)}
+                  disabled={!currentDemandCode.demandCode}
+                />
+              </div>
+
+              {currentDemandCode.demandCode && (
+                <div style={{ gridColumn: '1 / -1' }}>
+                  <button
+                    type="button"
+                    onClick={clearCurrentDemandCode}
+                    style={styles.clearDemandButton}
+                  >
+                    {isEditMode ? '✓ Done Editing - Add Another' : 'Clear to Add Another'}
+                  </button>
+                </div>
+              )}
+
+              {demandCodeError && (
+                <span style={{ ...styles.error, gridColumn: '1 / -1' }}>{demandCodeError}</span>
+              )}
+            </div>
+
+            {/* Display Demand Code Assignments */}
+            {demandCodeAssignments.length > 0 && (
+              <div style={styles.demandCodesList}>
+                <h3 style={styles.listTitle}>Demand Code Assignments ({demandCodeAssignments.length})</h3>
+                {demandCodeAssignments.map((assignment) => (
+                  <div 
+                    key={assignment.id} 
+                    style={{
+                      ...styles.demandCodeItem,
+                      ...(currentDemandCode.id === assignment.id ? styles.demandCodeItemActive : {})
+                    }}
+                  >
+                    <div style={styles.demandCodeHeader}>
+                      <div style={{ flex: 1 }}>
+                        <p style={styles.demandCodeLabel}>
+                          <strong>Demand Code:</strong> {assignment.demandCode}
+                          {currentDemandCode.id === assignment.id && (
+                            <span style={styles.editingBadge}> (Editing)</span>
+                          )}
+                        </p>
+                        {assignment.status && (
+                          <p style={styles.demandCodeLabel}><strong>Status:</strong> {assignment.status}</p>
+                        )}
+                        {assignment.clientInterviewStatus && (
+                          <p style={styles.demandCodeLabel}><strong>Interview Status:</strong> {assignment.clientInterviewStatus}</p>
+                        )}
+                        {assignment.feedback && (
+                          <p style={styles.demandCodeFeedback}><strong>Feedback:</strong> {assignment.feedback}</p>
+                        )}
+                      </div>
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        <button
+                          type="button"
+                          onClick={() => editDemandCode(assignment)}
+                          style={styles.editButton}
+                          title="Edit this assignment"
+                          disabled={currentDemandCode.id === assignment.id}
+                        >
+                          ✎ Edit
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => deleteDemandCodeAssignment(assignment.id)}
+                          style={styles.removeButton}
+                          title="Delete this assignment"
+                        >
+                          ✕ Delete
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Client Name and Updated By */}
             <div style={styles.formGrid}>
               {renderInput("Client Name", "Enter client name")}
-              {renderSelect("Demand Code", companyIds, "Select requirement code", true)}
               {renderInput("Interview taken by", "Enter interviewer name")}
               
               <div style={styles.inputGroup}>
@@ -553,7 +840,7 @@ const CandidateEditForm = () => {
           {/* Submit and Back Buttons */}
           <div style={styles.buttonContainer}>
             <button type="submit" style={styles.submitButton}>
-              💾 Update Candidate
+              ✅ Update Candidate
             </button>
             <button type="button" onClick={handleBack} style={styles.clearButton}>
               ← Back to List
@@ -740,6 +1027,96 @@ const styles = {
     borderRadius: '8px',
     cursor: 'pointer',
     transition: 'all 0.3s ease'
+  },
+  clearDemandButton: {
+    padding: '10px 20px',
+    fontSize: '14px',
+    fontWeight: '600',
+    backgroundColor: '#6366f1',
+    color: '#ffffff',
+    border: 'none',
+    borderRadius: '6px',
+    cursor: 'pointer',
+    transition: 'all 0.2s ease',
+    marginTop: '8px'
+  },
+  demandCodesList: {
+    marginBottom: '24px',
+    padding: '16px',
+    backgroundColor: '#f0fdf4',
+    borderRadius: '8px',
+    border: '1px solid #bbf7d0'
+  },
+  listTitle: {
+    fontSize: '16px',
+    fontWeight: '600',
+    color: '#1f2937',
+    marginTop: 0,
+    marginBottom: '16px'
+  },
+  demandCodeItem: {
+    backgroundColor: '#ffffff',
+    padding: '12px 16px',
+    borderRadius: '6px',
+    marginBottom: '12px',
+    border: '1px solid #d1d5db',
+    boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)',
+    transition: 'all 0.2s ease'
+  },
+  demandCodeItemActive: {
+    border: '2px solid #6366f1',
+    backgroundColor: '#f0f9ff'
+  },
+  demandCodeHeader: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    gap: '12px'
+  },
+  demandCodeLabel: {
+    margin: '0 0 6px 0',
+    fontSize: '14px',
+    color: '#374151',
+    fontWeight: '500'
+  },
+  demandCodeFeedback: {
+    margin: '8px 0 0 0',
+    fontSize: '13px',
+    color: '#6b7280',
+    fontStyle: 'italic'
+  },
+  editingBadge: {
+    fontSize: '12px',
+    fontWeight: '600',
+    color: '#6366f1',
+    backgroundColor: '#e0e7ff',
+    padding: '2px 8px',
+    borderRadius: '4px',
+    marginLeft: '8px'
+  },
+  editButton: {
+    padding: '6px 12px',
+    fontSize: '13px',
+    fontWeight: '600',
+    backgroundColor: '#3b82f6',
+    color: '#ffffff',
+    border: 'none',
+    borderRadius: '4px',
+    cursor: 'pointer',
+    transition: 'all 0.2s ease',
+    whiteSpace: 'nowrap'
+  },
+  removeButton: {
+    padding: '6px 12px',
+    fontSize: '13px',
+    fontWeight: '600',
+    backgroundColor: '#ef4444',
+    color: '#ffffff',
+    border: 'none',
+    borderRadius: '4px',
+    cursor: 'pointer',
+    transition: 'all 0.2s ease',
+    whiteSpace: 'nowrap'
   }
 };
 

@@ -4,22 +4,11 @@ import { useRouter } from 'next/navigation';
 import CircularProgress from '@/components/CircularIndeterminate';
 
 const sourcedFromOptions = [
-  "LinkedIn",
-  "Walk-in",
-  "Email",
-  "Naukri",
-  "Glassdoor",
-  "Foundit",
-  "CutShort",
-  "Indeed",
-  "Shine",
-  "Others"
+  "LinkedIn", "Walk-in","Email","Naukri","Glassdoor","Foundit","CutShort","Indeed","Shine","Others"
 ];
 
 const employmentTypeOptions = [
-  "Permanent",
-  "Contract",
-  "C2H (Contract to Hire)"
+  "Permanent","Contract","C2H (Contract to Hire)"
 ];
 
 const relocateOptions = [
@@ -28,12 +17,7 @@ const relocateOptions = [
 ];
 
 const statusOptions = [
-  "Screened",
-  "Not Screened",
-  "Internal Screening Rejected",
-  "Internal Screening Selected",
-  "L1 Accepted",
-  "L1 Rejected",
+  "Screened","Not Screened","Internal Screening Rejected","Internal Screening Selected","L1 Accepted","L1 Rejected",
   "L2 Accepted",
   "L2 Rejected",
   "Offer Accepted",
@@ -51,6 +35,13 @@ const CandidateForm = () => {
   const [companyIds, setCompanyIds] = useState([]);
   const [userName, setUserName] = useState("");
   const [touched, setTouched] = useState({});
+  const [demandCodes, setDemandCodes] = useState([]);
+  const [currentDemandCode, setCurrentDemandCode] = useState({
+    demandCode: "",
+    status: "",
+    feedback: "",
+    clientInterviewStatus: ""
+  });
   const router = useRouter();
 
   useEffect(() => {
@@ -65,6 +56,27 @@ const CandidateForm = () => {
       .catch((err) => console.error("Failed to load user info", err));
   }, []);
 
+  // Auto-save demand code when fields are filled
+  useEffect(() => {
+    if (currentDemandCode.demandCode && currentDemandCode.demandCode.trim()) {
+      const existingIndex = demandCodes.findIndex(
+        dc => dc.demandCode === currentDemandCode.demandCode
+      );
+
+      if (existingIndex >= 0) {
+        setDemandCodes(prev => prev.map((dc, idx) => 
+          idx === existingIndex ? { ...currentDemandCode, id: dc.id } : dc
+        ));
+      } else {
+        const newAssignment = {
+          id: Date.now(),
+          ...currentDemandCode
+        };
+        setDemandCodes(prev => [...prev, newAssignment]);
+      }
+    }
+  }, [currentDemandCode]);
+
   const handleInputChange = (field, value) => {
     if (field === "Upload Resume") {
       setFormData({ ...formData, [field]: value.target.files[0] });
@@ -73,10 +85,16 @@ const CandidateForm = () => {
       if (field === 'Offers Any') setHasOffer(value);
     }
     
-    // Clear error when user starts typing
     if (touched[field]) {
       setFormErrors(prev => ({ ...prev, [field]: null }));
     }
+  };
+
+  const handleDemandCodeChange = (field, value) => {
+    setCurrentDemandCode(prev => ({
+      ...prev,
+      [field]: value
+    }));
   };
 
   const handleBlur = (field) => {
@@ -95,10 +113,16 @@ const CandidateForm = () => {
     if (confirmClear) {
       setFormData({ "Offers Any": "No", "Updated By": userName });
       setHasOffer('No');
+      setDemandCodes([]);
+      setCurrentDemandCode({
+        demandCode: "",
+        status: "",
+        feedback: "",
+        clientInterviewStatus: ""
+      });
       setTouched({});
       setFormErrors({});
       
-      // Clear file input
       const fileInput = document.getElementById("Upload Resume");
       if (fileInput) {
         fileInput.value = "";
@@ -184,10 +208,6 @@ const CandidateForm = () => {
         if (!value || !value.trim()) return "Please select employment type";
         break;
 
-      case "Demand Code":
-        if (!value || !value.trim()) return "Please select a requirement code";
-        break;
-
       default:
         return null;
     }
@@ -204,8 +224,7 @@ const CandidateForm = () => {
       "Relavant Experience",
       "Upload Resume",
       "Sourced From",
-      "Employment Type",
-      "Demand Code"
+      "Employment Type"
     ];
 
     requiredFields.forEach(field => {
@@ -213,10 +232,13 @@ const CandidateForm = () => {
       if (error) errors[field] = error;
     });
 
-    // Check Offer Details if Offers Any is Yes
     if (formData["Offers Any"] === "Yes") {
       const offerError = validateField("Offer Details", formData["Offer Details"]);
       if (offerError) errors["Offer Details"] = offerError;
+    }
+
+    if (demandCodes.length === 0) {
+      errors["Demand Code"] = "Please add at least one demand code assignment";
     }
 
     return errors;
@@ -230,6 +252,40 @@ const CandidateForm = () => {
     } catch (err) {
       console.error('Error fetching candidates:', err);
     }
+  };
+
+  const removeDemandCode = (demandCodeValue) => {
+    setDemandCodes(demandCodes.filter(dc => dc.demandCode !== demandCodeValue));
+    
+    if (currentDemandCode.demandCode === demandCodeValue) {
+      setCurrentDemandCode({
+        demandCode: "",
+        status: "",
+        feedback: "",
+        clientInterviewStatus: ""
+      });
+    }
+  };
+
+  const editDemandCode = (demandCodeValue) => {
+    const dcToEdit = demandCodes.find(dc => dc.demandCode === demandCodeValue);
+    if (dcToEdit) {
+      setCurrentDemandCode({
+        demandCode: dcToEdit.demandCode,
+        status: dcToEdit.status,
+        feedback: dcToEdit.feedback,
+        clientInterviewStatus: dcToEdit.clientInterviewStatus
+      });
+    }
+  };
+
+  const clearCurrentDemandCode = () => {
+    setCurrentDemandCode({
+      demandCode: "",
+      status: "",
+      feedback: "",
+      clientInterviewStatus: ""
+    });
   };
 
   useEffect(() => {
@@ -249,7 +305,6 @@ const CandidateForm = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    // Mark all fields as touched
     const allFields = [
       "Name", "Contact Number", "Alternate Contact Number", "Email ID",
       "Sourced From", "Employment Type", "Domain Experience (Primary)",
@@ -257,7 +312,6 @@ const CandidateForm = () => {
       "Expected CTC (In LPA)", "Current Working Status", "Notice Period (In Days)",
       "Current Location (Nearest City)", "Ready to Relocate for Other Location",
       "Prefered Location (City)", "Availability for the Interview", "Client Name",
-      "Demand Code", 
       "Updated By", "Offers Any", "Technical Skills", "Secondary Skill",
       "Relavant Experience", "Relevant Experience in Primary Skill",
       "Relevant Experience in Secondary Skill", "NammaQA update", "Feedback",
@@ -272,6 +326,11 @@ const CandidateForm = () => {
     
     if (Object.keys(errors).length > 0) {
       alert('Please fix all validation errors before submitting');
+      return;
+    }
+
+    if (demandCodes.length === 0) {
+      alert('Please add at least one demand code');
       return;
     }
 
@@ -293,13 +352,36 @@ const CandidateForm = () => {
       });
 
       if (res.ok) {
+        const candidateData = await res.json();
+        
+        for (const dc of demandCodes) {
+          await fetch('/api/demand-code-assignments', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              candidateId: candidateData.id,
+              demandCode: dc.demandCode,
+              status: dc.status || null,
+              feedback: dc.feedback || null,
+              clientInterviewStatus: dc.clientInterviewStatus || null,
+              updatedBy: userName
+            })
+          });
+        }
+
         alert('Candidate submitted successfully!');
         setFormData({ "Offers Any": "No", "Updated By": userName });
         setHasOffer('No');
+        setDemandCodes([]);
+        setCurrentDemandCode({
+          demandCode: "",
+          status: "",
+          feedback: "",
+          clientInterviewStatus: ""
+        });
         setTouched({});
         setFormErrors({});
         
-        // Clear file input
         const fileInput = document.getElementById("Upload Resume");
         if (fileInput) {
           fileInput.value = "";
@@ -327,7 +409,7 @@ const CandidateForm = () => {
     <div style={styles.inputGroup}>
       <label htmlFor={field} style={styles.label}>
         {field}
-        {["Name", "Contact Number", "Email ID", "Technical Skills", "Relavant Experience", "Upload Resume", "Sourced From", "Employment Type", "Demand Code"].includes(field) && 
+        {["Name", "Contact Number", "Email ID", "Technical Skills", "Relavant Experience", "Upload Resume", "Sourced From", "Employment Type"].includes(field) && 
           <span style={styles.required}> *</span>
         }
       </label>
@@ -357,7 +439,7 @@ const CandidateForm = () => {
       <textarea
         id={field}
         name={field}
-        rows="4"
+        rows="3"
         style={{
           ...styles.textarea,
           ...(touched[field] && formErrors[field] ? styles.inputError : {})
@@ -466,11 +548,144 @@ const CandidateForm = () => {
 
           {/* Requirement Information Section */}
           <div style={styles.section}>
-            <h2 style={styles.sectionTitle}>Requirement Details</h2>
+            <h2 style={styles.sectionTitle}>Requirement & Demand Code Assignments</h2>
+            
+            {/* Add/Edit Demand Code Form */}
+            <div style={{ ...styles.formGrid, marginBottom: '16px', paddingBottom: '16px', borderBottom: '1px solid #e5e7eb' }}>
+              <div style={styles.inputGroup}>
+                <label htmlFor="Demand Code" style={styles.label}>
+                  Demand Code<span style={styles.required}> *</span>
+                </label>
+                <select
+                  id="Demand Code"
+                  name="Demand Code"
+                  style={styles.select}
+                  onChange={(e) => handleDemandCodeChange("demandCode", e.target.value)}
+                  value={currentDemandCode.demandCode || ''}
+                >
+                  <option value="">Select requirement code</option>
+                  {companyIds.map(option => (
+                    <option key={option} value={option}>{option}</option>
+                  ))}
+                </select>
+                <p style={styles.helpText}>Auto-saves when you select a code</p>
+              </div>
+
+              <div style={styles.inputGroup}>
+                <label htmlFor="Status" style={styles.label}>Status</label>
+                <select
+                  id="Status"
+                  name="Status"
+                  style={styles.select}
+                  onChange={(e) => handleDemandCodeChange("status", e.target.value)}
+                  value={currentDemandCode.status || ''}
+                  disabled={!currentDemandCode.demandCode}
+                >
+                  <option value="">Select status</option>
+                  {statusOptions.map(option => (
+                    <option key={option} value={option}>{option}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div style={styles.inputGroup}>
+                <label htmlFor="Client Interview Status" style={styles.label}>Client Interview Status</label>
+                <input
+                  type="text"
+                  id="Client Interview Status"
+                  name="Client Interview Status"
+                  style={styles.input}
+                  placeholder="e.g., Pending, Completed, Selected"
+                  value={currentDemandCode.clientInterviewStatus || ''}
+                  onChange={(e) => handleDemandCodeChange("clientInterviewStatus", e.target.value)}
+                  disabled={!currentDemandCode.demandCode}
+                />
+              </div>
+
+              <div style={styles.inputGroupFull}>
+                <label htmlFor="Feedback" style={styles.label}>Feedback</label>
+                <textarea
+                  id="Feedback"
+                  name="Feedback"
+                  rows="2"
+                  style={styles.textarea}
+                  placeholder="Enter feedback for this demand code"
+                  value={currentDemandCode.feedback || ''}
+                  onChange={(e) => handleDemandCodeChange("feedback", e.target.value)}
+                  disabled={!currentDemandCode.demandCode}
+                />
+              </div>
+
+              {currentDemandCode.demandCode && (
+                <div style={{ gridColumn: '1 / -1' }}>
+                  <button
+                    type="button"
+                    onClick={clearCurrentDemandCode}
+                    style={styles.clearDemandButton}
+                  >
+                    Clear to Add Another
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Display Added Demand Codes */}
+            {demandCodes.length > 0 && (
+              <div style={styles.demandCodesList}>
+                <h3 style={styles.listTitle}>Added Demand Code Assignments ({demandCodes.length})</h3>
+                {demandCodes.map((dc) => (
+                  <div key={dc.id} style={styles.demandCodeItem}>
+                    <div style={styles.demandCodeHeader}>
+                      <div>
+                        <p style={styles.demandCodeLabel}><strong>Demand Code:</strong> {dc.demandCode}</p>
+                        {dc.status && <p style={styles.demandCodeLabel}><strong>Status:</strong> {dc.status}</p>}
+                        {dc.clientInterviewStatus && <p style={styles.demandCodeLabel}><strong>Interview Status:</strong> {dc.clientInterviewStatus}</p>}
+                      </div>
+                      <div style={{ display: 'flex', gap: '6px' }}>
+                        <button
+                          type="button"
+                          onClick={() => editDemandCode(dc.demandCode)}
+                          style={styles.editButton}
+                          title="Edit this assignment"
+                        >
+                          ✎ Edit
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => removeDemandCode(dc.demandCode)}
+                          style={styles.removeButton}
+                          title="Remove this assignment"
+                        >
+                          ✕ Remove
+                        </button>
+                      </div>
+                    </div>
+                    {dc.feedback && (
+                      <p style={styles.demandCodeFeedback}><strong>Feedback:</strong> {dc.feedback}</p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {formErrors["Demand Code"] && (
+              <span style={{ ...styles.error, gridColumn: '1 / -1', marginBottom: '12px' }}>{formErrors["Demand Code"]}</span>
+            )}
+
             <div style={styles.formGrid}>
-              {renderInput("Client Name", "Enter client name")}
-              {renderSelect("Demand Code", companyIds, "Select requirement code", true)}
-              
+              <div style={styles.inputGroup}>
+                <label htmlFor="Client Name" style={styles.label}>Client Name</label>
+                <input
+                  type="text"
+                  id="Client Name"
+                  name="Client Name"
+                  style={styles.input}
+                  placeholder="Enter client name"
+                  value={formData["Client Name"] || ''}
+                  onChange={(e) => handleInputChange("Client Name", e.target.value)}
+                />
+              </div>
+
               <div style={styles.inputGroup}>
                 <label htmlFor="Updated By" style={styles.label}>Updated By</label>
                 <input
@@ -561,7 +776,6 @@ const CandidateForm = () => {
           <div style={styles.buttonContainer}>
             <button 
               type="submit" 
-              onClick={handleSubmit}
               disabled={isSubmitting}
               style={{
                 ...styles.submitButton,
@@ -598,52 +812,51 @@ const CandidateForm = () => {
 const styles = {
   pageWrapper: {
     minHeight: '100vh',
-    backgroundColor: '#f5f7fa',
+    backgroundColor: '#f8f9fa',
     padding: '0',
     fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif'
   },
   container: {
-    maxWidth: '1400px',
+    maxWidth: '1200px',
     margin: '0 auto',
     backgroundColor: '#ffffff',
-    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)',
-    overflow: 'hidden'
+    boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'
   },
   header: {
     backgroundColor: '#003366',
     color: '#ffffff',
-    padding: '32px 40px',
-    borderBottom: '4px solid #0055a5'
+    padding: '20px 24px',
+    borderBottom: '3px solid #0055a5'
   },
   heading: {
-    margin: '0 0 8px 0',
-    fontSize: '28px',
+    margin: '0 0 4px 0',
+    fontSize: '22px',
     fontWeight: '600',
-    letterSpacing: '-0.5px'
+    letterSpacing: '-0.3px'
   },
   subheading: {
     margin: 0,
-    fontSize: '14px',
+    fontSize: '13px',
     color: '#e0e7ff',
     fontWeight: '400'
   },
   section: {
-    padding: '32px 40px',
+    padding: '20px 24px',
     borderBottom: '1px solid #e5e7eb'
   },
   sectionTitle: {
-    fontSize: '18px',
+    fontSize: '15px',
     fontWeight: '600',
     color: '#1f2937',
     marginTop: 0,
-    marginBottom: '24px',
-    paddingBottom: '12px',
+    marginBottom: '16px',
+    paddingBottom: '8px',
     borderBottom: '2px solid #e5e7eb'
   },
   formGrid: {
     display: 'grid',
     gridTemplateColumns: 'repeat(2, 1fr)',
-    gap: '24px'
+    gap: '16px'
   },
   inputGroup: {
     display: 'flex',
@@ -655,10 +868,10 @@ const styles = {
     gridColumn: '1 / -1'
   },
   label: {
-    fontSize: '14px',
+    fontSize: '13px',
     fontWeight: '600',
     color: '#374151',
-    marginBottom: '8px',
+    marginBottom: '6px',
     display: 'flex',
     alignItems: 'center'
   },
@@ -667,24 +880,20 @@ const styles = {
     marginLeft: '2px'
   },
   input: {
-    padding: '12px 16px',
-    fontSize: '15px',
-    border: '1.5px solid #d1d5db',
-    borderRadius: '8px',
+    padding: '9px 12px',
+    fontSize: '14px',
+    border: '1px solid #d1d5db',
+    borderRadius: '6px',
     transition: 'all 0.2s ease',
     backgroundColor: '#ffffff',
     color: '#1f2937',
-    outline: 'none',
-    ':focus': {
-      borderColor: '#003366',
-      boxShadow: '0 0 0 3px rgba(0, 51, 102, 0.1)'
-    }
+    outline: 'none'
   },
   select: {
-    padding: '12px 16px',
-    fontSize: '15px',
-    border: '1.5px solid #d1d5db',
-    borderRadius: '8px',
+    padding: '9px 12px',
+    fontSize: '14px',
+    border: '1px solid #d1d5db',
+    borderRadius: '6px',
     transition: 'all 0.2s ease',
     backgroundColor: '#ffffff',
     color: '#1f2937',
@@ -693,38 +902,38 @@ const styles = {
     appearance: 'none',
     backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23374151' d='M6 9L1 4h10z'/%3E%3C/svg%3E")`,
     backgroundRepeat: 'no-repeat',
-    backgroundPosition: 'right 16px center',
-    paddingRight: '40px'
+    backgroundPosition: 'right 12px center',
+    paddingRight: '36px'
   },
   textarea: {
-    padding: '12px 16px',
-    fontSize: '15px',
-    border: '1.5px solid #d1d5db',
-    borderRadius: '8px',
+    padding: '9px 12px',
+    fontSize: '14px',
+    border: '1px solid #d1d5db',
+    borderRadius: '6px',
     transition: 'all 0.2s ease',
     backgroundColor: '#ffffff',
     color: '#1f2937',
     outline: 'none',
     resize: 'vertical',
     fontFamily: 'inherit',
-    minHeight: '100px'
+    minHeight: '70px'
   },
   fileInput: {
-    padding: '12px 16px',
-    fontSize: '15px',
-    borderWidth: '1.5px',
+    padding: '9px 12px',
+    fontSize: '14px',
+    borderWidth: '1px',
     borderStyle: 'solid',
     borderColor: '#d1d5db',
-    borderRadius: '8px',
+    borderRadius: '6px',
     backgroundColor: '#ffffff',
     cursor: 'pointer',
     transition: 'all 0.2s ease'
   },
   inputReadOnly: {
-    padding: '12px 16px',
-    fontSize: '15px',
-    border: '1.5px solid #e5e7eb',
-    borderRadius: '8px',
+    padding: '9px 12px',
+    fontSize: '14px',
+    border: '1px solid #e5e7eb',
+    borderRadius: '6px',
     backgroundColor: '#f9fafb',
     color: '#6b7280',
     cursor: 'not-allowed'
@@ -735,51 +944,45 @@ const styles = {
   },
   error: {
     color: '#dc2626',
-    fontSize: '13px',
-    marginTop: '6px',
+    fontSize: '12px',
+    marginTop: '4px',
     display: 'flex',
     alignItems: 'center',
     fontWeight: '500'
   },
   helpText: {
-    fontSize: '13px',
+    fontSize: '12px',
     color: '#6b7280',
-    marginTop: '6px',
+    marginTop: '4px',
     fontStyle: 'italic'
   },
   buttonContainer: {
-    padding: '32px 40px',
+    padding: '20px 24px',
     backgroundColor: '#f9fafb',
     display: 'flex',
     justifyContent: 'center',
-    gap: '16px'
+    gap: '12px'
   },
   submitButton: {
-    padding: '14px 48px',
-    fontSize: '16px',
+    padding: '10px 32px',
+    fontSize: '14px',
     fontWeight: '600',
     backgroundColor: '#003366',
     color: '#ffffff',
     border: 'none',
-    borderRadius: '8px',
+    borderRadius: '6px',
     cursor: 'pointer',
     transition: 'all 0.3s ease',
-    boxShadow: '0 2px 4px rgba(0, 51, 102, 0.2)',
+    boxShadow: '0 1px 3px rgba(0, 51, 102, 0.2)',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: '8px',
-    ':hover': {
-      backgroundColor: '#002244',
-      transform: 'translateY(-1px)',
-      boxShadow: '0 4px 8px rgba(0, 51, 102, 0.3)'
-    }
+    gap: '8px'
   },
   submitButtonDisabled: {
     backgroundColor: '#9ca3af',
     cursor: 'not-allowed',
     opacity: 0.6,
-    transform: 'none',
     boxShadow: 'none'
   },
   buttonContent: {
@@ -792,15 +995,15 @@ const styles = {
     marginLeft: '8px'
   },
   clearButton: {
-    padding: '14px 48px',
-    fontSize: '16px',
+    padding: '10px 32px',
+    fontSize: '14px',
     fontWeight: '600',
     backgroundColor: '#ffffff',
     color: '#6b7280',
-    borderWidth: '2px',
+    borderWidth: '1px',
     borderStyle: 'solid',
     borderColor: '#d1d5db',
-    borderRadius: '8px',
+    borderRadius: '6px',
     cursor: 'pointer',
     transition: 'all 0.3s ease'
   },
@@ -809,6 +1012,82 @@ const styles = {
     cursor: 'not-allowed',
     opacity: 0.6,
     borderColor: '#e5e7eb'
+  },
+  clearDemandButton: {
+    padding: '8px 16px',
+    fontSize: '13px',
+    fontWeight: '600',
+    backgroundColor: '#6366f1',
+    color: '#ffffff',
+    border: 'none',
+    borderRadius: '5px',
+    cursor: 'pointer',
+    transition: 'all 0.2s ease',
+    marginTop: '4px'
+  },
+  demandCodesList: {
+    marginBottom: '16px',
+    padding: '12px',
+    backgroundColor: '#f0fdf4',
+    borderRadius: '6px',
+    border: '1px solid #bbf7d0'
+  },
+  listTitle: {
+    fontSize: '14px',
+    fontWeight: '600',
+    color: '#1f2937',
+    marginTop: 0,
+    marginBottom: '12px'
+  },
+  demandCodeItem: {
+    backgroundColor: '#ffffff',
+    padding: '10px 12px',
+    borderRadius: '5px',
+    marginBottom: '10px',
+    border: '1px solid #d1d5db',
+    boxShadow: '0 1px 2px rgba(0, 0, 0, 0.04)'
+  },
+  demandCodeHeader: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: '6px'
+  },
+  demandCodeLabel: {
+    margin: '0 0 4px 0',
+    fontSize: '13px',
+    color: '#374151',
+    fontWeight: '500'
+  },
+  demandCodeFeedback: {
+    margin: '6px 0 0 0',
+    fontSize: '12px',
+    color: '#6b7280',
+    fontStyle: 'italic'
+  },
+  editButton: {
+    padding: '5px 10px',
+    fontSize: '12px',
+    fontWeight: '600',
+    backgroundColor: '#3b82f6',
+    color: '#ffffff',
+    border: 'none',
+    borderRadius: '4px',
+    cursor: 'pointer',
+    transition: 'all 0.2s ease',
+    whiteSpace: 'nowrap'
+  },
+  removeButton: {
+    padding: '5px 10px',
+    fontSize: '12px',
+    fontWeight: '600',
+    backgroundColor: '#ef4444',
+    color: '#ffffff',
+    border: 'none',
+    borderRadius: '4px',
+    cursor: 'pointer',
+    transition: 'all 0.2s ease',
+    whiteSpace: 'nowrap'
   }
 };
 
