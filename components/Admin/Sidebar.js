@@ -6,12 +6,11 @@ import Image from "next/image";
 // Import section components
 import Overview from "@components/Admin/Content/Overview";
 import BdSales from "@components/Admin/Content/BdSales";
-import Recruitment from "@components/Admin/Content/Recruitment";
+import Recruitment from "@components/Bdsales/Content/Recruitment";
 import Msa from "@components/Admin/Content/Msa";
 import Nda from "@components/Admin/Content/Nda";
 import Sow from "@components/Admin/Content/Sow";
 import Po from "@components/Admin/Content/Po";
-import AcManager from "@components/Admin/Content/AcManager";
 import Marketing from "@components/Admin/Content/Marketing";
 import ItTeam from "@components/Admin/Content/ItTeam";
 import Invoice from "@components/Admin/Content/Invoice";
@@ -22,6 +21,13 @@ import RequirementList from "@components/Admin/Content/RequirementList";
 import Customerlist from "@components/Admin/Content/Customerlist";
 import NewInvoice from "@components/Admin/Content/NewInvoice";
 import InvoiceForm from "@components/Admin/Content/Invoice";
+import MsaNda from '@/components/Bdsales/Content/MsaNda';
+import CandidateForm from "@components/Recruiter/content/CandidateForm";
+import CandidateList from "@components/Recruiter/content/CandidateList";
+import ShortList from "@components/Recruiter/content/ShortList";
+import RejectedList from "@components/Recruiter/content/RejectedList";
+import Acmanager from "@components/ACmanager/content/Acmanager"; 
+
 
 // Import icons
 import {
@@ -51,16 +57,22 @@ const sections = [
   { id: "agreement-list", label: "Agreement List", icon: <FaFileAlt size={20} />, content: <AgreementList /> },
   { id: "requirement-list", label: "Requirement List", icon: <FaListAlt size={20} />, content: <RequirementList /> },
   { id: "recruitment", label: "Requirement", icon: <FaUsers size={20} />, content: <Recruitment /> },
-  { id: "joblist", label: "Job list", icon: <FaBriefcase size={20} />, content: <JobList /> },
-  { id: "msa", label: "MSA", icon: <FaFileContract size={20} />, content: <Msa /> },
-  { id: "nda", label: "NDA", icon: <FaFileContract size={20} />, content: <Nda /> },
+  { id: "msa", label: "MSA & NDA", icon: <FaFileContract size={20} />, content: <MsaNda /> },
+  // { id: "joblist", label: "Job list", icon: <FaBriefcase size={20} />, content: <JobList /> },
+  // { id: "msa", label: "MSA", icon: <FaFileContract size={20} />, content: <Msa /> },
+  // { id: "nda", label: "NDA", icon: <FaFileContract size={20} />, content: <Nda /> },
   { id: "sow", label: "Statement of Work", icon: <FaClipboardList size={20} />, content: <Sow /> },
   { id: "po", label: "Purchase Order", icon: <FaShoppingCart size={20} />, content: <Po /> },
-  { id: "ac-manager", label: "A/C Manager", icon: <FaBuilding size={20} />, content: <AcManager /> },
-  { id: "marketing", label: "Marketing", icon: <FaBullhorn size={20} />, content: <Marketing /> },
-  { id: "customer-list", label: "Customer List", icon: <FaAddressBook size={20} />, content: <Customerlist /> },
-  { id: "customer", label: "Customer", icon: <FaAddressBook size={20} />, content: <InvoiceForm /> },
-  { id: "new-invoice", label: "Invoice", icon: <FaFileInvoice size={20} />, content: <NewInvoice /> },
+  { id: "acmanager", label: "AC Manager", icon: <FaUsers size={20} />, content: <Acmanager /> },
+  { id: "candidate-form", label: "Candidate Form", icon: <FaFileAlt size={20} />, content: <CandidateForm /> },
+  { id: "candidate-list", label: "Candidate List", icon: <FaUsers size={20} />, content: <CandidateList /> },
+  { id: "short-list", label: "Shortlisted", icon: <FaListAlt size={20} />, content: <ShortList /> },
+  { id: "rejected-list", label: "Rejected List", icon: <FaListAlt size={20} />, content: <RejectedList /> },
+  // { id: "marketing", label: "Marketing", icon: <FaBullhorn size={20} />, content: <Marketing /> },
+  // { id: "customer-list", label: "Customer List", icon: <FaAddressBook size={20} />, content: <Customerlist /> },
+  // { id: "customer", label: "Customer", icon: <FaAddressBook size={20} />, content: <InvoiceForm /> },
+  // { id: "new-invoice", label: "Invoice", icon: <FaFileInvoice size={20} />, content: <NewInvoice /> },
+  
 ];
 
 export default function Dashboard({ url }) {
