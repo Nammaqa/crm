@@ -18,10 +18,10 @@ export default function Overview() {
             src="/Wizzybox-logo.png"
             alt="CRM Logo"
             width={150}
-            height={50}
+            height={1560}
             unoptimized
             priority
-            className="w-auto max-w-full"
+            className="w- max-w-"
           />
           <h1
             id="welcome-message"
