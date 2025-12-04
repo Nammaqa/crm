@@ -346,16 +346,24 @@ const CandidateForm = () => {
         }
       });
 
-      const res = await fetch('/api/candidates', {
+      // Start candidate creation and demand code requests in parallel
+      const candidatePromise = fetch('/api/candidates', {
         method: 'POST',
         body: form
-      });
+      }).then(res => res.json());
 
-      if (res.ok) {
-        const candidateData = await res.json();
-        
-        for (const dc of demandCodes) {
-          await fetch('/api/demand-code-assignments', {
+      const candidateData = await candidatePromise;
+
+      if (!candidateData.id) {
+        alert('Error submitting candidate. Please try again.');
+        setIsSubmitting(false);
+        return;
+      }
+
+      // Fire off demand code requests without waiting - they'll complete in background
+      Promise.all(
+        demandCodes.map(dc =>
+          fetch('/api/demand-code-assignments', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -366,35 +374,36 @@ const CandidateForm = () => {
               clientInterviewStatus: dc.clientInterviewStatus || null,
               updatedBy: userName
             })
-          });
-        }
+          }).catch(err => console.error('Demand code assignment error:', err))
+        )
+      );
 
-        alert('Candidate submitted successfully!');
-        setFormData({ "Offers Any": "No", "Updated By": userName });
-        setHasOffer('No');
-        setDemandCodes([]);
-        setCurrentDemandCode({
-          demandCode: "",
-          status: "",
-          feedback: "",
-          clientInterviewStatus: ""
-        });
-        setTouched({});
-        setFormErrors({});
-        
-        const fileInput = document.getElementById("Upload Resume");
-        if (fileInput) {
-          fileInput.value = "";
-        }
-        
-        fetchCandidates();
-      } else {
-        alert('Error submitting candidate. Please try again.');
+      // Don't wait for demand codes - reset form immediately
+      alert('Candidate submitted successfully!');
+      setFormData({ "Offers Any": "No", "Updated By": userName });
+      setHasOffer('No');
+      setDemandCodes([]);
+      setCurrentDemandCode({
+        demandCode: "",
+        status: "",
+        feedback: "",
+        clientInterviewStatus: ""
+      });
+      setTouched({});
+      setFormErrors({});
+      
+      const fileInput = document.getElementById("Upload Resume");
+      if (fileInput) {
+        fileInput.value = "";
       }
+      
+      setIsSubmitting(false);
+      
+      // Fetch candidates in background
+      fetchCandidates();
     } catch (error) {
       console.error('Submission error:', error);
       alert('An error occurred. Please try again.');
-    } finally {
       setIsSubmitting(false);
     }
   };
