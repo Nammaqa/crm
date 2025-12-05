@@ -1,0 +1,71 @@
+name: CI/CD - Deploy CRM to Droplet
+
+on:
+  push:
+    branches:
+      - main   # runs when PR is merged to main
+  workflow_dispatch: {} # allow manual run from GitHub UI
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Optional: add tests/lint here if you have them
+      # - name: Run tests
+      #   run: npm test
+
+      - name: Build Next.js app
+        env:
+          NODE_OPTIONS: "--max_old_space_size=2048"
+        run: npm run build
+
+  deploy:
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: SSH & deploy to Droplet
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          port: 22
+          script: |
+            cd /root/crm
+
+            echo "Pulling latest code..."
+            git pull origin main
+
+            echo "Installing dependencies..."
+            npm ci
+
+            echo "Building app..."
+            export NODE_OPTIONS="--max_old_space_size=2048"
+            npm run build
+
+            echo "Running Prisma migrations..."
+            npx prisma migrate deploy
+
+            echo "Restarting PM2..."
+            pm2 restart crm-app || pm2 start npm --name crm-app -- run start
+
+            echo "Saving PM2 state..."
+            pm2 save
