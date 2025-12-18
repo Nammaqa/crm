@@ -5,8 +5,9 @@ import Image from "next/image";
 
 // Import section components
 import Overview from "@components/Admin/Content/Overview";
-import BdSales from "@components/Admin/Content/BdSales";
+import BD_Report from "@components/Admin/Content/BdSales";
 import Recruitment from "@components/Bdsales/Content/Recruitment";
+import BdSales from "@components/Bdsales/Content/BdSales";
 import Msa from "@components/Admin/Content/Msa";
 import Nda from "@components/Admin/Content/Nda";
 import Sow from "@components/Admin/Content/Sow";
@@ -54,6 +55,7 @@ const sections = [
   { id: "overview", label: "Overview", icon: <FaChartPie size={20} />, content: <Overview /> },
   { id: "add-user", label: "Add User", icon: <FaUser size={20} />, content: <Adduser /> },
   { id: "bd-sales", label: "BD/Sales", icon: <FaHandshake size={20} />, content: <BdSales /> },
+  { id: "BD_Report", label: "BD_Report", icon: <FaHandshake size={20} />, content: <BD_Report /> },
   { id: "agreement-list", label: "Agreement List", icon: <FaFileAlt size={20} />, content: <AgreementList /> },
   { id: "requirement-list", label: "Requirement List", icon: <FaListAlt size={20} />, content: <RequirementList /> },
   { id: "recruitment", label: "Requirement", icon: <FaUsers size={20} />, content: <Recruitment /> },

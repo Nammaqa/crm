@@ -89,7 +89,7 @@ export default function AcManagerTable() {
     // Handle rows per page change
     const handleRowsPerPageChange = (event) => {
         setRowsPerPage(parseInt(event.target.value, 10));
-        setCurrentPage(1); // Reset to first page
+        setCurrentPage(1);
     };
 
     // Handle View
@@ -98,7 +98,7 @@ export default function AcManagerTable() {
         setDialogOpen(true);
     };
 
-    // Handle Shortlist (store as "Selected" and save userName in acupdateby)
+    // Handle Shortlist
     const handleShortlist = async () => {
         if (!shortlistDate || !shortlistTime) {
             toast.error("Please select date and time.");
@@ -129,7 +129,7 @@ export default function AcManagerTable() {
         }
     };
 
-    // Handle Reject (store as "Rejected" and save userName in acupdateby)
+    // Handle Reject
     const handleReject = async () => {
         if (!feedback) {
             toast.error("Please provide feedback.");
@@ -167,7 +167,6 @@ export default function AcManagerTable() {
         setFeedback("");
     };
 
-    // Handle Demand Code change per candidate
     const handleDemandCodeChange = (candidateId, value) => {
         setSelectedDemandCode(prev => ({
             ...prev,
@@ -186,7 +185,7 @@ export default function AcManagerTable() {
     return (
         <div style={styles.pageContainer}>
             <div style={styles.container}>
-                {/* Header Section - Simplified */}
+                {/* Header Section */}
                 <div style={styles.header}>
                     <div>
                         <h1 style={styles.heading}>Pending Candidates</h1>
@@ -290,7 +289,7 @@ export default function AcManagerTable() {
                 </div>
             </div>
 
-            {/* Candidate Details Dialog */}
+            {/* Candidate Details Dialog - REDESIGNED */}
             <Dialog
                 open={dialogOpen}
                 TransitionComponent={Transition}
@@ -361,18 +360,6 @@ export default function AcManagerTable() {
                                             {selectedCandidate.acmanagerStatus || "Pending"}
                                         </span>
                                     </div>
-                                    {/* <div style={styles.infoItem}>
-                                        <span style={styles.infoLabel}>Current CTC:</span>
-                                        <span style={styles.infoValue}>
-                                            {selectedCandidate.currentCTC ? `${selectedCandidate.currentCTC} LPA` : "-"}
-                                        </span>
-                                    </div>
-                                    <div style={styles.infoItem}>
-                                        <span style={styles.infoLabel}>Expected CTC:</span>
-                                        <span style={styles.infoValue}>
-                                            {selectedCandidate.expectedCTC ? `${selectedCandidate.expectedCTC} LPA` : "-"}
-                                        </span>
-                                    </div> */}
                                 </div>
                             </div>
 
@@ -449,7 +436,7 @@ export default function AcManagerTable() {
                                     >
                                         {isSubmitting ? (
                                             <>
-                                                <CircularProgress size={18} style={styles.buttonSpinner} />
+                                                <CircularProgress size={16} style={styles.buttonSpinner} />
                                                 Processing...
                                             </>
                                         ) : (
@@ -468,7 +455,7 @@ export default function AcManagerTable() {
                                             value={feedback}
                                             onChange={(e) => setFeedback(e.target.value)}
                                             placeholder="Provide a reason for rejection"
-                                            rows="4"
+                                            rows="3"
                                         />
                                     </div>
                                     <button 
@@ -478,7 +465,7 @@ export default function AcManagerTable() {
                                     >
                                         {isSubmitting ? (
                                             <>
-                                                <CircularProgress size={18} style={styles.buttonSpinner} />
+                                                <CircularProgress size={16} style={styles.buttonSpinner} />
                                                 Processing...
                                             </>
                                         ) : (
@@ -501,346 +488,57 @@ export default function AcManagerTable() {
 }
 
 const styles = {
-    pageContainer: {
-        minHeight: '100vh',
-        backgroundColor: '#f5f7fa',
-        padding: '30px 20px',
-        fontFamily: "'Inter', 'Segoe UI', 'Roboto', sans-serif"
-    },
-    container: {
-        maxWidth: '1400px',
-        margin: '0 auto',
-        backgroundColor: '#ffffff',
-        borderRadius: '16px',
-        boxShadow: '0 4px 6px rgba(0, 0, 0, 0.07)',
-        overflow: 'hidden'
-    },
-    header: {
-        background: 'linear-gradient(135deg, #003366 0%, #004080 100%)',
-        padding: '30px 40px',
-        color: '#ffffff',
-        borderBottom: '4px solid #002244'
-    },
-    heading: {
-        margin: '0 0 8px 0',
-        fontSize: '28px',
-        fontWeight: '700'
-    },
-    subheading: {
-        margin: 0,
-        fontSize: '14px',
-        opacity: 0.9
-    },
-    tableContainer: {
-        padding: '30px'
-    },
-    loadingContainer: {
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '60px 20px',
-        gap: '20px'
-    },
-    loadingText: {
-        fontSize: '16px',
-        color: '#64748b'
-    },
-    emptyState: {
-        textAlign: 'center',
-        padding: '60px 20px'
-    },
-    emptyText: {
-        fontSize: '16px',
-        color: '#64748b'
-    },
-    table: {
-        width: '100%',
-        borderCollapse: 'separate',
-        borderSpacing: 0
-    },
-    tableHeaderRow: {
-        backgroundColor: '#f8fafc',
-        borderBottom: '2px solid #e2e8f0'
-    },
-    tableHead: {
-        padding: '16px',
-        fontSize: '14px',
-        fontWeight: '700',
-        color: '#475569',
-        textTransform: 'uppercase',
-        letterSpacing: '0.5px'
-    },
-    tableRow: {
-        borderBottom: '1px solid #e2e8f0',
-        transition: 'background-color 0.2s ease'
-    },
-    tableCell: {
-        padding: '16px',
-        fontSize: '14px',
-        color: '#334155'
-    },
-    statusBadge: {
-        display: 'inline-block',
-        padding: '6px 12px',
-        borderRadius: '20px',
-        fontSize: '12px',
-        fontWeight: '600',
-        textTransform: 'capitalize'
-    },
-    viewButton: {
-        padding: '8px 16px',
-        fontSize: '14px',
-        fontWeight: '500',
-        color: '#003366',
-        backgroundColor: '#e0f2fe',
-        border: '1px solid #bae6fd',
-        borderRadius: '6px',
-        cursor: 'pointer',
-        transition: 'all 0.2s ease'
-    },
-    paginationContainer: {
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginTop: '30px',
-        paddingTop: '20px',
-        borderTop: '2px solid #e2e8f0',
-        flexWrap: 'wrap',
-        gap: '16px'
-    },
-    paginationInfo: {
-        display: 'flex',
-        alignItems: 'center',
-        gap: '20px',
-        flexWrap: 'wrap'
-    },
-    rowsPerPageLabel: {
-        display: 'flex',
-        alignItems: 'center',
-        gap: '8px',
-        fontSize: '14px',
-        color: '#475569',
-        fontWeight: '500'
-    },
-    rowsPerPageSelect: {
-        padding: '6px 12px',
-        fontSize: '14px',
-        border: '2px solid #e2e8f0',
-        borderRadius: '6px',
-        outline: 'none',
-        cursor: 'pointer',
-        backgroundColor: '#ffffff',
-        color: '#334155',
-        marginLeft: '8px'
-    },
-    paginationText: {
-        fontSize: '14px',
-        color: '#64748b'
-    },
-    dialogPaper: {
-        borderRadius: '16px',
-        maxHeight: '90vh'
-    },
-    dialogTitle: {
-        fontSize: '24px',
-        fontWeight: '700',
-        color: '#1e293b',
-        padding: '24px 32px',
-        borderBottom: '2px solid #e2e8f0'
-    },
-    dialogContent: {
-        padding: '32px'
-    },
-    infoSection: {
-        marginBottom: '28px'
-    },
-    sectionTitle: {
-        fontSize: '18px',
-        fontWeight: '600',
-        color: '#1e293b',
-        marginBottom: '16px',
-        paddingBottom: '8px',
-        borderBottom: '2px solid #e2e8f0'
-    },
-    infoGrid: {
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
-        gap: '16px'
-    },
-    infoItem: {
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '4px'
-    },
-    infoLabel: {
-        fontSize: '12px',
-        fontWeight: '600',
-        color: '#64748b',
-        textTransform: 'uppercase',
-        letterSpacing: '0.5px'
-    },
-    infoValue: {
-        fontSize: '15px',
-        color: '#1e293b',
-        fontWeight: '500'
-    },
-    skillsContainer: {
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '16px'
-    },
-    skillItem: {
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '8px'
-    },
-    skillLabel: {
-        fontSize: '13px',
-        fontWeight: '600',
-        color: '#64748b'
-    },
-    skillValue: {
-        fontSize: '14px',
-        color: '#334155',
-        lineHeight: '1.6',
-        margin: 0,
-        padding: '12px',
-        backgroundColor: '#f8fafc',
-        borderRadius: '8px',
-        border: '1px solid #e2e8f0'
-    },
-    resumeIframe: {
-        width: '100%',
-        height: '300px',
-        border: '2px solid #e2e8f0',
-        borderRadius: '8px',
-        marginBottom: '16px'
-    },
-    openResumeButton: {
-        padding: '10px 20px',
-        fontSize: '14px',
-        fontWeight: '500',
-        color: '#003366',
-        backgroundColor: '#e0f2fe',
-        border: '1px solid #bae6fd',
-        borderRadius: '6px',
-        cursor: 'pointer',
-        transition: 'all 0.2s ease'
-    },
-    actionsSection: {
-        marginTop: '32px',
-        paddingTop: '24px',
-        borderTop: '2px solid #e2e8f0'
-    },
-    actionCard: {
-        backgroundColor: '#f8fafc',
-        padding: '24px',
-        borderRadius: '12px',
-        marginBottom: '20px',
-        border: '1px solid #e2e8f0'
-    },
-    actionCardTitle: {
-        fontSize: '16px',
-        fontWeight: '600',
-        color: '#1e293b',
-        marginBottom: '20px'
-    },
-    formGroup: {
-        marginBottom: '16px'
-    },
-    formLabel: {
-        display: 'block',
-        fontSize: '13px',
-        fontWeight: '600',
-        color: '#475569',
-        marginBottom: '8px'
-    },
-    formInput: {
-        width: '100%',
-        padding: '12px 16px',
-        fontSize: '14px',
-        border: '2px solid #e2e8f0',
-        borderRadius: '8px',
-        outline: 'none',
-        transition: 'border-color 0.2s ease',
-        fontFamily: 'inherit'
-    },
-    formInputReadonly: {
-        width: '100%',
-        padding: '12px 16px',
-        fontSize: '14px',
-        border: '2px solid #e2e8f0',
-        borderRadius: '8px',
-        backgroundColor: '#f1f5f9',
-        color: '#64748b',
-        fontFamily: 'inherit'
-    },
-    formTextarea: {
-        width: '100%',
-        padding: '12px 16px',
-        fontSize: '14px',
-        border: '2px solid #e2e8f0',
-        borderRadius: '8px',
-        outline: 'none',
-        resize: 'vertical',
-        fontFamily: 'inherit',
-        lineHeight: '1.5'
-    },
-    successButton: {
-        width: '100%',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: '8px',
-        padding: '14px 24px',
-        fontSize: '15px',
-        fontWeight: '600',
-        color: '#ffffff',
-        backgroundColor: '#10b981',
-        border: 'none',
-        borderRadius: '8px',
-        cursor: 'pointer',
-        transition: 'all 0.2s ease',
-        marginTop: '8px'
-    },
-    dangerButton: {
-        width: '100%',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: '8px',
-        padding: '14px 24px',
-        fontSize: '15px',
-        fontWeight: '600',
-        color: '#ffffff',
-        backgroundColor: '#ef4444',
-        border: 'none',
-        borderRadius: '8px',
-        cursor: 'pointer',
-        transition: 'all 0.2s ease',
-        marginTop: '8px'
-    },
-    buttonDisabled: {
-        opacity: 0.6,
-        cursor: 'not-allowed'
-    },
-    buttonSpinner: {
-        color: '#ffffff'
-    },
-    dialogActions: {
-        padding: '16px 32px',
-        borderTop: '2px solid #e2e8f0'
-    },
-    closeButton: {
-        padding: '10px 24px',
-        fontSize: '14px',
-        fontWeight: '500',
-        color: '#64748b',
-        backgroundColor: 'transparent',
-        border: '1px solid #cbd5e0',
-        borderRadius: '6px',
-        cursor: 'pointer',
-        transition: 'all 0.2s ease'
-    }
+    pageContainer: { minHeight: '100vh', backgroundColor: '#f5f7fa', padding: '30px 20px', fontFamily: "'Inter', 'Segoe UI', 'Roboto', sans-serif" },
+    container: { maxWidth: '1400px', margin: '0 auto', backgroundColor: '#ffffff', borderRadius: '16px', boxShadow: '0 4px 6px rgba(0, 0, 0, 0.07)', overflow: 'hidden' },
+    header: { background: 'linear-gradient(135deg, #003366 0%, #004080 100%)', padding: '30px 40px', color: '#ffffff', borderBottom: '4px solid #002244' },
+    heading: { margin: '0 0 8px 0', fontSize: '28px', fontWeight: '700' },
+    subheading: { margin: 0, fontSize: '14px', opacity: 0.9 },
+    tableContainer: { padding: '30px' },
+    loadingContainer: { display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '60px 20px', gap: '20px' },
+    loadingText: { fontSize: '16px', color: '#64748b' },
+    emptyState: { textAlign: 'center', padding: '60px 20px' },
+    emptyText: { fontSize: '16px', color: '#64748b' },
+    table: { width: '100%', borderCollapse: 'separate', borderSpacing: 0 },
+    tableHeaderRow: { backgroundColor: '#f8fafc', borderBottom: '2px solid #e2e8f0' },
+    tableHead: { padding: '16px', fontSize: '14px', fontWeight: '700', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.5px' },
+    tableRow: { borderBottom: '1px solid #e2e8f0', transition: 'background-color 0.2s ease' },
+    tableCell: { padding: '16px', fontSize: '14px', color: '#334155' },
+    statusBadge: { display: 'inline-block', padding: '6px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: '600', textTransform: 'capitalize' },
+    viewButton: { padding: '8px 16px', fontSize: '14px', fontWeight: '500', color: '#003366', backgroundColor: '#e0f2fe', border: '1px solid #bae6fd', borderRadius: '6px', cursor: 'pointer', transition: 'all 0.2s ease' },
+    paginationContainer: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '30px', paddingTop: '20px', borderTop: '2px solid #e2e8f0', flexWrap: 'wrap', gap: '16px' },
+    paginationInfo: { display: 'flex', alignItems: 'center', gap: '20px', flexWrap: 'wrap' },
+    rowsPerPageLabel: { display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', color: '#475569', fontWeight: '500' },
+    rowsPerPageSelect: { padding: '6px 12px', fontSize: '14px', border: '2px solid #e2e8f0', borderRadius: '6px', outline: 'none', cursor: 'pointer', backgroundColor: '#ffffff', color: '#334155', marginLeft: '8px' },
+    paginationText: { fontSize: '14px', color: '#64748b' },
+    
+    // UPDATED MODAL STYLES - REDUCED FONT SIZES
+    dialogPaper: { borderRadius: '12px', maxHeight: '90vh' },
+    dialogTitle: { fontSize: '16px', fontWeight: '700', color: '#1e293b', padding: '16px 20px', borderBottom: '2px solid #e2e8f0' },
+    dialogContent: { padding: '20px' },
+    infoSection: { marginBottom: '20px' },
+    sectionTitle: { fontSize: '13px', fontWeight: '600', color: '#1e293b', marginBottom: '12px', paddingBottom: '6px', borderBottom: '1px solid #e2e8f0' },
+    infoGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' },
+    infoItem: { display: 'flex', flexDirection: 'column', gap: '3px' },
+    infoLabel: { fontSize: '10px', fontWeight: '600', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.3px' },
+    infoValue: { fontSize: '12px', color: '#1e293b', fontWeight: '500' },
+    skillsContainer: { display: 'flex', flexDirection: 'column', gap: '12px' },
+    skillItem: { display: 'flex', flexDirection: 'column', gap: '6px' },
+    skillLabel: { fontSize: '11px', fontWeight: '600', color: '#64748b' },
+    skillValue: { fontSize: '11px', color: '#334155', lineHeight: '1.5', margin: 0, padding: '10px', backgroundColor: '#f8fafc', borderRadius: '6px', border: '1px solid #e2e8f0' },
+    resumeIframe: { width: '100%', height: '250px', border: '2px solid #e2e8f0', borderRadius: '6px', marginBottom: '12px' },
+    openResumeButton: { padding: '8px 16px', fontSize: '12px', fontWeight: '500', color: '#003366', backgroundColor: '#e0f2fe', border: '1px solid #bae6fd', borderRadius: '6px', cursor: 'pointer', transition: 'all 0.2s ease' },
+    actionsSection: { marginTop: '24px', paddingTop: '20px', borderTop: '2px solid #e2e8f0' },
+    actionCard: { backgroundColor: '#f8fafc', padding: '16px', borderRadius: '8px', marginBottom: '16px', border: '1px solid #e2e8f0' },
+    actionCardTitle: { fontSize: '13px', fontWeight: '600', color: '#1e293b', marginBottom: '14px' },
+    formGroup: { marginBottom: '12px' },
+    formLabel: { display: 'block', fontSize: '11px', fontWeight: '600', color: '#475569', marginBottom: '6px' },
+    formInput: { width: '100%', padding: '8px 12px', fontSize: '12px', border: '2px solid #e2e8f0', borderRadius: '6px', outline: 'none', transition: 'border-color 0.2s ease', fontFamily: 'inherit' },
+    formInputReadonly: { width: '100%', padding: '8px 12px', fontSize: '12px', border: '2px solid #e2e8f0', borderRadius: '6px', backgroundColor: '#f1f5f9', color: '#64748b', fontFamily: 'inherit' },
+    formTextarea: { width: '100%', padding: '8px 12px', fontSize: '11px', border: '2px solid #e2e8f0', borderRadius: '6px', outline: 'none', resize: 'vertical', fontFamily: 'inherit', lineHeight: '1.5' },
+    successButton: { width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', padding: '10px 20px', fontSize: '12px', fontWeight: '600', color: '#ffffff', backgroundColor: '#10b981', border: 'none', borderRadius: '6px', cursor: 'pointer', transition: 'all 0.2s ease', marginTop: '6px' },
+    dangerButton: { width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', padding: '10px 20px', fontSize: '12px', fontWeight: '600', color: '#ffffff', backgroundColor: '#ef4444', border: 'none', borderRadius: '6px', cursor: 'pointer', transition: 'all 0.2s ease', marginTop: '6px' },
+    buttonDisabled: { opacity: 0.6, cursor: 'not-allowed' },
+    buttonSpinner: { color: '#ffffff' },
+    dialogActions: { padding: '12px 20px', borderTop: '2px solid #e2e8f0' },
+    closeButton: { padding: '8px 20px', fontSize: '12px', fontWeight: '500', color: '#64748b', backgroundColor: 'transparent', border: '1px solid #cbd5e0', borderRadius: '6px', cursor: 'pointer', transition: 'all 0.2s ease' }
 };

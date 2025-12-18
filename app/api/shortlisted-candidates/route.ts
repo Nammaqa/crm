@@ -12,7 +12,7 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    // 1) Find requirements created by this BD (updatedBy). Use case-insensitive match.
+    // 1) Find requirements created by this BD (updatedBy)
     const userRequirements = await prisma.requirement.findMany({
       where: {
         updatedBy: {
@@ -20,7 +20,7 @@ export async function GET(req: NextRequest) {
           mode: "insensitive"
         }
       },
-      select: { requirementId: true } // <--- MATCHES your schema field name
+      select: { requirementId: true }
     });
 
     const userRequirementIds = userRequirements
@@ -36,15 +36,21 @@ export async function GET(req: NextRequest) {
       });
     }
 
-    // 2) Fetch candidates whose demandCode is in the user's requirement IDs,
-    //    and whose acmanagerStatus is Selected or Shortlisted.
+    // 2) Fetch candidates through demandCodeAssignments relation
     const candidates = await prisma.candidate.findMany({
       where: {
-        demandCode: { in: userRequirementIds },
+        demandCodeAssignments: {
+          some: {
+            demandCode: { in: userRequirementIds }
+          }
+        },
         acmanagerStatus: {
-          in: ["Selected", "Shortlisted"],
+          equals: "Selected",
           mode: "insensitive"
         }
+      },
+      include: {
+        demandCodeAssignments: true
       },
       orderBy: { createdAt: "desc" }
     });
@@ -53,9 +59,7 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({ success: true, data: candidates });
   } catch (error) {
-    // Log full error server-side for debugging
     console.error("[shortlisted-candidates] error:", error);
-    // Return safe message to client
     return NextResponse.json(
       { success: false, message: "Server error" },
       { status: 500 }

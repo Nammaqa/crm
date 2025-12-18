@@ -4,10 +4,11 @@ const prisma = new PrismaClient();
 
 export async function PATCH(
   req: Request,
-  context: { params?: { id?: string } }
+  context: { params?: Promise<{ id?: string }> }
 ): Promise<Response> {
-  // Use context.params directly (no await)
-  const id = context.params?.id ? parseInt(context.params.id, 10) : NaN;
+  // Await params first
+  const params = await context.params;
+  const id = params?.id ? parseInt(params.id, 10) : NaN;
 
   if (isNaN(id)) {
     return new Response(
@@ -39,17 +40,18 @@ export async function PATCH(
       where: { id },
       data: {
         acmanagerStatus,
-        demandCode,
+        ...(demandCode && { demandCode }),
         acupdateby,
       },
     });
     return new Response(
-      JSON.stringify(updated),
+      JSON.stringify({ success: true, data: updated }),
       { status: 200, headers: { "Content-Type": "application/json" } }
     );
   } catch (error) {
+    console.error("Update error:", error);
     return new Response(
-      JSON.stringify({ error: "Failed to update status" }),
+      JSON.stringify({ error: "Failed to update candidate status" }),
       { status: 500, headers: { "Content-Type": "application/json" } }
     );
   }

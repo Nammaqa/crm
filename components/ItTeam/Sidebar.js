@@ -1,56 +1,26 @@
 "use client";
 import { useState } from "react";
-import { FaBars, FaTimes } from "react-icons/fa";
 import Image from "next/image";
 
 // Import section components
 import Overview from "@/components/ItTeam/content/Overview";
-import BdSales from "@components/Admin/Content/BdSales";
-import Recruitment from "@components/Admin/Content/Recruitment";
-import Msa from "@components/Admin/Content/Msa";
-import Nda from "@components/Admin/Content/Nda";
-import Sow from "@components/Admin/Content/Sow";
-import Po from "@components/Admin/Content/Po";
-import AcManager from "@components/Admin/Content/AcManager";
-import Marketing from "@components/Admin/Content/Marketing";
-import  DeviceInventoryPage  from "@/components/ItTeam/content/ItemsList";
-
-import Invoice from "@components/Admin/Content/Invoice";
-import JobList from "@components/Admin/Content/JobList";
-import Adduser from "@components/Admin/Content/AddUser";
-import AgreementList from "@components/Admin/Content/AgreementList";
-import RequirementList from "@components/Admin/Content/RequirementList";
+import DeviceInventoryPage from "@/components/ItTeam/content/ItemsList";
 
 // Import icons
 import {
   FaChartPie,
-  FaHandshake,
-  FaUsers,
-  FaFileContract,
-  FaClipboardList,
-  FaShoppingCart,
-  FaBuilding,
-  FaBullhorn,
   FaLaptopCode,
-  FaFileInvoice,
-  FaBriefcase,
-  FaFileAlt,
   FaSignOutAlt,
-  FaListAlt,
-  FaUser,
 } from "react-icons/fa";
 
 // Sidebar sections with dynamic content
 const sections = [
   { id: "overview", label: "Overview", icon: <FaChartPie size={20} />, content: <Overview /> },
-//   { id: "requirement-list", label: "Requirement List", icon: <FaListAlt size={20} />, content: <RequirementList /> },
   { id: "it-team", label: "IT Team", icon: <FaLaptopCode size={20} />, content: <DeviceInventoryPage /> },
-
 ];
 
 export default function Dashboard() {
   const [selectedSection, setSelectedSection] = useState("overview");
-  const [open, setOpen] = useState(true);
 
   const handleLogout = () => {
     localStorage.removeItem("token");
@@ -58,80 +28,67 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="flex h-screen w-full">
-      {/* Sidebar (Left Side) */}
-      <aside
-        className={`bg-gray-900 text-white h-full p-5 pt-8 transition-all duration-300 flex flex-col border-r border-gray-800 shadow-md ${
-          open ? "w-64" : "w-20"
-        } relative overflow-y-auto overflow-x-hidden`} // Only vertical scroll
-      >
-        {/* Toggle Button */}
-        <button
-          className="absolute top-6 right-[-15px] bg-gray-800 text-white p-2 rounded-full border-2 border-gray-600 hover:bg-gray-700 focus:outline-none transition-all"
-          onClick={() => setOpen(!open)}
-        >
-          {open ? <FaTimes size={18} /> : <FaBars size={18} />}
-        </button>
-
-        {/* Logo */}
-       <div className="flex items-center gap-x-4 mb-6">
-          <Image
-            src="/Wizzybox-logo.png"
-            alt="Company Logo"
-            width={150}
-            height={50}
-            unoptimized
-            priority
-            className={`transition-all duration-300 ${open ? "w-auto h-auto" : "w-0 h-0 opacity-0"}`}
-            style={{ width: open ? 'auto' : 0, height: 'auto' }}
-          />
-        </div>
-
-        {/* Sidebar Menu Items */}
-        <ul className="flex flex-col space-y-2">
-          {sections.map((section) => (
-            <li
-              key={section.id}
-              className={`flex items-center p-2 rounded-md cursor-pointer text-sm transition-all hover:bg-gray-700 ${
-                selectedSection === section.id ? "bg-gray-700" : ""
-              }`}
-              onClick={() => setSelectedSection(section.id)}
-              tabIndex={0}
-            >
-              <div className="w-8 text-center">{section.icon}</div>
-              <span
-                className={`transition-all duration-300 ${
-                  !open ? "opacity-0 w-0" : "opacity-100 w-auto"
-                }`}
-              >
-                {section.label}
-              </span>
-            </li>
-          ))}
-        </ul>
-
-        {/* Logout Button */}
-        <button
-          onClick={handleLogout}
-          className="mt-auto flex items-center p-2 rounded-md cursor-pointer text-sm transition-all bg-red-600 hover:bg-red-700 text-white"
-        >
-          <div className="w-8 text-center">
-            <FaSignOutAlt size={20} />
+    <div className="flex h-screen w-full overflow-hidden bg-gray-50">
+      {/* Static Sidebar – match BD sidebar */}
+      <div className="bg-white h-full w-64 flex flex-col border-r border-gray-200 shadow-lg">
+        <div className="flex flex-col h-full">
+          {/* Logo Section */}
+          <div className="flex items-center gap-x-4 mb-6 p-5 pt-8 border-b border-gray-100">
+            <Image
+              src="/Wizzybox-logo.png"
+              alt="Company Logo"
+              width={220}
+              height={70}
+              unoptimized
+              priority
+              className="transition-all duration-300 max-w-full"
+            />
           </div>
-          <span
-            className={`transition-all duration-300 ${
-              !open ? "opacity-0 w-0" : "opacity-100 w-auto"
-            }`}
-          >
-            Logout
-          </span>
-        </button>
-      </aside>
 
-      {/* Main Content Area (Right Side) */}
-      <main className="flex-1 h-full overflow-auto p-6 bg-gray-100">
-        <div className="w-full max-w-6xl pt-6">
-          {sections.find((s) => s.id === selectedSection)?.content}
+          {/* Sidebar Menu Items */}
+          <div className="flex-1 px-5 overflow-y-auto">
+            <ul className="flex flex-col space-y-1">
+              {sections.map((section) => (
+                <li
+                  key={section.id}
+                  className={`flex items-center p-3 rounded-lg cursor-pointer text-sm transition-all ${
+                    selectedSection === section.id
+                      ? "bg-blue-50 text-blue-600 border-l-4 border-blue-600 font-medium shadow-sm"
+                      : "text-gray-700 hover:bg-gray-100 hover:text-blue-600"
+                  }`}
+                  onClick={() => setSelectedSection(section.id)}
+                  tabIndex={0}
+                >
+                  <div className="w-8 text-center flex items-center justify-center">
+                    {section.icon}
+                  </div>
+                  <span className="ml-3 whitespace-nowrap">
+                    {section.label}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Logout Button at the Bottom */}
+          <div className="p-5 pt-3 border-t border-gray-100">
+            <button
+              onClick={handleLogout}
+              className="w-full flex items-center justify-center gap-3 p-3 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 transition-all text-sm border border-red-200 hover:border-red-300 font-medium"
+            >
+              <FaSignOutAlt size={18} />
+              <span>Logout</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Content Area – same card shell */}
+      <main className="max-h-screen flex-1 flex justify-center items-start p-8 overflow-y-auto bg-gray-50">
+        <div className="w-full max-w-7xl">
+          <div className="bg-white rounded-xl shadow-sm p-6 min-h-[calc(100vh-4rem)]">
+            {sections.find((s) => s.id === selectedSection)?.content}
+          </div>
         </div>
       </main>
     </div>

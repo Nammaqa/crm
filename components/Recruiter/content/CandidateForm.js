@@ -817,287 +817,78 @@ const CandidateForm = () => {
     </div>
   );
 };
-
 const styles = {
-  pageWrapper: {
-    minHeight: '100vh',
-    backgroundColor: '#f8f9fa',
-    padding: '0',
-    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif'
-  },
-  container: {
-    maxWidth: '1200px',
-    margin: '0 auto',
-    backgroundColor: '#ffffff',
-    boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'
-  },
-  header: {
-    backgroundColor: '#003366',
-    color: '#ffffff',
-    padding: '20px 24px',
-    borderBottom: '3px solid #0055a5'
-  },
-  heading: {
-    margin: '0 0 4px 0',
-    fontSize: '22px',
-    fontWeight: '600',
-    letterSpacing: '-0.3px'
-  },
-  subheading: {
-    margin: 0,
-    fontSize: '13px',
-    color: '#e0e7ff',
-    fontWeight: '400'
-  },
-  section: {
-    padding: '20px 24px',
-    borderBottom: '1px solid #e5e7eb'
-  },
-  sectionTitle: {
-    fontSize: '15px',
-    fontWeight: '600',
-    color: '#1f2937',
-    marginTop: 0,
-    marginBottom: '16px',
-    paddingBottom: '8px',
-    borderBottom: '2px solid #e5e7eb'
-  },
-  formGrid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(2, 1fr)',
-    gap: '16px'
-  },
-  inputGroup: {
-    display: 'flex',
-    flexDirection: 'column'
-  },
-  inputGroupFull: {
-    display: 'flex',
-    flexDirection: 'column',
-    gridColumn: '1 / -1'
-  },
-  label: {
-    fontSize: '13px',
-    fontWeight: '600',
-    color: '#374151',
-    marginBottom: '6px',
-    display: 'flex',
-    alignItems: 'center'
-  },
-  required: {
-    color: '#dc2626',
-    marginLeft: '2px'
-  },
-  input: {
-    padding: '9px 12px',
-    fontSize: '14px',
-    border: '1px solid #d1d5db',
-    borderRadius: '6px',
-    transition: 'all 0.2s ease',
-    backgroundColor: '#ffffff',
-    color: '#1f2937',
-    outline: 'none'
-  },
-  select: {
-    padding: '9px 12px',
-    fontSize: '14px',
-    border: '1px solid #d1d5db',
-    borderRadius: '6px',
-    transition: 'all 0.2s ease',
-    backgroundColor: '#ffffff',
-    color: '#1f2937',
-    outline: 'none',
-    cursor: 'pointer',
-    appearance: 'none',
-    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23374151' d='M6 9L1 4h10z'/%3E%3C/svg%3E")`,
-    backgroundRepeat: 'no-repeat',
-    backgroundPosition: 'right 12px center',
-    paddingRight: '36px'
-  },
-  textarea: {
-    padding: '9px 12px',
-    fontSize: '14px',
-    border: '1px solid #d1d5db',
-    borderRadius: '6px',
-    transition: 'all 0.2s ease',
-    backgroundColor: '#ffffff',
-    color: '#1f2937',
-    outline: 'none',
-    resize: 'vertical',
-    fontFamily: 'inherit',
-    minHeight: '70px'
-  },
-  fileInput: {
-    padding: '9px 12px',
-    fontSize: '14px',
-    borderWidth: '1px',
-    borderStyle: 'solid',
-    borderColor: '#d1d5db',
-    borderRadius: '6px',
-    backgroundColor: '#ffffff',
-    cursor: 'pointer',
-    transition: 'all 0.2s ease'
-  },
-  inputReadOnly: {
-    padding: '9px 12px',
-    fontSize: '14px',
-    border: '1px solid #e5e7eb',
-    borderRadius: '6px',
-    backgroundColor: '#f9fafb',
-    color: '#6b7280',
-    cursor: 'not-allowed'
-  },
-  inputError: {
-    borderColor: '#dc2626',
-    backgroundColor: '#fef2f2'
-  },
-  error: {
-    color: '#dc2626',
-    fontSize: '12px',
-    marginTop: '4px',
-    display: 'flex',
-    alignItems: 'center',
-    fontWeight: '500'
-  },
-  helpText: {
-    fontSize: '12px',
-    color: '#6b7280',
-    marginTop: '4px',
-    fontStyle: 'italic'
-  },
-  buttonContainer: {
-    padding: '20px 24px',
-    backgroundColor: '#f9fafb',
-    display: 'flex',
-    justifyContent: 'center',
-    gap: '12px'
-  },
-  submitButton: {
-    padding: '10px 32px',
-    fontSize: '14px',
-    fontWeight: '600',
-    backgroundColor: '#003366',
-    color: '#ffffff',
-    border: 'none',
-    borderRadius: '6px',
-    cursor: 'pointer',
-    transition: 'all 0.3s ease',
-    boxShadow: '0 1px 3px rgba(0, 51, 102, 0.2)',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: '8px'
-  },
-  submitButtonDisabled: {
-    backgroundColor: '#9ca3af',
-    cursor: 'not-allowed',
-    opacity: 0.6,
-    boxShadow: 'none'
-  },
-  buttonContent: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: '8px'
-  },
-  loadingText: {
-    marginLeft: '8px'
-  },
-  clearButton: {
-    padding: '10px 32px',
-    fontSize: '14px',
-    fontWeight: '600',
-    backgroundColor: '#ffffff',
-    color: '#6b7280',
-    borderWidth: '1px',
-    borderStyle: 'solid',
-    borderColor: '#d1d5db',
-    borderRadius: '6px',
-    cursor: 'pointer',
-    transition: 'all 0.3s ease'
-  },
-  clearButtonDisabled: {
-    backgroundColor: '#f9fafb',
-    cursor: 'not-allowed',
-    opacity: 0.6,
-    borderColor: '#e5e7eb'
-  },
-  clearDemandButton: {
-    padding: '8px 16px',
-    fontSize: '13px',
-    fontWeight: '600',
-    backgroundColor: '#6366f1',
-    color: '#ffffff',
-    border: 'none',
-    borderRadius: '5px',
-    cursor: 'pointer',
-    transition: 'all 0.2s ease',
-    marginTop: '4px'
-  },
-  demandCodesList: {
-    marginBottom: '16px',
-    padding: '12px',
-    backgroundColor: '#f0fdf4',
-    borderRadius: '6px',
-    border: '1px solid #bbf7d0'
-  },
-  listTitle: {
-    fontSize: '14px',
-    fontWeight: '600',
-    color: '#1f2937',
-    marginTop: 0,
-    marginBottom: '12px'
-  },
-  demandCodeItem: {
-    backgroundColor: '#ffffff',
-    padding: '10px 12px',
-    borderRadius: '5px',
-    marginBottom: '10px',
-    border: '1px solid #d1d5db',
-    boxShadow: '0 1px 2px rgba(0, 0, 0, 0.04)'
-  },
-  demandCodeHeader: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: '6px'
-  },
-  demandCodeLabel: {
-    margin: '0 0 4px 0',
-    fontSize: '13px',
-    color: '#374151',
-    fontWeight: '500'
-  },
-  demandCodeFeedback: {
-    margin: '6px 0 0 0',
-    fontSize: '12px',
-    color: '#6b7280',
-    fontStyle: 'italic'
-  },
-  editButton: {
-    padding: '5px 10px',
-    fontSize: '12px',
-    fontWeight: '600',
-    backgroundColor: '#3b82f6',
-    color: '#ffffff',
-    border: 'none',
-    borderRadius: '4px',
-    cursor: 'pointer',
-    transition: 'all 0.2s ease',
-    whiteSpace: 'nowrap'
-  },
-  removeButton: {
-    padding: '5px 10px',
-    fontSize: '12px',
-    fontWeight: '600',
-    backgroundColor: '#ef4444',
-    color: '#ffffff',
-    border: 'none',
-    borderRadius: '4px',
-    cursor: 'pointer',
-    transition: 'all 0.2s ease',
-    whiteSpace: 'nowrap'
-  }
+  pageWrapper: { minHeight: '100vh', backgroundColor: '#f8f9fa', padding: '0', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif' },
+ 
+  container: { maxWidth: '1200px', margin: '0 auto', backgroundColor: '#ffffff', boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)' },
+  
+  header: { backgroundColor: '#003366', color: '#ffffff', padding: '20px 24px', borderBottom: '3px solid #0055a5' },
+  
+  heading: { margin: '0 0 4px 0', fontSize: '22px', fontWeight: '600', letterSpacing: '-0.3px' },
+  
+  subheading: { margin: 0, fontSize: '13px', color: '#e0e7ff', fontWeight: '400' },
+ 
+  section: { padding: '20px 24px', borderBottom: '1px solid #e5e7eb' },
+  
+  sectionTitle: { fontSize: '15px', fontWeight: '600', color: '#1f2937', marginTop: 0, marginBottom: '16px', paddingBottom: '8px', borderBottom: '2px solid #e5e7eb' },
+  
+  formGrid: { display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '16px' },
+  
+  inputGroup: { display: 'flex', flexDirection: 'column' },
+  
+  inputGroupFull: { display: 'flex', flexDirection: 'column', gridColumn: '1 / -1' },
+  
+  label: { fontSize: '13px', fontWeight: '600', color: '#374151', marginBottom: '6px', display: 'flex', alignItems: 'center' },
+  
+  required: { color: '#dc2626', marginLeft: '2px' },
+  
+  input: { padding: '9px 12px', fontSize: '14px', borderWidth: '1px', borderStyle: 'solid', borderColor: '#d1d5db', borderRadius: '6px', transition: 'all 0.2s ease', backgroundColor: '#ffffff', color: '#1f2937', outline: 'none' },
+  
+  select: { padding: '9px 12px', fontSize: '14px', borderWidth: '1px', borderStyle: 'solid', borderColor: '#d1d5db', borderRadius: '6px', transition: 'all 0.2s ease', backgroundColor: '#ffffff', color: '#1f2937', outline: 'none', cursor: 'pointer', appearance: 'none', backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23374151' d='M6 9L1 4h10z'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 12px center', paddingRight: '36px' },
+  
+  textarea: { padding: '9px 12px', fontSize: '14px', borderWidth: '1px', borderStyle: 'solid', borderColor: '#d1d5db', borderRadius: '6px', transition: 'all 0.2s ease', backgroundColor: '#ffffff', color: '#1f2937', outline: 'none', resize: 'vertical', fontFamily: 'inherit', minHeight: '70px' },
+  
+  fileInput: { padding: '9px 12px', fontSize: '14px', borderWidth: '1px', borderStyle: 'solid', borderColor: '#d1d5db', borderRadius: '6px', backgroundColor: '#ffffff', cursor: 'pointer', transition: 'all 0.2s ease' },
+  
+  inputReadOnly: { padding: '9px 12px', fontSize: '14px', borderWidth: '1px', borderStyle: 'solid', borderColor: '#e5e7eb', borderRadius: '6px', backgroundColor: '#f9fafb', color: '#6b7280', cursor: 'not-allowed' },
+  
+  inputError: { borderColor: '#dc2626', backgroundColor: '#fef2f2' },
+  
+  error: { color: '#dc2626', fontSize: '12px', marginTop: '4px', display: 'flex', alignItems: 'center', fontWeight: '500' },
+  
+  helpText: { fontSize: '12px', color: '#6b7280', marginTop: '4px', fontStyle: 'italic' },
+  
+  buttonContainer: { padding: '20px 24px', backgroundColor: '#f9fafb', display: 'flex', justifyContent: 'center', gap: '12px' },
+  
+  submitButton: { padding: '10px 32px', fontSize: '14px', fontWeight: '600', backgroundColor: '#003366', color: '#ffffff', border: 'none', borderRadius: '6px', cursor: 'pointer', transition: 'all 0.3s ease', boxShadow: '0 1px 3px rgba(0, 51, 102, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' },
+  
+  submitButtonDisabled: { backgroundColor: '#9ca3af', cursor: 'not-allowed', opacity: 0.6, boxShadow: 'none' },
+  
+  buttonContent: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' },
+  
+  loadingText: { marginLeft: '8px' },
+  
+  clearButton: { padding: '10px 32px', fontSize: '14px', fontWeight: '600', backgroundColor: '#ffffff', color: '#6b7280', borderWidth: '1px', borderStyle: 'solid', borderColor: '#d1d5db', borderRadius: '6px', cursor: 'pointer', transition: 'all 0.3s ease' },
+  
+  clearButtonDisabled: { backgroundColor: '#f9fafb', cursor: 'not-allowed', opacity: 0.6, borderColor: '#e5e7eb' },
+  
+  clearDemandButton: { padding: '8px 16px', fontSize: '13px', fontWeight: '600', backgroundColor: '#6366f1', color: '#ffffff', border: 'none', borderRadius: '5px', cursor: 'pointer', transition: 'all 0.2s ease', marginTop: '4px' },
+  
+  demandCodesList: { marginBottom: '16px', padding: '12px', backgroundColor: '#f0fdf4', borderRadius: '6px', border: '1px solid #bbf7d0' },
+  
+  listTitle: { fontSize: '14px', fontWeight: '600', color: '#1f2937', marginTop: 0, marginBottom: '12px' },
+  
+  demandCodeItem: { backgroundColor: '#ffffff', padding: '10px 12px', borderRadius: '5px', marginBottom: '10px', border: '1px solid #d1d5db', boxShadow: '0 1px 2px rgba(0, 0, 0, 0.04)' },
+  
+  demandCodeHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '6px' },
+  
+  demandCodeLabel: { margin: '0 0 4px 0', fontSize: '13px', color: '#374151', fontWeight: '500' },
+  
+  demandCodeFeedback: { margin: '6px 0 0 0', fontSize: '12px', color: '#6b7280', fontStyle: 'italic' },
+  
+  editButton: { padding: '5px 10px', fontSize: '12px', fontWeight: '600', backgroundColor: '#3b82f6', color: '#ffffff', border: 'none', borderRadius: '4px', cursor: 'pointer', transition: 'all 0.2s ease', whiteSpace: 'nowrap' },
+  
+  removeButton: { padding: '5px 10px', fontSize: '12px', fontWeight: '600', backgroundColor: '#ef4444', color: '#ffffff', border: 'none', borderRadius: '4px', cursor: 'pointer', transition: 'all 0.2s ease', whiteSpace: 'nowrap' }
 };
 
 export default CandidateForm;

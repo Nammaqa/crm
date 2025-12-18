@@ -70,15 +70,16 @@ export default function Bdsles() {
         <div className="flex flex-col h-full">
           {/* Logo Section */}
           <div className="flex items-center gap-x-4 mb-6 p-5 pt-8 border-b border-gray-100">
-            <Image
-              src="/Wizzybox-logo.png"
-              alt="Company Logo"
-              width={150}
-              height={50}
-              unoptimized
-              priority
-              className="transition-all duration-300"
-            />
+<Image
+  src="/Wizzybox-logo.png"
+  alt="Company Logo"
+  width={220}           // increased from 150
+  height={70}           // increased from 50
+  unoptimized
+  priority
+  className="transition-all duration-300 max-w-full"
+ />
+
           </div>
 
           {/* Menu Items container */}
