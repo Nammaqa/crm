@@ -26,9 +26,9 @@ async function main() {
         role: Role.ADMIN,
       },
     });
-    console.log(`✅ Created ADMIN user: ${admin.userName}`);
+    console.log(` Created ADMIN user: ${admin.userName}`);
   } else {
-    console.log('ℹ️ Admin user already exists, skipping creation');
+    console.log(' Admin user already exists, skipping creation');
   }
 
   // Superadmin user
@@ -52,9 +52,9 @@ async function main() {
         role: Role.SUPERADMIN,
       },
     });
-    console.log(`✅ Created SUPERADMIN user: ${superadmin.userName}`);
+    console.log(` Created SUPERADMIN user: ${superadmin.userName}`);
   } else {
-    console.log('ℹ️ Superadmin user already exists, skipping creation');
+    console.log(' Superadmin user already exists, skipping creation');
   }
   // Invoice Admin
   const invoiceadminexists = await prisma.user.findFirst({
@@ -102,9 +102,9 @@ async function main() {
         role: Role.IT_ADMIN,
       },
     });
-    console.log(`✅ Created IT_ADMIN user: ${itadmin.userName}`);
+    console.log(` Created IT_ADMIN user: ${itadmin.userName}`);
   } else {
-    console.log('ℹ️ IT_ADMIN user already exists, skipping creation');
+    console.log('IT_ADMIN user already exists, skipping creation');
   }
 
   // Account Manager user
@@ -128,17 +128,69 @@ async function main() {
         role: Role.ACCOUNT_MANAGER,
       },
     });
-    console.log(`✅ Created ACCOUNT_MANAGER user: ${am.userName}`);
+    console.log(` Created ACCOUNT_MANAGER user: ${am.userName}`);
   } else {
-    console.log('ℹ️ ACCOUNT_MANAGER user already exists, skipping creation');
+    console.log(' ACCOUNT_MANAGER user already exists, skipping creation');
+  }
+
+  // Sales user
+  const salesExists = await prisma.user.findFirst({
+    where: {
+      OR: [
+        { userName: 'sales' },
+        { wbEmailId: 'sales@wizzybox.com' },
+      ],
+    },
+  });
+
+  if (!salesExists) {
+    const hashedPassword = await bcrypt.hash('sales123', 12);
+    const sales = await prisma.user.create({
+      data: {
+        userName: 'sales',
+        wbEmailId: 'sales@wizzybox.com',
+        password: hashedPassword,
+        phoneNumber: '7777777777',
+        role: Role.SALES,
+      },
+    });
+    console.log(` Created SALES user: ${sales.userName}`);
+  } else {
+    console.log(' SALES user already exists, skipping creation');
+  }
+
+  // HR user
+  const hrExists = await prisma.user.findFirst({
+    where: {
+      OR: [
+        { userName: 'hr' },
+        { wbEmailId: 'hr@wizzybox.com' },
+      ],
+    },
+  });
+
+  if (!hrExists) {
+    const hashedPassword = await bcrypt.hash('hr123', 12);
+    const hr = await prisma.user.create({
+      data: {
+        userName: 'hr',
+        wbEmailId: 'hr@wizzybox.com',
+        password: hashedPassword,
+        phoneNumber: '6666666666',
+        role: Role.RECRUITER,
+      },
+    });
+    console.log(` Created HR user: ${hr.userName}`);
+  } else {
+    console.log(' HR user already exists, skipping creation');
   }
 
   // Agreements check
   const agreementCount = await prisma.agreement.count();
   if (agreementCount === 0) {
-    console.log('ℹ️ No agreements present; consider seeding sample agreements if needed.');
+    console.log(' No agreements present; consider seeding sample agreements if needed.');
   } else {
-    console.log('ℹ️ Agreements already exist, skipping creation');
+    console.log(' Agreements already exist, skipping creation');
   }
 }
 
@@ -147,7 +199,7 @@ main()
     await prisma.$disconnect();
   })
   .catch(async (e) => {
-    console.error('❌ Error in seeding:', e);
+    console.error(' Error in seeding:', e);
     await prisma.$disconnect();
     process.exit(1);
   });
