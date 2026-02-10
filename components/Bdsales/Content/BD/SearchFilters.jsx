@@ -45,7 +45,7 @@ export default function SearchFilters({
         </div>
 
         {/* Sales Owner */}
-        <div className="space-y-2">
+        {/* <div className="space-y-2">
           <label className="block text-sm font-medium text-gray-700">
             Sales Owner
           </label>
@@ -59,7 +59,7 @@ export default function SearchFilters({
               className="pl-10 h-11 bg-gray-50 border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all"
             />
           </div>
-        </div>
+        </div> */}
 
         {/* Date From */}
         <div className="space-y-2">

@@ -13,7 +13,7 @@ import { Separator } from "@/components/ui/separator";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Input } from "@/components/ui/input";
 
-export default function ExistingDealForm({ formData, setFormData, isEditMode }) {
+export default function ExistingDealForm({ formData, setFormData, isEditMode, leads, onClearForm }) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
 
@@ -78,6 +78,13 @@ export default function ExistingDealForm({ formData, setFormData, isEditMode }) 
         setFormData((prev) => ({ ...prev, ...data }));
       }
       alert("Saved successfully.");
+      
+      // Clear form after successful submission
+      if (onClearForm) {
+        setTimeout(() => {
+          onClearForm();
+        }, 500);
+      }
     } catch (err) {
       console.error("Save error:", err);
       setError(err.message || "Failed to save changes. Please try again.");

@@ -19,6 +19,18 @@ function isTenDigits(value) {
   return /^\d{10}$/.test(value);
 }
 
+function isValidPhoneNumber(value) {
+  return /^[6789]\d{9}$/.test(value);
+}
+
+function isValidEmail(value) {
+  return /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(value);
+}
+
+function isAlpha(value) {
+  return /^[a-zA-Z\s]+$/.test(value);
+}
+
 export default function SpocFields({ 
   spocs, 
   setSpocs, 
@@ -70,12 +82,27 @@ export default function SpocFields({
 
   const handleNameChange = (index, value) => {
     updateSpoc(index, "name", allowAlpha(value));
-    updateError(index, "name", "");
+    
+    if (value.length === 0) {
+      updateError(index, "name", "Name is required.");
+    } else if (!isAlpha(allowAlpha(value))) {
+      updateError(index, "name", "Name must contain only alphabets and spaces.");
+    } else {
+      updateError(index, "name", "");
+    }
   };
 
   const handleEmailChange = (index, value) => {
-    updateSpoc(index, "email", allowEmail(value));
-    updateError(index, "email", "");
+    const cleaned = allowEmail(value);
+    updateSpoc(index, "email", cleaned);
+    
+    if (cleaned.length === 0) {
+      updateError(index, "email", "Email is required.");
+    } else if (!isValidEmail(cleaned)) {
+      updateError(index, "email", "Please enter a valid email address (e.g., user@example.com).");
+    } else {
+      updateError(index, "email", "");
+    }
   };
 
   const handleContactChange = (index, value) => {
@@ -88,9 +115,9 @@ export default function SpocFields({
     if (cleaned.length === 0) {
       updateError(index, "contact", "Contact Number is required.");
     } else if (cleaned.length < 10) {
-      updateError(index, "contact", "Contact Number must be exactly 10 digits.");
-    } else if (!isTenDigits(cleaned)) {
-      updateError(index, "contact", "Contact Number must be exactly 10 digits.");
+      updateError(index, "contact", `Contact Number must be exactly 10 digits (${cleaned.length}/10).`);
+    } else if (!isValidPhoneNumber(cleaned)) {
+      updateError(index, "contact", "Contact Number must start with 6, 7, 8, or 9.");
     } else {
       updateError(index, "contact", "");
     }
@@ -106,9 +133,9 @@ export default function SpocFields({
     if (cleaned.length === 0) {
       updateError(index, "altContact", "");
     } else if (cleaned.length < 10) {
-      updateError(index, "altContact", "Alt Contact Number must be exactly 10 digits.");
-    } else if (!isTenDigits(cleaned)) {
-      updateError(index, "altContact", "Alt Contact Number must be exactly 10 digits.");
+      updateError(index, "altContact", `Alt Contact Number must be exactly 10 digits (${cleaned.length}/10).`);
+    } else if (!isValidPhoneNumber(cleaned)) {
+      updateError(index, "altContact", "Alt Contact Number must start with 6, 7, 8, or 9.");
     } else {
       updateError(index, "altContact", "");
     }
@@ -116,12 +143,22 @@ export default function SpocFields({
 
   const handleDesignationChange = (index, value) => {
     updateSpoc(index, "designation", allowAlpha(value));
-    updateError(index, "designation", "");
+    
+    if (value.length > 0 && !isAlpha(allowAlpha(value))) {
+      updateError(index, "designation", "Designation must contain only alphabets and spaces.");
+    } else {
+      updateError(index, "designation", "");
+    }
   };
 
   const handleLocationChange = (index, value) => {
     updateSpoc(index, "location", allowAlpha(value));
-    updateError(index, "location", "");
+    
+    if (value.length > 0 && !isAlpha(allowAlpha(value))) {
+      updateError(index, "location", "Location must contain only alphabets and spaces.");
+    } else {
+      updateError(index, "location", "");
+    }
   };
 
   const addSpoc = () => {
@@ -195,7 +232,7 @@ export default function SpocFields({
                 <Input
                   value={spoc.name}
                   onChange={(e) => handleNameChange(index, e.target.value)}
-                  placeholder="Enter name"
+                  placeholder="Enter name (alphabets only)"
                   className={currentErrors.name ? "border-red-500" : ""}
                 />
                 {currentErrors.name && (
@@ -214,7 +251,7 @@ export default function SpocFields({
                   type="email"
                   value={spoc.email}
                   onChange={(e) => handleEmailChange(index, e.target.value)}
-                  placeholder="Enter email"
+                  placeholder="user@example.com"
                   className={currentErrors.email ? "border-red-500" : ""}
                 />
                 {currentErrors.email && (
@@ -232,7 +269,7 @@ export default function SpocFields({
                 <Input
                   value={spoc.contact}
                   onChange={(e) => handleContactChange(index, e.target.value)}
-                  placeholder="10 digits (6/7/8/9)"
+                  placeholder="10 digits starting with 6/7/8/9"
                   maxLength={10}
                   className={currentErrors.contact ? "border-red-500" : ""}
                 />
@@ -253,7 +290,7 @@ export default function SpocFields({
                   onChange={(e) =>
                     handleAltContactChange(index, e.target.value)
                   }
-                  placeholder="10 digits (6/7/8/9)"
+                  placeholder="10 digits starting with 6/7/8/9"
                   maxLength={10}
                   className={currentErrors.altContact ? "border-red-500" : ""}
                 />
@@ -267,14 +304,14 @@ export default function SpocFields({
               {/* Designation */}
               <div>
                 <label className="block text-sm font-medium mb-1">
-                  Designation <span className="text-red-500"></span>
+                  Designation
                 </label>
                 <Input
                   value={spoc.designation}
                   onChange={(e) =>
                     handleDesignationChange(index, e.target.value)
                   }
-                  placeholder="Enter designation"
+                  placeholder="Enter designation (alphabets only)"
                   className={currentErrors.designation ? "border-red-500" : ""}
                 />
                 {currentErrors.designation && (
@@ -287,12 +324,12 @@ export default function SpocFields({
               {/* Location */}
               <div>
                 <label className="block text-sm font-medium mb-1">
-                  Location <span className="text-red-500"></span>
+                  Location
                 </label>
                 <Input
                   value={spoc.location}
                   onChange={(e) => handleLocationChange(index, e.target.value)}
-                  placeholder="Enter location"
+                  placeholder="Enter location (alphabets only)"
                   className={currentErrors.location ? "border-red-500" : ""}
                 />
                 {currentErrors.location && (

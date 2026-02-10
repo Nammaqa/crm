@@ -12,6 +12,7 @@ import {
   SelectItem,
 } from '@/components/ui/select';
 import { toast } from 'sonner';
+import { Eye, EyeOff } from 'lucide-react';
 
 const roles = ['ADMIN', 'RECRUITER', 'SALES', 'ACCOUNT_MANAGER'];
 
@@ -26,6 +27,7 @@ export default function SignupForm() {
 
   const [users, setUsers] = useState([]);
   const [errors, setErrors] = useState({});
+  const [showPassword, setShowPassword] = useState(false);
 
   const fetchUsers = async () => {
     try {
@@ -132,12 +134,21 @@ export default function SignupForm() {
 
         <div>
           <Label htmlFor="password">Password</Label>
-          <Input
-            type="password"
-            name="password"
-            value={form.password}
-            onChange={handleChange}
-          />
+          <div className="relative">
+            <Input
+              type={showPassword ? "text" : "password"}
+              name="password"
+              value={form.password}
+              onChange={handleChange}
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+            >
+              {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+            </button>
+          </div>
         </div>
 
         <div>
@@ -185,7 +196,7 @@ export default function SignupForm() {
         </Button>
       </div>
 
-      {/* ✅ User List Section */}
+      {/* User List Section */}
       <div className="mt-8 border p-6 rounded-xl shadow">
         <h2 className="text-lg font-semibold mb-4">Registered Users</h2>
         {users.length === 0 ? (

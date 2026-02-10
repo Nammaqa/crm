@@ -22,6 +22,7 @@ export default function QualifiedLeadForm({
   leads,
   handleMoveToExistingDeal,
   onSaveSuccess, // NEW: callback to refresh table
+  onClearForm, // NEW: callback to clear form after save
 }) {
   const [errors, setErrors] = useState({});
   const [spocErrors, setSpocErrors] = useState([]);
@@ -171,6 +172,13 @@ export default function QualifiedLeadForm({
       // NEW: Call the callback to refresh the table immediately
       if (onSaveSuccess) {
         onSaveSuccess(data);
+      }
+
+      // Clear form after successful submission
+      if (onClearForm) {
+        setTimeout(() => {
+          onClearForm();
+        }, 500);
       }
     } catch (err) {
       console.error("Save error:", err);
