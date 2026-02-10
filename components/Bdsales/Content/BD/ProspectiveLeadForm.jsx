@@ -201,7 +201,7 @@ export default function ProspectiveLeadForm({ formData, setFormData, isEditMode,
 
         <div>
           <Label>Company Size (Number of Employees) *</Label>
-          <Input value={formData.companysize} onChange={(e) => { const v = e.target.value; if (v === "" || isNumeric(v)) setFormData((p) => ({ ...p, companysize: v })); }} placeholder="Enter company size" className={errors.companysize ? "border-red-500" : ""} />
+          <Input value={formData.companysize} onChange={(e) => { const v = e.target.value; if (v === "" || isNumeric(v)) setFormData((p) => ({ ...p, companysize: v })); }} placeholder="Enter company size" maxLength={4} className={errors.companysize ? "border-red-500" : ""} />
           {errors.companysize && <p className="text-red-500 text-sm mt-1">{errors.companysize}</p>}
         </div>
 
