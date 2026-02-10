@@ -59,6 +59,7 @@ function isNumeric(value) { return /^\d+$/.test(value); }
 function isAlphanumeric(value) { return /^[a-zA-Z0-9\-]+$/.test(value); }
 function isValidPhoneNumber(value) { return /^[6789]\d{9}$/.test(value); }
 function isValidEmail(value) { return /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(value); }
+function isValidCompanyName(value) { return /^[a-zA-Z0-9\s\-&.,()'/_@]+$/.test(value); }
 
 async function checkCompanyIDUnique(companyID) {
   if (!companyID) return { unique: true };
@@ -111,7 +112,7 @@ export default function ProspectiveLeadForm({ formData, setFormData, isEditMode,
     let valid = true;
     let newErrors = { companyName: "", companysize: "", companyID: "", spocs: [], technologyOther: "", industryOther: "", businessType: "", companyType: "" };
 
-    if (!formData.companyName || !isAlpha(formData.companyName)) { newErrors.companyName = "Company name must contain only alphabets and spaces."; valid = false; }
+    if (!formData.companyName || !isValidCompanyName(formData.companyName)) { newErrors.companyName = "Company name must contain alphabets, numbers, spaces, and basic special characters."; valid = false; }
     if (!formData.companysize || !isNumeric(formData.companysize)) { newErrors.companysize = "Company size must be numeric."; valid = false; }
     
     if (!formData.companyID || !isAlphanumeric(formData.companyID)) {
@@ -153,7 +154,7 @@ export default function ProspectiveLeadForm({ formData, setFormData, isEditMode,
 
   // Add company name check
   const checkCompanyNameDebounced = debounce(async (name) => {
-    if (name && isAlpha(name)) {
+    if (name && isValidCompanyName(name)) {
       const { unique, addedBy } = await checkCompanyNameUnique(name);
       if (!unique) {
         setErrors(prev => ({
@@ -170,7 +171,7 @@ export default function ProspectiveLeadForm({ formData, setFormData, isEditMode,
   // Modify the company name input handler
   const handleCompanyNameChange = (e) => {
     const value = e.target.value.toUpperCase();
-    if (value === "" || isAlpha(value.toLowerCase())) {
+    if (value === "" || isValidCompanyName(value.toLowerCase())) {
       setFormData((prev) => ({ ...prev, companyName: value }));
       if (!isEditMode) {
         checkCompanyNameDebounced(value);

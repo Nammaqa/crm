@@ -179,6 +179,48 @@ export default function BdSales({ isSidebarOpen }) {
     });
   };
 
+  // Function to clear form data
+  const clearFormData = () => {
+    setFormData({
+      id: "",
+      salesName: salesName,
+      leadType: activeTab === "Prospective" ? "prospective" : activeTab === "QualifiedLead" ? "new" : "existing",
+      status: activeTab === "Prospective" ? "prospective" : activeTab === "QualifiedLead" ? "newlead" : "deal",
+      companyName: "",
+      companysize: "",
+      companyID: "",
+      companyType: "",
+      technology: "",
+      technologyOther: "",
+      industry: "",
+      industryOther: "",
+      businessType: "",
+      numberOfEmployees: "",
+      percentage: "",
+      remarks: "",
+      spocs: [
+        {
+          id: 1,
+          name: "",
+          email: "",
+          contact: "",
+          altContact: "",
+          designation: "",
+          location: "",
+        },
+      ],
+      dealType: "",
+      replacementReason: "",
+      replacementToDate: "",
+      replacementRequestDate: "",
+      employeeName: "",
+      companySelect: "",
+      companyNameGST: "",
+    });
+    setIsEditMode(false);
+    setSelectedLead(null);
+  };
+
   // Handle lead click from table
   const handleLeadClick = (lead) => {
     setSelectedLead(lead);
@@ -363,6 +405,11 @@ export default function BdSales({ isSidebarOpen }) {
 
         setFormData((prev) => ({ ...prev, id: data.id }));
         setIsEditMode(true);
+        
+        // Clear form after successful submission
+        setTimeout(() => {
+          clearFormData();
+        }, 500);
 
         return true;
       } else {
@@ -639,6 +686,7 @@ export default function BdSales({ isSidebarOpen }) {
                 leads={leads}
                 handleMoveToExistingDeal={handleMoveToExistingDeal}
                 onSaveSuccess={handleQualifiedLeadSaveSuccess}
+                onClearForm={clearFormData}
               />
             )}
 
@@ -648,6 +696,7 @@ export default function BdSales({ isSidebarOpen }) {
                 setFormData={setFormData}
                 isEditMode={isEditMode}
                 leads={leads}
+                onClearForm={clearFormData}
               />
             )}
           </div>
