@@ -595,6 +595,7 @@ function RecruitmentForm() {
                   type="number"
                   min="0"
                   step="1"
+                  maxLength={4}
                   placeholder="e.g., 30"
                   autoComplete="off"
                 />
@@ -618,6 +619,7 @@ function RecruitmentForm() {
                   type="number"
                   min="0"
                   step="1"
+                  maxLength={4}
                   placeholder="e.g., 2"
                   autoComplete="off"
                 />
