@@ -303,7 +303,7 @@ export default function SOPForm() {
 
         {/* Technology Dropdown */}
         <label className="block font-medium mb-1" htmlFor="technology">
-          Technology to be check  <span className="text-red-600">*</span>
+          Technology  <span className="text-red-600">*</span>
         </label>
         <select
           name="technology"
