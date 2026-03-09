@@ -7,6 +7,7 @@ import ProspectiveLeadForm from "./BD/ProspectiveLeadForm";
 import QualifiedLeadForm from "./BD/QualifiedLeadForm";
 import ExistingDealForm from "./BD/ExistingDealForm";
 import SearchFilters from "./BD/SearchFilters";
+import { FiRefreshCw } from "react-icons/fi";
 
 export default function BdSales({ isSidebarOpen }) {
   const [leads, setLeads] = useState([]);
@@ -63,51 +64,52 @@ export default function BdSales({ isSidebarOpen }) {
     companyNameGST: "",
   });
 
-  // Fetch initial data
-  useEffect(() => {
-    const fetchInitialData = async () => {
-      try {
-        const baseUrl = process.env.NEXT_PUBLIC_BASEAPIURL;
-        const userRes = await fetch(`${baseUrl}/api/users/me`, {
-          method: "GET",
-          credentials: "include",
-        });
-        const userData = await userRes.json();
+  // Fetch initial data - moved outside effect so it can be reused for refresh/clear
+  const fetchInitialData = async () => {
+    try {
+      // use relative paths so the client will hit the same origin; avoid 404 when
+      // NEXT_PUBLIC_BASEAPIURL isn't defined locally
+      const userRes = await fetch(`/api/users/me`, {
+        method: "GET",
+        credentials: "include",
+      });
+      const userData = await userRes.json();
 
-        if (!userRes.ok) {
-          throw new Error(userData.message || "Failed to fetch user data");
-        }
-
-        const loggedInSalesName = userData?.data?.userName || userData?.userName;
-        if (!loggedInSalesName) {
-          throw new Error("Failed to fetch user name");
-        }
-
-        setSalesName(loggedInSalesName);
-        setFormData((prev) => ({
-          ...prev,
-          salesName: loggedInSalesName,
-        }));
-
-        const leadRes = await fetch("/api/lead");
-        const leadData = await leadRes.json();
-
-        if (!leadRes.ok) {
-          console.error("Failed to fetch leads:", leadData.error);
-          return;
-        }
-
-        const filteredLeads = leadData.filter(
-          (lead) => lead.salesName?.toLowerCase() === loggedInSalesName.toLowerCase()
-        );
-        setLeads(filteredLeads);
-        setFilteredLeads(filteredLeads);
-      } catch (err) {
-        console.error("Initialization error:", err);
-        toast.error("Failed to load initial data");
+      if (!userRes.ok) {
+        throw new Error(userData.message || "Failed to fetch user data");
       }
-    };
 
+      const loggedInSalesName = userData?.data?.userName || userData?.userName;
+      if (!loggedInSalesName) {
+        throw new Error("Failed to fetch user name");
+      }
+
+      setSalesName(loggedInSalesName);
+      setFormData((prev) => ({
+        ...prev,
+        salesName: loggedInSalesName,
+      }));
+
+      const leadRes = await fetch(`/api/lead`);
+      const leadData = await leadRes.json();
+
+      if (!leadRes.ok) {
+        console.error("Failed to fetch leads:", leadData.error);
+        return;
+      }
+
+      const filteredLeads = leadData.filter(
+        (lead) => lead.salesName?.toLowerCase() === loggedInSalesName.toLowerCase()
+      );
+      setLeads(filteredLeads);
+      setFilteredLeads(filteredLeads);
+    } catch (err) {
+      console.error("Initialization error:", err);
+      toast.error("Failed to load initial data");
+    }
+  };
+
+  useEffect(() => {
     fetchInitialData();
   }, []);
 
@@ -177,6 +179,13 @@ export default function BdSales({ isSidebarOpen }) {
       dateFrom: "",
       dateTo: "",
     });
+  };
+
+  // Clear everything on the page (filters, form, and re-fetch leads)
+  const handleRefresh = async () => {
+    clearFilters();
+    clearFormData();
+    await fetchInitialData();
   };
 
   // Function to clear form data
@@ -640,6 +649,15 @@ export default function BdSales({ isSidebarOpen }) {
                   </div>
                 </div>
               </div>
+
+              {/* Refresh icon button */}
+              <button
+                onClick={handleRefresh}
+                title="Refresh"
+                className="ml-4 p-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg shadow"
+              >
+                <FiRefreshCw className="h-5 w-5" />
+              </button>
             </div>
           </div>
         </CardHeader>
