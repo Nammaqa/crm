@@ -41,7 +41,7 @@ export default function Overview() {
 
   const fetchUser = async () => {
     try {
-      const baseUrl = process.env.NEXT_PUBLIC_BASEAPIURL;
+      const baseUrl = process.env.NEXT_PUBLIC_BASEAPIURL || "";
       const res = await fetch(`${baseUrl}/api/users/me`, { 
         method: "GET",
       });
@@ -59,7 +59,7 @@ export default function Overview() {
 
   const fetchLeadStats = async () => {
     try {
-      const baseUrl = process.env.NEXT_PUBLIC_BASEAPIURL;
+      const baseUrl = process.env.NEXT_PUBLIC_BASEAPIURL || "";
       const res = await fetch(`${baseUrl}/api/lead`);
       const data = await res.json();
       
@@ -105,7 +105,7 @@ export default function Overview() {
 
   const fetchReminders = async () => {
     try {
-      const baseUrl = process.env.NEXT_PUBLIC_BASEAPIURL;
+      const baseUrl = process.env.NEXT_PUBLIC_BASEAPIURL || "";
       const res = await fetch(`${baseUrl}/api/reminders`);
       if (res.ok) {
         const data = await res.json();
