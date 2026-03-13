@@ -124,6 +124,8 @@ export async function PUT(
         remarks: body.remarks ?? existingLead.remarks,
         companyType: body.companyType ?? existingLead.companyType,
         technologyOther: body.technologyOther ?? existingLead.technologyOther,
+        companyLinkedInUrl: body.companyLinkedInUrl ?? existingLead.companyLinkedInUrl,
+        companyWebsite: body.companyWebsite ?? existingLead.companyWebsite,
         updatedAt: new Date(),
         ...(body.spocs && {
           spocs: {
@@ -134,6 +136,7 @@ export async function PUT(
               altContact: spoc.altContact,
               designation: spoc.designation,
               location: spoc.location,
+              linkedinUrl: spoc.linkedinUrl || null,
             })),
           },
         }),

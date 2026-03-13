@@ -53,6 +53,7 @@ export default function BdSales({ isSidebarOpen }) {
         altContact: "",
         designation: "",
         location: "",
+        linkedUrl: "",
       },
     ],
     dealType: "",
@@ -216,6 +217,7 @@ export default function BdSales({ isSidebarOpen }) {
           altContact: "",
           designation: "",
           location: "",
+          linkedUrl: "",
         },
       ],
       dealType: "",
@@ -225,6 +227,8 @@ export default function BdSales({ isSidebarOpen }) {
       employeeName: "",
       companySelect: "",
       companyNameGST: "",
+      companyLinkedInUrl: "",
+      companyWebsite: "",
     });
     setIsEditMode(false);
     setSelectedLead(null);
@@ -262,6 +266,7 @@ export default function BdSales({ isSidebarOpen }) {
               altContact: spoc.altContact || "",
               designation: spoc.designation || "",
               location: spoc.location || "",
+              linkedUrl: spoc.linkedinUrl || "",
             }))
           : [
               {
@@ -272,6 +277,7 @@ export default function BdSales({ isSidebarOpen }) {
                 altContact: "",
                 designation: "",
                 location: "",
+                linkedUrl: "",
               },
             ],
       dealType: lead.dealType || "",
@@ -287,6 +293,8 @@ export default function BdSales({ isSidebarOpen }) {
         : lead.employeeName || "",
       companySelect: String(lead.id || ""),
       companyNameGST: lead.companyNameGST || lead.companyName || "",
+      companyLinkedInUrl: lead.companyLinkedInUrl || "",
+      companyWebsite: lead.companyWebsite || "",
     });
 
     // Switch to appropriate tab
@@ -367,9 +375,11 @@ export default function BdSales({ isSidebarOpen }) {
       industry: formData.industry,
       industryOther: formData.industryOther || null,
       businessType: formData.businessType,
-      numberOfEmployees: parseInt(formData.numberOfEmployees, 10) || 0,
+      numberOfEmployees: parseInt(formData.companysize, 10) || 0,
       percentage: parseInt(formData.percentage, 10) || 0,
       remarks: formData.remarks || null,
+      companyLinkedInUrl: formData.companyLinkedInUrl || null,
+      companyWebsite: formData.companyWebsite || null,
       spocs: formData.spocs.map((spoc) => ({
         name: spoc.name,
         email: spoc.email,
@@ -377,7 +387,9 @@ export default function BdSales({ isSidebarOpen }) {
         altContact: spoc.altContact || null,
         designation: spoc.designation,
         location: spoc.location,
+        linkedinUrl: spoc.linkedinUrl || null,
       })),
+
     };
 
     if (validateOnly) return true;
@@ -492,7 +504,7 @@ export default function BdSales({ isSidebarOpen }) {
         industry: formData.industry,
         industryOther: formData.industryOther || null,
         businessType: formData.businessType,
-        numberOfEmployees: parseInt(formData.numberOfEmployees, 10) || 0,
+      numberOfEmployees: parseInt(formData.companysize, 10) || 0,
         percentage: percentageValue,
         remarks: formData.remarks || null,
         dealType: formData.dealType || null,

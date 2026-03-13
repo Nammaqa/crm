@@ -43,25 +43,27 @@ enum Priority {
 }
 
 model Requirement {
-  id              Int      @id @default(autoincrement())
-  requirementId   String   @unique
-  requirementName String
-  companyName     String
-  jobDescription  String
-  experience      Int
-  noticePeriod    Int
-  positions       Int
-  primarySkills   String
-  secondarySkills String
-  closePositions  String
-  requirementType String
-  workLocation    String
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  jdImage         String?
-  budget          Int?
-  priority        Priority @default(Medium)
-  updatedBy       String?
+  id                     Int      @id @default(autoincrement())
+  requirementId          String   @unique
+  requirementName        String
+  companyName            String
+  jobDescription         String
+  experience             Int
+  noticePeriod           Int
+  positions              Int
+  primarySkills          String
+  secondarySkills        String
+  closePositions         String
+  requirementType        String
+  requirementTypeDetails String? // extra info for C2H/Contract
+  workLocation           String
+  workMode               String?
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+  jdImage                String?
+  budget                 Int?
+  priority               Priority @default(Medium)
+  updatedBy              String?
 }
 
 model Lead {
@@ -86,6 +88,8 @@ model Lead {
   businessType           String?
   companyID              String?            @unique
   technologyOther        String?
+  companyLinkedInUrl     String?
+  companyWebsite         String?
   leadType               LeadType
   companyType            String?
   spocs                  Spoc[]
@@ -100,6 +104,7 @@ model Spoc {
   altContact  String?
   designation String
   location    String
+  linkedinUrl String?
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
   leadId      Int

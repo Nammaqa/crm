@@ -186,7 +186,7 @@ export default function ProspectiveLeadForm({ formData, setFormData, isEditMode,
     <div className="space-y-6 mb-8">
       <h2 className="text-2xl font-bold">{isEditMode ? "Edit Prospective Lead" : "Add Prospective Lead"}</h2>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div>
           <Label>Company Name *</Label>
           <Input 
@@ -210,6 +210,28 @@ export default function ProspectiveLeadForm({ formData, setFormData, isEditMode,
           <Input value={formData.companyID} readOnly placeholder="Auto-generated" className={errors.companyID ? "border-red-500" : "bg-gray-50"} />
           {errors.companyID && <p className="text-red-500 text-sm mt-1">{errors.companyID}</p>}
           {isEditMode && <p className="text-gray-500 text-xs mt-1">ID updates automatically when company name changes</p>}
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div>
+          <Label>Company LinkedIn URL</Label>
+          <Input
+            value={formData.companyLinkedInUrl || ""}
+            onChange={(e) => setFormData((p) => ({ ...p, companyLinkedInUrl: e.target.value }))}
+            placeholder="https://linkedin.com/company/companyname"
+            type="url"
+          />
+        </div>
+
+        <div>
+          <Label>Company Website</Label>
+          <Input
+            value={formData.companyWebsite || ""}
+            onChange={(e) => setFormData((p) => ({ ...p, companyWebsite: e.target.value }))}
+            placeholder="https://www.example.com"
+            type="url"
+          />
         </div>
       </div>
 

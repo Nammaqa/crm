@@ -31,6 +31,16 @@ function isAlpha(value) {
   return /^[a-zA-Z\s]+$/.test(value);
 }
 
+function isValidURL(value) {
+  if (!value) return true; // Optional field
+  try {
+    new URL(value);
+    return true;
+  } catch (err) {
+    return false;
+  }
+}
+
 export default function SpocFields({ 
   spocs, 
   setSpocs, 
@@ -52,6 +62,7 @@ export default function SpocFields({
           altContact: "",
           designation: "",
           location: "",
+          linkedinUrl: "",
         }))
       );
     }
@@ -75,6 +86,7 @@ export default function SpocFields({
             altContact: "",
             designation: "",
             location: "",
+            linkedinUrl: "",
           }));
     updatedErrors[index][field] = message;
     setErrors(updatedErrors);
@@ -161,6 +173,18 @@ export default function SpocFields({
     }
   };
 
+  const handleLinkedInUrlChange = (index, value) => {
+    updateSpoc(index, "linkedinUrl", value);
+    
+    if (value.length === 0) {
+      updateError(index, "linkedinUrl", "");
+    } else if (!isValidURL(value)) {
+      updateError(index, "linkedinUrl", "Please enter a valid URL (e.g., https://linkedin.com/in/profile).");
+    } else {
+      updateError(index, "linkedinUrl", "");
+    }
+  };
+
   const addSpoc = () => {
     if (spocs.length < max) {
       updateSpocs([
@@ -173,6 +197,7 @@ export default function SpocFields({
           altContact: "",
           designation: "",
           location: "",
+          linkedinUrl: "",
         },
       ]);
       if (setErrors) {
@@ -185,6 +210,7 @@ export default function SpocFields({
             altContact: "",
             designation: "",
             location: "",
+            linkedinUrl: "",
           },
         ]);
       }
@@ -335,6 +361,25 @@ export default function SpocFields({
                 {currentErrors.location && (
                   <p className="text-red-500 text-sm mt-1">
                     {currentErrors.location}
+                  </p>
+                )}
+              </div>
+
+              {/* LinkedIn URL */}
+              <div>
+                <label className="block text-sm font-medium mb-1">
+                  LinkedIn URL
+                </label>
+                <Input
+                  value={spoc.linkedinUrl}
+                  onChange={(e) => handleLinkedInUrlChange(index, e.target.value)}
+                  placeholder="https://linkedin.com/in/profile"
+                  type="url"
+                  className={currentErrors.linkedinUrl ? "border-red-500" : ""}
+                />
+                {currentErrors.linkedinUrl && (
+                  <p className="text-red-500 text-sm mt-1">
+                    {currentErrors.linkedinUrl}
                   </p>
                 )}
               </div>

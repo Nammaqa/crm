@@ -15,14 +15,16 @@ interface RequirementData {
   requirementName: string;
   companyName: string;
   jobDescription: string;
-  experience: number;
+  experience?: number;
   noticePeriod: number;
   positions: number;
   primarySkills: string;
   secondarySkills: string;
   closePositions: string;
   requirementType: string;
+  requirementTypeDetails?: string;
   workLocation: string;
+  workMode?: string;
   budget: number;
   jdImage?: string;
   priority: 'Low' | 'Medium' | 'High';
@@ -92,7 +94,9 @@ export async function POST(req: NextRequest) {
         secondarySkills: formDataRaw.get("secondarySkills") as string,
         closePositions: formDataRaw.get("closePositions") as string,
         requirementType: formDataRaw.get("requirementType") as string,
+        requirementTypeDetails: (formDataRaw.get("requirementTypeDetails") as string) || undefined,
         workLocation: formDataRaw.get("workLocation") as string,
+        workMode: (formDataRaw.get("workMode") as string) || undefined,
         budget: Number(formDataRaw.get("budget")),
         priority: (formDataRaw.get("priority") as 'Low' | 'Medium' | 'High') || 'Medium',
         requirementId: formDataRaw.get("requirementId") as string,
@@ -100,6 +104,10 @@ export async function POST(req: NextRequest) {
       };
     } else {
       formData = await req.json();
+      // Ensure experience is a number for JSON requests
+      if (formData.experience !== undefined) {
+        formData.experience = Number(formData.experience);
+      }
     }
 
     // Create requirement in database
@@ -108,14 +116,16 @@ export async function POST(req: NextRequest) {
         requirementName: formData.requirementName,
         companyName: formData.companyName,
         jobDescription: formData.jobDescription,
-        experience: formData.experience,
+        experience: formData.experience || 0,
         noticePeriod: formData.noticePeriod,
         positions: formData.positions,
         primarySkills: formData.primarySkills,
         secondarySkills: formData.secondarySkills,
         closePositions: formData.closePositions,
         requirementType: formData.requirementType,
+        requirementTypeDetails: formData.requirementTypeDetails || null,
         workLocation: formData.workLocation,
+        workMode: formData.workMode || null,
         budget: formData.budget,
         priority: formData.priority,
         requirementId: formData.requirementId,

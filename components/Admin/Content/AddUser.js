@@ -28,6 +28,7 @@ export default function SignupForm() {
   const [users, setUsers] = useState([]);
   const [errors, setErrors] = useState({});
   const [showPassword, setShowPassword] = useState(false);
+  const [editingUser, setEditingUser] = useState(null);
 
   const fetchUsers = async () => {
     try {
@@ -82,8 +83,11 @@ export default function SignupForm() {
     }
 
     try {
-      const res = await fetch('/api/auth/signup', {
-        method: 'POST',
+      const url = editingUser ? `/api/auth/users/${editingUser}` : '/api/auth/signup';
+      const method = editingUser ? 'PUT' : 'POST';
+
+      const res = await fetch(url, {
+        method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(form),
       });
@@ -91,7 +95,7 @@ export default function SignupForm() {
       const data = await res.json();
 
       if (res.ok) {
-        toast.success(data.message || 'User created!');
+        toast.success(data.message || (editingUser ? 'User updated!' : 'User created!'));
         setForm({
           userName: '',
           wbEmailId: '',
@@ -100,19 +104,31 @@ export default function SignupForm() {
           role: 'SALES',
         });
         setErrors({});
+        setEditingUser(null);
         fetchUsers(); // refresh list
       } else {
-        toast.error(data.message || 'Signup failed');
+        toast.error(data.message || (editingUser ? 'Update failed' : 'Signup failed'));
       }
     } catch {
       toast.error('Network error!');
     }
   };
 
+  const handleEdit = (user) => {
+    setForm({
+      userName: user.userName,
+      wbEmailId: user.wbEmailId,
+      password: '', // Don't prefill password
+      phoneNumber: user.phoneNumber || '',
+      role: user.role,
+    });
+    setEditingUser(user.id);
+  };
+
   return (
     <div className="max-w-3xl mx-auto p-6 space-y-6">
       <div className="border p-6 rounded-xl shadow space-y-4">
-        <h2 className="text-xl font-semibold text-center">Create User</h2>
+        <h2 className="text-xl font-semibold text-center">{editingUser ? 'Edit User' : 'Create User'}</h2>
 
         <div>
           <Label htmlFor="userName">Username</Label>
@@ -187,13 +203,33 @@ export default function SignupForm() {
           </Select>
         </div>
 
-        <Button
-          className="w-full mt-4"
-          onClick={handleSubmit}
-          disabled={!!errors.phoneNumber}
-        >
-          Create User
-        </Button>
+        <div className="flex gap-2 mt-4">
+          <Button
+            className="flex-1"
+            onClick={handleSubmit}
+            disabled={!!errors.phoneNumber}
+          >
+            {editingUser ? 'Update User' : 'Create User'}
+          </Button>
+          {editingUser && (
+            <Button
+              variant="outline"
+              onClick={() => {
+                setEditingUser(null);
+                setForm({
+                  userName: '',
+                  wbEmailId: '',
+                  password: '',
+                  phoneNumber: '',
+                  role: 'SALES',
+                });
+                setErrors({});
+              }}
+            >
+              Cancel
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* User List Section */}
@@ -210,6 +246,8 @@ export default function SignupForm() {
                   <th className="px-4 py-2 border">Email</th>
                   <th className="px-4 py-2 border">Phone</th>
                   <th className="px-4 py-2 border">Role</th>
+                  <th className="px-4 py-2 border">Password</th>
+                  <th className="px-4 py-2 border">Actions</th>
                   <th className="px-4 py-2 border">Created</th>
                 </tr>
               </thead>
@@ -220,6 +258,10 @@ export default function SignupForm() {
                     <td className="px-4 py-2">{u.wbEmailId}</td>
                     <td className="px-4 py-2">{u.phoneNumber || '-'}</td>
                     <td className="px-4 py-2">{u.role}</td>
+                    <td className="px-4 py-2">••••••</td>
+                    <td className="px-4 py-2">
+                      <Button size="sm" onClick={() => handleEdit(u)}>Edit</Button>
+                    </td>
                     <td className="px-4 py-2">
                       {new Date(u.createdAt).toLocaleDateString()}
                     </td>

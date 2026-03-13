@@ -34,7 +34,7 @@ export default function ReminderDashboard() {
 
   const fetchReminders = async () => {
     try {
-      const baseUrl = process.env.NEXT_PUBLIC_BASEAPIURL;
+      const baseUrl = process.env.NEXT_PUBLIC_BASEAPIURL || "";
       const res = await fetch(`${baseUrl}/api/reminders`);
       const data = await res.json();
       setReminders(data);
@@ -49,7 +49,7 @@ export default function ReminderDashboard() {
     if (!confirm('Are you sure you want to delete this reminder?')) return;
 
     try {
-      const baseUrl = process.env.NEXT_PUBLIC_BASEAPIURL;
+      const baseUrl = process.env.NEXT_PUBLIC_BASEAPIURL || "";
       const res = await fetch(`${baseUrl}/api/reminders/${id}`, {
         method: 'DELETE',
       });

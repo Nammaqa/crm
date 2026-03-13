@@ -28,7 +28,9 @@ function RecruitmentForm() {
     secondarySkills: "",
     closePositions: "",
     requirementType: "",
+    requirementTypeDetails: "", // extra info for C2H/Contract
     workLocation: "",
+    workMode: "",
     budget: "",
     priority: "Medium",
     updatedBy: "",
@@ -57,7 +59,12 @@ function RecruitmentForm() {
   const isAlpha = (str) => /^[A-Za-z\s]+$/.test(str);
   const isAlphaOrComma = (str) => /^[A-Za-z\s,]+$/.test(str);
   const isNumeric = (str) => /^\d+$/.test(str);
-  const isExperienceValid = (str) => /^(\d{1,2}(\.\d{0,1})?)?$/.test(str);
+  // Only numbers and the hyphen (-) are allowed, maximum 9 characters. Letters, underscore, and other symbols are disallowed.
+const isExperienceValid = (str) => {
+  if (str === "") return true;
+  // allow digits and the hyphen character, up to 9 chars
+  return /^[0-9-.]{1,9}$/.test(str);
+};
 
   // Fetch logged in user and autofill updatedBy
   useEffect(() => {
@@ -116,7 +123,7 @@ function RecruitmentForm() {
     if (!formData.experience.toString().trim()) {
       newErrors.experience = "Experience is required.";
     } else if (!isExperienceValid(formData.experience)) {
-      newErrors.experience = "Max 2 digits before decimal and 1 digit after decimal allowed.";
+      newErrors.experience = "Only numbers and hyphen (-) allowed, max 9 characters.";
     }
 
     if (!formData.noticePeriod.toString().trim()) {
@@ -143,6 +150,11 @@ function RecruitmentForm() {
     if (!formData.workLocation) {
       newErrors.workLocation = "Work Location is required.";
     }
+
+    if (["WFO", "WFC", "Hybrid"].includes(formData.workLocation) && !formData.workMode?.trim()) {
+      newErrors.workMode = "Work Mode / Details are required for this work location.";
+    }
+
     if (!formData.closePositions) {
       newErrors.closePositions = "Position Type is required.";
     }
@@ -165,7 +177,7 @@ function RecruitmentForm() {
     } else {
       setErrors((prev) => ({
         ...prev,
-        experience: "Max 2 digits before decimal and 1 digit after decimal allowed.",
+        experience: "Only numbers and hyphen (-) allowed.",
       }));
     }
   };
@@ -572,11 +584,10 @@ function RecruitmentForm() {
                   value={formData.experience}
                   onChange={handleExperienceChange}
                   type="text"
-                  inputMode="decimal"
-                  maxLength={4}
-                  placeholder="e.g., 3.5"
+                  placeholder="Numbers and hyphen only (max 9 chars, e.g., 123-456)"
                   autoComplete="off"
-                  pattern="\d{1,2}(\.\d{0,1})?"
+                  pattern="[0-9-]{1,9}"
+                  maxLength={9}
                 />
                 {errors.experience && (
                   <span className="text-red-600 text-xs">{errors.experience}</span>
@@ -658,7 +669,12 @@ function RecruitmentForm() {
                 <RadioGroup
                   value={formData.requirementType}
                   onValueChange={(value) =>
-                    setFormData((prev) => ({ ...prev, requirementType: value }))
+                    setFormData((prev) => ({
+                      ...prev,
+                      requirementType: value,
+                      requirementTypeDetails:
+                        value === "C2H" || value === "Contract" ? prev.requirementTypeDetails : "",
+                    }))
                   }
                   className="flex flex-row gap-4 pt-2 flex-wrap"
                 >
@@ -673,6 +689,21 @@ function RecruitmentForm() {
                 </RadioGroup>
                 {errors.requirementType && (
                   <span className="text-red-600 text-xs">{errors.requirementType}</span>
+                )}
+                {(formData.requirementType === "C2H" || formData.requirementType === "Contract") && (
+                  <div className="mt-4 flex flex-col space-y-2">
+                    <Label htmlFor="requirementTypeDetails">
+                      Requirement Type Details
+                    </Label>
+                    <Input
+                      id="requirementTypeDetails"
+                      name="requirementTypeDetails"
+                      value={formData.requirementTypeDetails}
+                      onChange={handleChange}
+                      placeholder="Enter details for selected type (optional)"
+                      autoComplete="off"
+                    />
+                  </div>
                 )}
               </div>
 
@@ -710,7 +741,7 @@ function RecruitmentForm() {
               <RadioGroup
                 value={formData.workLocation}
                 onValueChange={(value) =>
-                  setFormData((prev) => ({ ...prev, workLocation: value }))
+                  setFormData((prev) => ({ ...prev, workLocation: value, workMode: "" }))
                 }
                 className="flex flex-row gap-6 pt-2 flex-wrap"
               >
@@ -727,6 +758,27 @@ function RecruitmentForm() {
                 <span className="text-red-600 text-xs">{errors.workLocation}</span>
               )}
             </div>
+
+            {/* Row 9.5: Work Mode - Conditional (Shows for WFO, WFC, or Hybrid) */}
+            {["WFO", "WFC", "Hybrid"].includes(formData.workLocation) && (
+              <div className="flex flex-col space-y-2">
+                <Label htmlFor="workMode">
+                  Work Mode / Details <span className="text-red-500">*</span>
+                </Label>
+                <Input
+                  id="workMode"
+                  name="workMode"
+                  value={formData.workMode}
+                  onChange={handleChange}
+                  placeholder="e.g., Monday-Friday, Flexible hours, etc."
+                  autoComplete="off"
+                  className="border rounded-md"
+                />
+                {errors.workMode && (
+                  <span className="text-red-600 text-xs">{errors.workMode}</span>
+                )}
+              </div>
+            )}
 
             {/* Submit Buttons */}
             <div className="flex justify-end gap-4 pt-4">

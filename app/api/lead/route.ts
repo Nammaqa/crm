@@ -143,6 +143,8 @@ export async function POST(req: NextRequest) {
       companyType,
       technologyOther,
       industryOther,
+      companyLinkedInUrl,
+      companyWebsite,
     } = body as Record<string, any>;
 
     // Validate required fields
@@ -212,6 +214,8 @@ export async function POST(req: NextRequest) {
         companyType, 
         technologyOther: technologyOther || null,
         // industryOther: industryOther || null,
+        companyLinkedInUrl: companyLinkedInUrl || null,
+        companyWebsite: companyWebsite || null,
         spocs: {
           create: spocArray.map((spoc: SpocInput) => ({
             name: spoc.name,
@@ -220,6 +224,7 @@ export async function POST(req: NextRequest) {
             altContact: spoc.altContact,
             designation: spoc.designation,
             location: spoc.location,
+            linkedinUrl: (spoc as any).linkedinUrl || null,
           })),
         },
       },

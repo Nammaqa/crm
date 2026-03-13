@@ -26,7 +26,7 @@ export async function DELETE(
 export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
   try {
     const data = await request.json();
-    const reminderId = parseInt(params.id);
+    const reminderId = parseInt((await params).id);
 
     // Update the reminder based on the provided data
     const reminder = await prisma.reminder.update({

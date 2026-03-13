@@ -34,7 +34,8 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    const invoiceId = Number(params.id);
+    const { id } = await params;
+    const invoiceId = Number(id);
     if (isNaN(invoiceId)) {
       return NextResponse.json(
         { success: false, error: "Invalid invoice ID" },
@@ -82,7 +83,8 @@ export async function POST(
   { params }: { params: { id: string } }
 ) {
   try {
-    const invoiceId = Number(params.id);
+    const { id } = await params;
+    const invoiceId = Number(id);
     if (isNaN(invoiceId)) {
       return NextResponse.json(
         { success: false, error: "Invalid invoice ID" },

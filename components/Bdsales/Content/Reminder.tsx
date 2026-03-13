@@ -71,7 +71,7 @@ export default function AddReminderForm({
 
   const fetchUser = async () => {                              // NEW
     try {
-      const baseUrl = process.env.NEXT_PUBLIC_BASEAPIURL;
+      const baseUrl = process.env.NEXT_PUBLIC_BASEAPIURL || "";
       const res = await fetch(`${baseUrl}/api/users/me`, { method: "GET", credentials: "include" });
       const data = await res.json();
       if (res.ok) setUser(data?.data || data);
@@ -82,7 +82,7 @@ export default function AddReminderForm({
 
   const fetchClients = async (currentUser: any) => {           // CHANGED: takes user
     try {
-      const baseUrl = process.env.NEXT_PUBLIC_BASEAPIURL;
+      const baseUrl = process.env.NEXT_PUBLIC_BASEAPIURL || "";
       const res = await fetch(`${baseUrl}/api/lead`, { credentials: "include" });
       if (!res.ok) return;
       const data = await res.json();
@@ -138,7 +138,7 @@ export default function AddReminderForm({
   const handleSubmit = async () => {
     setLoading(true);
     try {
-      const baseUrl = process.env.NEXT_PUBLIC_BASEAPIURL;
+      const baseUrl = process.env.NEXT_PUBLIC_BASEAPIURL || "";
 
       // Logged-in user
       const userRes = await fetch(`${baseUrl}/api/users/me`, {
